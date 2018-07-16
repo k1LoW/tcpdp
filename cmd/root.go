@@ -22,24 +22,37 @@ package cmd
 
 import (
 	"fmt"
+	"net"
 	"os"
 
+	"github.com/k1LoW/tcprxy/server"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
+
+var listenAddr string
+var remoteAddr string
+var dumper string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "tcprxy",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	//	Run: func(cmd *cobra.Command, args []string) { },
+	Short: "tcprxy",
+	Long:  `tcprxy`,
+	Run: func(cmd *cobra.Command, args []string) {
+		lAddr, err := net.ResolveTCPAddr("tcp", listenAddr)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		rAddr, err := net.ResolveTCPAddr("tcp", remoteAddr)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		s := &server.Server{}
+		s.Start(lAddr, rAddr)
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -52,12 +65,8 @@ func Execute() {
 }
 
 func init() {
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.tcprxy.yaml)")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.Flags().StringVarP(&listenAddr, "listen", "l", "localhost:8080", "listen address")
+	rootCmd.Flags().StringVarP(&remoteAddr, "remote", "r", "localhost:80", "remote address")
+	rootCmd.Flags().StringVarP(&dumper, "dumper", "d", "hex", "dumper")
+	viper.BindPFlag("dumper", rootCmd.Flags().Lookup("dumper"))
 }
