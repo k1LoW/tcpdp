@@ -9,7 +9,7 @@ import (
 // MysqlDumper struct
 type MysqlDumper struct{}
 
-// Dump MySQL query
+// Dump query of MySQL
 func (m *MysqlDumper) Dump(in []byte) string {
 	if in[4] != 0x03 {
 		return ""

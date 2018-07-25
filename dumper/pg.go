@@ -9,7 +9,7 @@ import (
 // PgDumper struct
 type PgDumper struct{}
 
-// Dump PostgreSQL query
+// Dump query of PostgreSQL
 func (p *PgDumper) Dump(in []byte) string {
 	if in[0] != 'Q' {
 		return ""
