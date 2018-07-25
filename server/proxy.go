@@ -29,6 +29,8 @@ func (p *Proxy) Start(ctx context.Context, conn, remoteConn *net.TCPConn) {
 		d = &dumper.HexDumper{}
 	case "pg":
 		d = &dumper.PgDumper{}
+	case "mysql":
+		d = &dumper.MysqlDumper{}
 	default:
 		d = &dumper.HexDumper{}
 	}
@@ -43,12 +45,12 @@ func (p *Proxy) Start(ctx context.Context, conn, remoteConn *net.TCPConn) {
 	}
 }
 
-func (p *Proxy) pipe(ctx context.Context, cancel context.CancelFunc, d dumper.Dumper, fromConn, toConn *net.TCPConn) {
+func (p *Proxy) pipe(ctx context.Context, cancel context.CancelFunc, d dumper.Dumper, srcConn, destConn *net.TCPConn) {
 	defer cancel()
 
 	buff := make([]byte, 0xFFFF)
 	for {
-		n, err := fromConn.Read(buff)
+		n, err := srcConn.Read(buff)
 		if err != nil {
 			break
 		}
@@ -59,7 +61,7 @@ func (p *Proxy) pipe(ctx context.Context, cancel context.CancelFunc, d dumper.Du
 			fmt.Print(out)
 		}
 
-		n, err = toConn.Write(b)
+		n, err = destConn.Write(b)
 		if err != nil {
 			break
 		}
