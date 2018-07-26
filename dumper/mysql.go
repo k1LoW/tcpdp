@@ -10,13 +10,13 @@ import (
 type MysqlDumper struct{}
 
 // Dump query of MySQL
-func (m *MysqlDumper) Dump(in []byte) string {
+func (m *MysqlDumper) Dump(in []byte) (error, string) {
 	if in[4] != 0x03 {
-		return ""
+		return nil, ""
 	}
 	buff := bytes.NewBuffer(in)
 	_, _ = buff.Read(make([]byte, 4))
 	str, _ := buff.ReadString(0x00)
 	query := strings.Trim(str, "\x00")
-	return fmt.Sprintf("%s\n", query)
+	return nil, fmt.Sprintf("%s\n", query)
 }

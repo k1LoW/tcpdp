@@ -7,7 +7,7 @@ import (
 // HexDumper ...
 type HexDumper struct{}
 
-// Dump ...
-func (h *HexDumper) Dump(in []byte) string {
-	return hex.Dump(in)
+// Dump TCP
+func (h *HexDumper) Dump(in []byte) (error, string) {
+	return nil, hex.Dump(in)
 }

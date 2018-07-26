@@ -56,7 +56,10 @@ func (p *Proxy) pipe(ctx context.Context, cancel context.CancelFunc, d dumper.Du
 		}
 		b := buff[:n]
 
-		out := d.Dump(b)
+		err, out := d.Dump(b)
+		if err != nil {
+			break
+		}
 		if out != "" {
 			fmt.Print(out)
 		}
