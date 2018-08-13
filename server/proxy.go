@@ -2,7 +2,7 @@ package server
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"net"
 
 	"github.com/k1LoW/tcprxy/dumper"
@@ -63,7 +63,7 @@ func (p *Proxy) pipe(ctx context.Context, cancel context.CancelFunc, d dumper.Du
 			break
 		}
 		if out != "" {
-			fmt.Print(out)
+			log.Print(out)
 		}
 
 		n, err = destConn.Write(b)

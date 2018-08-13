@@ -22,13 +22,13 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"os"
 
 	"github.com/k1LoW/tcprxy/server"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"log"
 	"os/signal"
 	"sync"
 	"syscall"
@@ -46,12 +46,12 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		lAddr, err := net.ResolveTCPAddr("tcp", listenAddr)
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 			os.Exit(1)
 		}
 		rAddr, err := net.ResolveTCPAddr("tcp", remoteAddr)
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 			os.Exit(1)
 		}
 
@@ -63,22 +63,24 @@ var rootCmd = &cobra.Command{
 		wg := &sync.WaitGroup{}
 
 		s := &server.Server{}
+		log.Printf("Starting server. %s:%d <-> %s:%d\n", lAddr.IP, lAddr.Port, rAddr.IP, rAddr.Port)
 		go s.Start(ctx, wg, lAddr, rAddr)
 
 		sc := <-signalChan
 
 		switch sc {
 		case syscall.SIGINT:
-			fmt.Println("Shutting down server...")
+			log.Println("Shutting down server...")
 			shutdown()
 			wg.Wait()
 		case syscall.SIGQUIT, syscall.SIGTERM:
 			// TODO: Graceful shutdown
-			fmt.Println("Shutting down server...")
+			log.Println("Shutting down server...")
 			shutdown()
 			wg.Wait()
 		default:
-			panic("Unexpected signal")
+			log.Println("Unexpected signal")
+			os.Exit(1)
 		}
 	},
 }
@@ -87,7 +89,7 @@ var rootCmd = &cobra.Command{
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		os.Exit(1)
 	}
 }
