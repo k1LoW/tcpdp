@@ -17,3 +17,4 @@ $ tcprxy -l localhost:33306 -r localhost:3306 -d mysql # Dump query of MySQL
 ## References
 
 - https://github.com/jpillora/go-tcp-proxy
+- https://github.com/dmmlabo/tcpserver_go
