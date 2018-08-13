@@ -11,18 +11,30 @@ import (
 
 // Proxy struct
 type Proxy struct {
-	Ctx        context.Context
-	CloseFunc  context.CancelFunc
-	Conn       *net.TCPConn
-	RemoteConn *net.TCPConn
+	ctx        context.Context
+	Close      context.CancelFunc
+	conn       *net.TCPConn
+	remoteConn *net.TCPConn
+}
+
+// NewProxy ...
+func NewProxy(ctx context.Context, conn, remoteConn *net.TCPConn) *Proxy {
+	innerCtx, close := context.WithCancel(ctx)
+
+	return &Proxy{
+		ctx:        innerCtx,
+		Close:      close,
+		conn:       conn,
+		remoteConn: remoteConn,
+	}
 }
 
 // Start proxy
 func (p *Proxy) Start() {
 	defer func() {
-		p.Conn.Close()
-		p.RemoteConn.Close()
-		p.CloseFunc()
+		p.conn.Close()
+		p.remoteConn.Close()
+		p.Close()
 	}()
 
 	var d dumper.Dumper
@@ -40,18 +52,18 @@ func (p *Proxy) Start() {
 		d = &dumper.HexDumper{}
 	}
 
-	go p.pipe(d, p.Conn, p.RemoteConn)
-	go p.pipe(d, p.RemoteConn, p.Conn)
+	go p.pipe(d, p.conn, p.remoteConn)
+	go p.pipe(d, p.remoteConn, p.conn)
 
 	select {
-	case <-p.Ctx.Done():
+	case <-p.ctx.Done():
 		// TODO: logging
 		return
 	}
 }
 
 func (p *Proxy) pipe(d dumper.Dumper, srcConn, destConn *net.TCPConn) {
-	defer p.CloseFunc()
+	defer p.Close()
 
 	buff := make([]byte, 0xFFFF)
 	for {
@@ -75,7 +87,7 @@ func (p *Proxy) pipe(d dumper.Dumper, srcConn, destConn *net.TCPConn) {
 		}
 
 		select {
-		case <-p.Ctx.Done():
+		case <-p.ctx.Done():
 			break
 		default:
 		}

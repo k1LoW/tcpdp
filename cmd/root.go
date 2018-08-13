@@ -30,7 +30,6 @@ import (
 	"github.com/spf13/viper"
 	"log"
 	"os/signal"
-	"sync"
 	"syscall"
 )
 
@@ -59,15 +58,8 @@ var rootCmd = &cobra.Command{
 		signal.Ignore()
 		signal.Notify(signalChan, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
 
-		ctx, shutdown := context.WithCancel(context.Background())
-		wg := &sync.WaitGroup{}
+		s := server.NewServer(context.Background(), lAddr, rAddr)
 
-		s := &server.Server{
-			ListenAddr: lAddr,
-			RemoteAddr: rAddr,
-			Ctx:        ctx,
-			Wg:         wg,
-		}
 		log.Printf("Starting server. %s:%d <-> %s:%d\n", lAddr.IP, lAddr.Port, rAddr.IP, rAddr.Port)
 		go s.Start()
 
@@ -76,13 +68,13 @@ var rootCmd = &cobra.Command{
 		switch sc {
 		case syscall.SIGINT:
 			log.Println("Shutting down server...")
-			shutdown()
-			wg.Wait()
+			s.Shutdown()
+			s.Wg.Wait()
 		case syscall.SIGQUIT, syscall.SIGTERM:
 			// TODO: Graceful shutdown
 			log.Println("Shutting down server...")
-			shutdown()
-			wg.Wait()
+			s.Shutdown()
+			s.Wg.Wait()
 		default:
 			log.Println("Unexpected signal")
 			os.Exit(1)
