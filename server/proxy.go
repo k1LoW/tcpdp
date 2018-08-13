@@ -14,8 +14,10 @@ type Proxy struct{}
 
 // Start proxy
 func (p *Proxy) Start(ctx context.Context, conn, remoteConn *net.TCPConn) {
-	defer conn.Close()
-	defer remoteConn.Close()
+	defer func() {
+		conn.Close()
+		remoteConn.Close()
+	}()
 
 	innerCtx, cancel := context.WithCancel(ctx)
 	defer cancel()

@@ -3,13 +3,14 @@ package server
 import (
 	"context"
 	"net"
+	"sync"
 )
 
 // Server struct
 type Server struct{}
 
 // Start TCP proxy server.
-func (s *Server) Start(listenAddr, remoteAddr *net.TCPAddr) error {
+func (s *Server) Start(ctx context.Context, wg *sync.WaitGroup, listenAddr, remoteAddr *net.TCPAddr) error {
 	lt, err := net.ListenTCP("tcp", listenAddr)
 	if err != nil {
 		return err
@@ -19,16 +20,25 @@ func (s *Server) Start(listenAddr, remoteAddr *net.TCPAddr) error {
 	for {
 		conn, err := lt.AcceptTCP()
 		if err != nil {
+			if ne, ok := err.(net.Error); ok {
+				if ne.Temporary() {
+					continue
+				}
+			}
 			return err
 		}
-		go s.handleConn(conn, remoteAddr)
+		wg.Add(1)
+		go s.handleConn(ctx, wg, conn, remoteAddr)
 	}
 }
 
-func (s *Server) handleConn(conn *net.TCPConn, remoteAddr *net.TCPAddr) {
-	defer conn.Close()
+func (s *Server) handleConn(ctx context.Context, wg *sync.WaitGroup, conn *net.TCPConn, remoteAddr *net.TCPAddr) {
+	defer func() {
+		conn.Close()
+		wg.Done()
+	}()
 
-	ctx, cancel := context.WithCancel(context.Background())
+	innerCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	remoteConn, err := net.DialTCP("tcp", nil, remoteAddr)
@@ -39,5 +49,5 @@ func (s *Server) handleConn(conn *net.TCPConn, remoteAddr *net.TCPAddr) {
 	}
 
 	p := &Proxy{}
-	p.Start(ctx, conn, remoteConn)
+	p.Start(innerCtx, conn, remoteConn)
 }

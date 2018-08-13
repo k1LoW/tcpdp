@@ -21,6 +21,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"os"
@@ -28,6 +29,9 @@ import (
 	"github.com/k1LoW/tcprxy/server"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"os/signal"
+	"sync"
+	"syscall"
 )
 
 var listenAddr string
@@ -50,8 +54,32 @@ var rootCmd = &cobra.Command{
 			fmt.Println(err)
 			os.Exit(1)
 		}
+
+		signalChan := make(chan os.Signal, 1)
+		signal.Ignore()
+		signal.Notify(signalChan, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
+
+		ctx, shutdown := context.WithCancel(context.Background())
+		wg := &sync.WaitGroup{}
+
 		s := &server.Server{}
-		s.Start(lAddr, rAddr)
+		go s.Start(ctx, wg, lAddr, rAddr)
+
+		sc := <-signalChan
+
+		switch sc {
+		case syscall.SIGINT:
+			fmt.Println("Shutting down server...")
+			shutdown()
+			wg.Wait()
+		case syscall.SIGQUIT, syscall.SIGTERM:
+			// TODO: Graceful shutdown
+			fmt.Println("Shutting down server...")
+			shutdown()
+			wg.Wait()
+		default:
+			panic("Unexpected signal")
+		}
 	},
 }
 
