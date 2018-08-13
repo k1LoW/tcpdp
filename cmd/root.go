@@ -70,11 +70,13 @@ var rootCmd = &cobra.Command{
 			log.Println("Shutting down server...")
 			s.Shutdown()
 			s.Wg.Wait()
+			<-s.ClosedChan
 		case syscall.SIGQUIT, syscall.SIGTERM:
 			// TODO: Graceful shutdown
 			log.Println("Shutting down server...")
 			s.Shutdown()
 			s.Wg.Wait()
+			<-s.ClosedChan
 		default:
 			log.Println("Unexpected signal")
 			os.Exit(1)

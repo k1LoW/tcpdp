@@ -17,7 +17,7 @@ type Proxy struct {
 	remoteConn *net.TCPConn
 }
 
-// NewProxy ...
+// NewProxy returns a new Proxy
 func NewProxy(ctx context.Context, conn, remoteConn *net.TCPConn) *Proxy {
 	innerCtx, close := context.WithCancel(ctx)
 
