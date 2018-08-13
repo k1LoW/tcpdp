@@ -7,11 +7,16 @@ import (
 )
 
 // Server struct
-type Server struct{}
+type Server struct {
+	ListenAddr *net.TCPAddr
+	RemoteAddr *net.TCPAddr
+	Ctx        context.Context
+	Wg         *sync.WaitGroup
+}
 
 // Start TCP proxy server.
-func (s *Server) Start(ctx context.Context, wg *sync.WaitGroup, listenAddr, remoteAddr *net.TCPAddr) error {
-	lt, err := net.ListenTCP("tcp", listenAddr)
+func (s *Server) Start() error {
+	lt, err := net.ListenTCP("tcp", s.ListenAddr)
 	if err != nil {
 		return err
 	}
@@ -27,27 +32,32 @@ func (s *Server) Start(ctx context.Context, wg *sync.WaitGroup, listenAddr, remo
 			}
 			return err
 		}
-		wg.Add(1)
-		go s.handleConn(ctx, wg, conn, remoteAddr)
+		s.Wg.Add(1)
+		go s.handleConn(conn)
 	}
 }
 
-func (s *Server) handleConn(ctx context.Context, wg *sync.WaitGroup, conn *net.TCPConn, remoteAddr *net.TCPAddr) {
+func (s *Server) handleConn(conn *net.TCPConn) {
 	defer func() {
 		conn.Close()
-		wg.Done()
+		s.Wg.Done()
 	}()
 
-	innerCtx, cancel := context.WithCancel(ctx)
+	innerCtx, cancel := context.WithCancel(s.Ctx)
 	defer cancel()
 
-	remoteConn, err := net.DialTCP("tcp", nil, remoteAddr)
+	remoteConn, err := net.DialTCP("tcp", nil, s.RemoteAddr)
 	defer remoteConn.Close()
 	if err != nil {
 		// TODO: error handling
 		return
 	}
 
-	p := &Proxy{}
-	p.Start(innerCtx, conn, remoteConn)
+	p := &Proxy{
+		Ctx:        innerCtx,
+		CloseFunc:  cancel,
+		Conn:       conn,
+		RemoteConn: remoteConn,
+	}
+	p.Start()
 }

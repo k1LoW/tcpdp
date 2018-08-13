@@ -62,9 +62,14 @@ var rootCmd = &cobra.Command{
 		ctx, shutdown := context.WithCancel(context.Background())
 		wg := &sync.WaitGroup{}
 
-		s := &server.Server{}
+		s := &server.Server{
+			ListenAddr: lAddr,
+			RemoteAddr: rAddr,
+			Ctx:        ctx,
+			Wg:         wg,
+		}
 		log.Printf("Starting server. %s:%d <-> %s:%d\n", lAddr.IP, lAddr.Port, rAddr.IP, rAddr.Port)
-		go s.Start(ctx, wg, lAddr, rAddr)
+		go s.Start()
 
 		sc := <-signalChan
 
