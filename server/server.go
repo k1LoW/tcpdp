@@ -32,7 +32,6 @@ func NewServer(ctx context.Context, lAddr, rAddr *net.TCPAddr, logger *zap.Logge
 	innerCtx, shutdown := context.WithCancel(ctx)
 	wg := &sync.WaitGroup{}
 	closedChan := make(chan struct{})
-	dumpLogger := l.NewDumpLogger("query")
 
 	var d dumper.Dumper
 	dFlag := viper.GetString("dumper")
@@ -40,19 +39,19 @@ func NewServer(ctx context.Context, lAddr, rAddr *net.TCPAddr, logger *zap.Logge
 	switch dFlag {
 	case "hex":
 		d = &dumper.HexDumper{
-			Logger: dumpLogger,
+			Logger: l.NewDumpLogger(),
 		}
 	case "pg":
 		d = &dumper.PgDumper{
-			Logger: dumpLogger,
+			Logger: l.NewQueryLogger(),
 		}
 	case "mysql":
 		d = &dumper.MysqlDumper{
-			Logger: dumpLogger,
+			Logger: l.NewQueryLogger(),
 		}
 	default:
 		d = &dumper.HexDumper{
-			Logger: dumpLogger,
+			Logger: l.NewDumpLogger(),
 		}
 	}
 

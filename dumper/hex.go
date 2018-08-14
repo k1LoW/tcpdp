@@ -2,7 +2,7 @@ package dumper
 
 import (
 	"encoding/hex"
-	"fmt"
+	"time"
 
 	"go.uber.org/zap"
 )
@@ -14,6 +14,6 @@ type HexDumper struct {
 
 // Dump TCP
 func (h *HexDumper) Dump(cid string, in []byte) error {
-	h.Logger.Info(fmt.Sprintf("\n%s", hex.Dump(in)), zap.String("cid", cid))
+	h.Logger.Info(hex.Dump(in), zap.String("cid", cid), zap.Time("time", time.Now()))
 	return nil
 }
