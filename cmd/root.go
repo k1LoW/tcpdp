@@ -22,20 +22,21 @@ package cmd
 
 import (
 	"context"
+	"log"
 	"net"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/k1LoW/tcprxy/server"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"log"
-	"os/signal"
-	"syscall"
 )
 
 var listenAddr string
 var remoteAddr string
 var dumper string
+var useServerSterter bool
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -60,7 +61,11 @@ var rootCmd = &cobra.Command{
 
 		s := server.NewServer(context.Background(), lAddr, rAddr)
 
-		log.Printf("Starting server. %s:%d <-> %s:%d\n", lAddr.IP, lAddr.Port, rAddr.IP, rAddr.Port)
+		if useServerSterter {
+			log.Printf("Starting server. [server_starter] <-> %s:%d\n", rAddr.IP, rAddr.Port)
+		} else {
+			log.Printf("Starting server. %s:%d <-> %s:%d\n", lAddr.IP, lAddr.Port, rAddr.IP, rAddr.Port)
+		}
 		go s.Start()
 
 		sc := <-signalChan
@@ -96,5 +101,7 @@ func init() {
 	rootCmd.Flags().StringVarP(&listenAddr, "listen", "l", "localhost:8080", "listen address")
 	rootCmd.Flags().StringVarP(&remoteAddr, "remote", "r", "localhost:80", "remote address")
 	rootCmd.Flags().StringVarP(&dumper, "dumper", "d", "hex", "dumper")
+	rootCmd.Flags().BoolVarP(&useServerSterter, "use-server-starter", "s", false, "use server_starter")
+	viper.BindPFlag("useServerSterter", rootCmd.Flags().Lookup("use-server-starter"))
 	viper.BindPFlag("dumper", rootCmd.Flags().Lookup("dumper"))
 }

@@ -5,6 +5,9 @@ import (
 	"net"
 	"strings"
 	"sync"
+
+	"github.com/lestrrat-go/server-starter/listener"
+	"github.com/spf13/viper"
 )
 
 // Server struct
@@ -36,11 +39,23 @@ func NewServer(ctx context.Context, lAddr, rAddr *net.TCPAddr) *Server {
 
 // Start server.
 func (s *Server) Start() error {
-	lt, err := net.ListenTCP("tcp", s.listenAddr)
-	if err != nil {
-		return err
+	useServerSterter := viper.GetBool("useServerSterter")
+
+	var lt *net.TCPListener
+	if useServerSterter {
+		listeners, err := listener.ListenAll()
+		if listeners == nil || err != nil {
+			return err
+		}
+		lt = listeners[0].(*net.TCPListener)
+		s.listener = lt
+	} else {
+		lt, err := net.ListenTCP("tcp", s.listenAddr)
+		if err != nil {
+			return err
+		}
+		s.listener = lt
 	}
-	s.listener = lt
 	defer func() {
 		lt.Close()
 		close(s.ClosedChan)
