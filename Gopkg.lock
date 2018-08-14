@@ -96,6 +96,14 @@
   version = "v0.8.0"
 
 [[projects]]
+  digest = "1:757b110984b77e820e01c60d3ac03a376a0fdb05c990dd9d6bd4f9ba0d606261"
+  name = "github.com/rs/xid"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "2c7e97ce663ff82c49656bca3048df0fdd83c5f9"
+  version = "v1.2.0"
+
+[[projects]]
   digest = "1:bd1ae00087d17c5a748660b8e89e1043e1e5479d0fea743352cda2f8dd8c4f84"
   name = "github.com/spf13/afero"
   packages = [
@@ -179,9 +187,12 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:0316a8ad208917f1d141b077e278980fd5e4594f3a85f835dacbf24d85798252"
+  digest = "1:d756534cd4124a2c7f9b349b2a70a63e53d4e32befae47d6a4bd938a64b92e14"
   name = "golang.org/x/sys"
-  packages = ["unix"]
+  packages = [
+    "unix",
+    "windows",
+  ]
   pruneopts = "UT"
   revision = "4e1fef5609515ec7a2cee7b5de30ba6d9b438cbf"
 
@@ -214,6 +225,7 @@
   input-imports = [
     "github.com/lestrrat-go/file-rotatelogs",
     "github.com/lestrrat-go/server-starter/listener",
+    "github.com/rs/xid",
     "github.com/spf13/cobra",
     "github.com/spf13/viper",
     "go.uber.org/zap",

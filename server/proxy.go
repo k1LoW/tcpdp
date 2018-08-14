@@ -3,6 +3,8 @@ package server
 import (
 	"context"
 	"net"
+
+	"github.com/rs/xid"
 )
 
 // Proxy struct
@@ -35,8 +37,10 @@ func (p *Proxy) Start() {
 		p.Close()
 	}()
 
-	go p.pipe(p.conn, p.remoteConn)
-	go p.pipe(p.remoteConn, p.conn)
+	guid := xid.New()
+
+	go p.pipe(guid.String(), p.conn, p.remoteConn)
+	go p.pipe(guid.String(), p.remoteConn, p.conn)
 
 	select {
 	case <-p.ctx.Done():
@@ -44,7 +48,7 @@ func (p *Proxy) Start() {
 	}
 }
 
-func (p *Proxy) pipe(srcConn, destConn *net.TCPConn) {
+func (p *Proxy) pipe(cid string, srcConn, destConn *net.TCPConn) {
 	defer p.Close()
 
 	buff := make([]byte, 0xFFFF)
@@ -55,7 +59,7 @@ func (p *Proxy) pipe(srcConn, destConn *net.TCPConn) {
 		}
 		b := buff[:n]
 
-		err = p.server.Dumper.Dump(b)
+		err = p.server.Dumper.Dump(cid, b)
 		if err != nil {
 			break
 		}

@@ -13,7 +13,7 @@ type HexDumper struct {
 }
 
 // Dump TCP
-func (h *HexDumper) Dump(in []byte) error {
-	h.Logger.Info(fmt.Sprintf("\n%s", hex.Dump(in)))
+func (h *HexDumper) Dump(cid string, in []byte) error {
+	h.Logger.Info(fmt.Sprintf("\n%s", hex.Dump(in)), zap.String("cid", cid))
 	return nil
 }

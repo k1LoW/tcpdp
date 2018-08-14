@@ -2,5 +2,5 @@ package dumper
 
 // Dumper interface
 type Dumper interface {
-	Dump(in []byte) error
+	Dump(cid string, in []byte) error
 }
