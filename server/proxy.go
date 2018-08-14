@@ -7,6 +7,7 @@ import (
 
 	"github.com/k1LoW/tcprxy/dumper"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 )
 
 // Proxy struct
@@ -15,10 +16,11 @@ type Proxy struct {
 	Close      context.CancelFunc
 	conn       *net.TCPConn
 	remoteConn *net.TCPConn
+	logger     *zap.Logger
 }
 
 // NewProxy returns a new Proxy
-func NewProxy(ctx context.Context, conn, remoteConn *net.TCPConn) *Proxy {
+func NewProxy(ctx context.Context, conn, remoteConn *net.TCPConn, logger *zap.Logger) *Proxy {
 	innerCtx, close := context.WithCancel(ctx)
 
 	return &Proxy{
@@ -26,6 +28,7 @@ func NewProxy(ctx context.Context, conn, remoteConn *net.TCPConn) *Proxy {
 		Close:      close,
 		conn:       conn,
 		remoteConn: remoteConn,
+		logger:     logger,
 	}
 }
 

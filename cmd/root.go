@@ -22,21 +22,26 @@ package cmd
 
 import (
 	"context"
-	"log"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"fmt"
+	l "github.com/k1LoW/tcprxy/logger"
 	"github.com/k1LoW/tcprxy/server"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 )
 
-var listenAddr string
-var remoteAddr string
-var dumper string
-var useServerSterter bool
+var (
+	listenAddr       string
+	remoteAddr       string
+	dumper           string
+	useServerSterter bool
+	logger           *zap.Logger
+)
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -44,14 +49,16 @@ var rootCmd = &cobra.Command{
 	Short: "tcprxy",
 	Long:  `tcprxy`,
 	Run: func(cmd *cobra.Command, args []string) {
+		defer logger.Sync()
+
 		lAddr, err := net.ResolveTCPAddr("tcp", listenAddr)
 		if err != nil {
-			log.Println(err)
+			logger.Fatal("error", zap.Error(err))
 			os.Exit(1)
 		}
 		rAddr, err := net.ResolveTCPAddr("tcp", remoteAddr)
 		if err != nil {
-			log.Println(err)
+			logger.Fatal("error", zap.Error(err))
 			os.Exit(1)
 		}
 
@@ -59,12 +66,12 @@ var rootCmd = &cobra.Command{
 		signal.Ignore()
 		signal.Notify(signalChan, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
 
-		s := server.NewServer(context.Background(), lAddr, rAddr)
+		s := server.NewServer(context.Background(), lAddr, rAddr, logger)
 
 		if useServerSterter {
-			log.Printf("Starting server. [server_starter] <-> %s:%d\n", rAddr.IP, rAddr.Port)
+			logger.Info(fmt.Sprintf("Starting server. [server_starter] <-> %s:%d", rAddr.IP, rAddr.Port))
 		} else {
-			log.Printf("Starting server. %s:%d <-> %s:%d\n", lAddr.IP, lAddr.Port, rAddr.IP, rAddr.Port)
+			logger.Info(fmt.Sprintf("Starting server. %s:%d <-> %s:%d", lAddr.IP, lAddr.Port, rAddr.IP, rAddr.Port))
 		}
 		go s.Start()
 
@@ -72,17 +79,17 @@ var rootCmd = &cobra.Command{
 
 		switch sc {
 		case syscall.SIGINT:
-			log.Println("Shutting down server...")
+			logger.Info("Shutting down server...")
 			s.Shutdown()
 			s.Wg.Wait()
 			<-s.ClosedChan
 		case syscall.SIGQUIT, syscall.SIGTERM:
-			log.Println("Graceful Shutting down server...")
+			logger.Info("Graceful Shutting down server...")
 			s.GracefulShutdown()
 			s.Wg.Wait()
 			<-s.ClosedChan
 		default:
-			log.Println("Unexpected signal")
+			logger.Info("Unexpected signal")
 			os.Exit(1)
 		}
 	},
@@ -92,12 +99,13 @@ var rootCmd = &cobra.Command{
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		log.Println(err)
+		logger.Fatal("error", zap.Error(err))
 		os.Exit(1)
 	}
 }
 
 func init() {
+	logger = l.NewLogger()
 	rootCmd.Flags().StringVarP(&listenAddr, "listen", "l", "localhost:8080", "listen address")
 	rootCmd.Flags().StringVarP(&remoteAddr, "remote", "r", "localhost:80", "remote address")
 	rootCmd.Flags().StringVarP(&dumper, "dumper", "d", "hex", "dumper")

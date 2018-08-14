@@ -9,6 +9,7 @@ import (
 
 	"github.com/lestrrat-go/server-starter/listener"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 )
 
 // Server struct
@@ -20,10 +21,11 @@ type Server struct {
 	Wg         *sync.WaitGroup
 	ClosedChan chan struct{}
 	listener   *net.TCPListener
+	logger     *zap.Logger
 }
 
 // NewServer returns a new Server
-func NewServer(ctx context.Context, lAddr, rAddr *net.TCPAddr) *Server {
+func NewServer(ctx context.Context, lAddr, rAddr *net.TCPAddr, logger *zap.Logger) *Server {
 	innerCtx, shutdown := context.WithCancel(ctx)
 	wg := &sync.WaitGroup{}
 	closedChan := make(chan struct{})
@@ -35,6 +37,7 @@ func NewServer(ctx context.Context, lAddr, rAddr *net.TCPAddr) *Server {
 		shutdown:   shutdown,
 		Wg:         wg,
 		ClosedChan: closedChan,
+		logger:     logger,
 	}
 }
 
@@ -116,6 +119,6 @@ func (s *Server) handleConn(conn *net.TCPConn) {
 		return
 	}
 
-	p := NewProxy(s.ctx, conn, remoteConn)
+	p := NewProxy(s.ctx, conn, remoteConn, s.logger)
 	p.Start()
 }
