@@ -72,9 +72,8 @@ var rootCmd = &cobra.Command{
 			s.Wg.Wait()
 			<-s.ClosedChan
 		case syscall.SIGQUIT, syscall.SIGTERM:
-			// TODO: Graceful shutdown
-			log.Println("Shutting down server...")
-			s.Shutdown()
+			log.Println("Graceful Shutting down server...")
+			s.GracefulShutdown()
 			s.Wg.Wait()
 			<-s.ClosedChan
 		default:

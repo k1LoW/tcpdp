@@ -78,6 +78,15 @@ func (s *Server) Shutdown() {
 	}
 }
 
+// GracefulShutdown server.
+func (s *Server) GracefulShutdown() {
+	select {
+	case <-s.ctx.Done():
+	default:
+		s.listener.Close()
+	}
+}
+
 func (s *Server) handleConn(conn *net.TCPConn) {
 	defer func() {
 		conn.Close()
