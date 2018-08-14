@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"log"
 	"net"
 	"strings"
 	"sync"
@@ -111,12 +112,10 @@ func (s *Server) handleConn(conn *net.TCPConn) {
 	remoteConn, err := net.DialTCP("tcp", nil, s.remoteAddr)
 	defer remoteConn.Close()
 	if err != nil {
-		// TODO: error handling
+		log.Println(err)
 		return
 	}
 
 	p := NewProxy(s.ctx, conn, remoteConn)
-	defer p.Close()
-
 	p.Start()
 }

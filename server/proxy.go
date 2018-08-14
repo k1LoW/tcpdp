@@ -57,7 +57,6 @@ func (p *Proxy) Start() {
 
 	select {
 	case <-p.ctx.Done():
-		// TODO: logging
 		return
 	}
 }
