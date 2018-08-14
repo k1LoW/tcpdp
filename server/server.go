@@ -45,13 +45,12 @@ func NewServer(ctx context.Context, lAddr, rAddr *net.TCPAddr, logger *zap.Logge
 func (s *Server) Start() error {
 	useServerSterter := viper.GetBool("useServerSterter")
 
-	var lt *net.TCPListener
 	if useServerSterter {
 		listeners, err := listener.ListenAll()
 		if listeners == nil || err != nil {
 			return err
 		}
-		lt = listeners[0].(*net.TCPListener)
+		lt := listeners[0].(*net.TCPListener)
 		s.listener = lt
 	} else {
 		lt, err := net.ListenTCP("tcp", s.listenAddr)
@@ -61,12 +60,12 @@ func (s *Server) Start() error {
 		s.listener = lt
 	}
 	defer func() {
-		lt.Close()
+		s.listener.Close()
 		close(s.ClosedChan)
 	}()
 
 	for {
-		conn, err := lt.AcceptTCP()
+		conn, err := s.listener.AcceptTCP()
 		if err != nil {
 			if ne, ok := err.(net.Error); ok {
 				if ne.Temporary() {
