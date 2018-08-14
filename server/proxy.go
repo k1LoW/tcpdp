@@ -2,12 +2,7 @@ package server
 
 import (
 	"context"
-	"log"
 	"net"
-
-	"github.com/k1LoW/tcprxy/dumper"
-	"github.com/spf13/viper"
-	"go.uber.org/zap"
 )
 
 // Proxy struct
@@ -16,19 +11,19 @@ type Proxy struct {
 	Close      context.CancelFunc
 	conn       *net.TCPConn
 	remoteConn *net.TCPConn
-	logger     *zap.Logger
+	server     *Server
 }
 
 // NewProxy returns a new Proxy
-func NewProxy(ctx context.Context, conn, remoteConn *net.TCPConn, logger *zap.Logger) *Proxy {
-	innerCtx, close := context.WithCancel(ctx)
+func NewProxy(s *Server, conn, remoteConn *net.TCPConn) *Proxy {
+	innerCtx, close := context.WithCancel(s.ctx)
 
 	return &Proxy{
 		ctx:        innerCtx,
 		Close:      close,
 		conn:       conn,
 		remoteConn: remoteConn,
-		logger:     logger,
+		server:     s,
 	}
 }
 
@@ -40,23 +35,8 @@ func (p *Proxy) Start() {
 		p.Close()
 	}()
 
-	var d dumper.Dumper
-
-	dFlag := viper.GetString("dumper")
-
-	switch dFlag {
-	case "hex":
-		d = &dumper.HexDumper{}
-	case "pg":
-		d = &dumper.PgDumper{}
-	case "mysql":
-		d = &dumper.MysqlDumper{}
-	default:
-		d = &dumper.HexDumper{}
-	}
-
-	go p.pipe(d, p.conn, p.remoteConn)
-	go p.pipe(d, p.remoteConn, p.conn)
+	go p.pipe(p.conn, p.remoteConn)
+	go p.pipe(p.remoteConn, p.conn)
 
 	select {
 	case <-p.ctx.Done():
@@ -64,7 +44,7 @@ func (p *Proxy) Start() {
 	}
 }
 
-func (p *Proxy) pipe(d dumper.Dumper, srcConn, destConn *net.TCPConn) {
+func (p *Proxy) pipe(srcConn, destConn *net.TCPConn) {
 	defer p.Close()
 
 	buff := make([]byte, 0xFFFF)
@@ -75,9 +55,9 @@ func (p *Proxy) pipe(d dumper.Dumper, srcConn, destConn *net.TCPConn) {
 		}
 		b := buff[:n]
 
-		out, _ := d.Dump(b)
-		if out != "" {
-			log.Print(out)
+		err = p.server.Dumper.Dump(b)
+		if err != nil {
+			break
 		}
 
 		n, err = destConn.Write(b)

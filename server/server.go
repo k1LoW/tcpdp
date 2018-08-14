@@ -7,6 +7,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/k1LoW/tcprxy/dumper"
+	l "github.com/k1LoW/tcprxy/logger"
 	"github.com/lestrrat-go/server-starter/listener"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -22,6 +24,7 @@ type Server struct {
 	ClosedChan chan struct{}
 	listener   *net.TCPListener
 	logger     *zap.Logger
+	Dumper     dumper.Dumper
 }
 
 // NewServer returns a new Server
@@ -29,6 +32,29 @@ func NewServer(ctx context.Context, lAddr, rAddr *net.TCPAddr, logger *zap.Logge
 	innerCtx, shutdown := context.WithCancel(ctx)
 	wg := &sync.WaitGroup{}
 	closedChan := make(chan struct{})
+	dumpLogger := l.NewDumpLogger("query")
+
+	var d dumper.Dumper
+	dFlag := viper.GetString("dumper")
+
+	switch dFlag {
+	case "hex":
+		d = &dumper.HexDumper{
+			Logger: dumpLogger,
+		}
+	case "pg":
+		d = &dumper.PgDumper{
+			Logger: dumpLogger,
+		}
+	case "mysql":
+		d = &dumper.MysqlDumper{
+			Logger: dumpLogger,
+		}
+	default:
+		d = &dumper.HexDumper{
+			Logger: dumpLogger,
+		}
+	}
 
 	return &Server{
 		listenAddr: lAddr,
@@ -38,6 +64,7 @@ func NewServer(ctx context.Context, lAddr, rAddr *net.TCPAddr, logger *zap.Logge
 		Wg:         wg,
 		ClosedChan: closedChan,
 		logger:     logger,
+		Dumper:     d,
 	}
 }
 
@@ -118,6 +145,6 @@ func (s *Server) handleConn(conn *net.TCPConn) {
 		return
 	}
 
-	p := NewProxy(s.ctx, conn, remoteConn, s.logger)
+	p := NewProxy(s, conn, remoteConn)
 	p.Start()
 }
