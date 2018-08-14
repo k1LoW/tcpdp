@@ -75,10 +75,7 @@ func (p *Proxy) pipe(d dumper.Dumper, srcConn, destConn *net.TCPConn) {
 		}
 		b := buff[:n]
 
-		err, out := d.Dump(b)
-		if err != nil {
-			break
-		}
+		out, _ := d.Dump(b)
 		if out != "" {
 			log.Print(out)
 		}
