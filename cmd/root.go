@@ -21,26 +21,15 @@
 package cmd
 
 import (
-	"context"
-	"net"
 	"os"
-	"os/signal"
-	"syscall"
 
-	"fmt"
 	l "github.com/k1LoW/tcprxy/logger"
-	"github.com/k1LoW/tcprxy/server"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
 
 var (
-	listenAddr       string
-	remoteAddr       string
-	dumper           string
-	useServerSterter bool
-	logger           *zap.Logger
+	logger *zap.Logger
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -48,51 +37,6 @@ var rootCmd = &cobra.Command{
 	Use:   "tcprxy",
 	Short: "tcprxy",
 	Long:  `tcprxy`,
-	Run: func(cmd *cobra.Command, args []string) {
-		defer logger.Sync()
-
-		lAddr, err := net.ResolveTCPAddr("tcp", listenAddr)
-		if err != nil {
-			logger.Fatal("error", zap.Error(err))
-			os.Exit(1)
-		}
-		rAddr, err := net.ResolveTCPAddr("tcp", remoteAddr)
-		if err != nil {
-			logger.Fatal("error", zap.Error(err))
-			os.Exit(1)
-		}
-
-		signalChan := make(chan os.Signal, 1)
-		signal.Ignore()
-		signal.Notify(signalChan, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
-
-		s := server.NewServer(context.Background(), lAddr, rAddr, logger)
-
-		if useServerSterter {
-			logger.Info(fmt.Sprintf("Starting server. [server_starter] <-> %s:%d", rAddr.IP, rAddr.Port))
-		} else {
-			logger.Info(fmt.Sprintf("Starting server. %s:%d <-> %s:%d", lAddr.IP, lAddr.Port, rAddr.IP, rAddr.Port))
-		}
-		go s.Start()
-
-		sc := <-signalChan
-
-		switch sc {
-		case syscall.SIGINT:
-			logger.Info("Shutting down server...")
-			s.Shutdown()
-			s.Wg.Wait()
-			<-s.ClosedChan
-		case syscall.SIGQUIT, syscall.SIGTERM:
-			logger.Info("Graceful Shutting down server...")
-			s.GracefulShutdown()
-			s.Wg.Wait()
-			<-s.ClosedChan
-		default:
-			logger.Info("Unexpected signal")
-			os.Exit(1)
-		}
-	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -106,10 +50,4 @@ func Execute() {
 
 func init() {
 	logger = l.NewLogger()
-	rootCmd.Flags().StringVarP(&listenAddr, "listen", "l", "localhost:8080", "listen address")
-	rootCmd.Flags().StringVarP(&remoteAddr, "remote", "r", "localhost:80", "remote address")
-	rootCmd.Flags().StringVarP(&dumper, "dumper", "d", "hex", "dumper")
-	rootCmd.Flags().BoolVarP(&useServerSterter, "use-server-starter", "s", false, "use server_starter")
-	viper.BindPFlag("useServerSterter", rootCmd.Flags().Lookup("use-server-starter"))
-	viper.BindPFlag("dumper", rootCmd.Flags().Lookup("dumper"))
 }
