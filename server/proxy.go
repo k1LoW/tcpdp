@@ -5,6 +5,8 @@ import (
 	"net"
 
 	"github.com/rs/xid"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 // Proxy struct
@@ -55,17 +57,20 @@ func (p *Proxy) pipe(cid string, srcConn, destConn *net.TCPConn) {
 	for {
 		n, err := srcConn.Read(buff)
 		if err != nil {
+			p.server.logger.WithOptions(zap.AddCaller(), zap.AddStacktrace(zapcore.DebugLevel)).Error("strCon Read error", zap.Error(err))
 			break
 		}
 		b := buff[:n]
 
 		err = p.server.Dumper.Dump(cid, b)
 		if err != nil {
+			p.server.logger.WithOptions(zap.AddCaller(), zap.AddStacktrace(zapcore.DebugLevel)).Error("dumber Dump error", zap.Error(err))
 			break
 		}
 
 		n, err = destConn.Write(b)
 		if err != nil {
+			p.server.logger.WithOptions(zap.AddCaller(), zap.AddStacktrace(zapcore.DebugLevel)).Error("destCon Write error", zap.Error(err))
 			break
 		}
 
