@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"net"
+	"strings"
 
 	"github.com/rs/xid"
 	"go.uber.org/zap"
@@ -36,7 +37,6 @@ func (p *Proxy) Start() {
 	defer func() {
 		p.conn.Close()
 		p.remoteConn.Close()
-		p.Close()
 	}()
 
 	guid := xid.New()
@@ -57,7 +57,9 @@ func (p *Proxy) pipe(cid string, srcConn, destConn *net.TCPConn) {
 	for {
 		n, err := srcConn.Read(buff)
 		if err != nil {
-			p.server.logger.WithOptions(zap.AddCaller(), zap.AddStacktrace(zapcore.DebugLevel)).Error("strCon Read error", zap.Error(err))
+			if err.Error() != "EOF" && !strings.Contains(err.Error(), "use of closed network connection") {
+				p.server.logger.WithOptions(zap.AddCaller(), zap.AddStacktrace(zapcore.DebugLevel)).Error("strCon Read error", zap.Error(err))
+			}
 			break
 		}
 		b := buff[:n]

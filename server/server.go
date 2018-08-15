@@ -87,6 +87,7 @@ func (s *Server) Start() error {
 		}
 		s.listener = lt
 	}
+
 	defer func() {
 		s.listener.Close()
 		close(s.ClosedChan)
@@ -104,10 +105,10 @@ func (s *Server) Start() error {
 					case <-s.ctx.Done():
 						break
 					default:
+						s.logger.WithOptions(zap.AddCaller(), zap.AddStacktrace(zapcore.DebugLevel)).Fatal("listener AcceptTCP error", zap.Error(err))
 					}
 				}
 			}
-			s.logger.WithOptions(zap.AddCaller(), zap.AddStacktrace(zapcore.DebugLevel)).Fatal("listener AcceptTCP error", zap.Error(err))
 			return err
 		}
 		s.Wg.Add(1)
