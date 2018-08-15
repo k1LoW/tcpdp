@@ -4,16 +4,25 @@ import (
 	"encoding/hex"
 	"time"
 
+	"github.com/k1LoW/tcprxy/logger"
 	"go.uber.org/zap"
 )
 
 // HexDumper ...
 type HexDumper struct {
-	Logger *zap.Logger
+	logger *zap.Logger
+}
+
+// NewHexDumper returns a HexDumper
+func NewHexDumper() *HexDumper {
+	dumper := &HexDumper{
+		logger: logger.NewDumpLogger(),
+	}
+	return dumper
 }
 
 // Dump TCP
 func (h *HexDumper) Dump(cid string, in []byte) error {
-	h.Logger.Info(hex.Dump(in), zap.String("cid", cid), zap.Time("time", time.Now()))
+	h.logger.Info(hex.Dump(in), zap.String("cid", cid), zap.Time("time", time.Now()))
 	return nil
 }

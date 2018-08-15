@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/k1LoW/tcprxy/dumper"
-	l "github.com/k1LoW/tcprxy/logger"
 	"github.com/lestrrat-go/server-starter/listener"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -37,21 +36,13 @@ func NewServer(ctx context.Context, lAddr, rAddr *net.TCPAddr, logger *zap.Logge
 
 	switch dFlag {
 	case "hex":
-		d = &dumper.HexDumper{
-			Logger: l.NewDumpLogger(),
-		}
+		d = dumper.NewHexDumper()
 	case "pg":
-		d = &dumper.PgDumper{
-			Logger: l.NewQueryLogger(),
-		}
+		d = dumper.NewPgDumper()
 	case "mysql":
-		d = &dumper.MysqlDumper{
-			Logger: l.NewQueryLogger(),
-		}
+		d = dumper.NewMysqlDumper()
 	default:
-		d = &dumper.HexDumper{
-			Logger: l.NewDumpLogger(),
-		}
+		d = dumper.NewHexDumper()
 	}
 
 	return &Server{

@@ -129,22 +129,13 @@ func NewQueryLogger() *zap.Logger {
 		log.Fatalf("Log setting error %v", err)
 	}
 
-	consoleCore := zapcore.NewCore(
-		zapcore.NewConsoleEncoder(encoderConfig),
-		zapcore.AddSync(os.Stdout),
-		zapcore.DebugLevel,
-	)
-
 	logCore := zapcore.NewCore(
 		zapcore.NewJSONEncoder(encoderConfig),
 		zapcore.AddSync(rl),
 		zapcore.InfoLevel,
 	)
 
-	logger := zap.New(zapcore.NewTee(
-		consoleCore,
-		logCore,
-	))
+	logger := zap.New(logCore)
 
 	return logger
 }
