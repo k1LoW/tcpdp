@@ -7,6 +7,12 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	pgMessageQuery = 'Q'
+	pgMessageParse = 'P'
+	pgMessageBind  = 'B'
+)
+
 // PgDumper struct
 type PgDumper struct {
 	logger *zap.Logger
@@ -22,11 +28,12 @@ func NewPgDumper() *PgDumper {
 
 // Dump query of PostgreSQL
 func (p *PgDumper) Dump(cid string, in []byte) error {
-	if in[0] != 'Q' {
+	messageType := in[0]
+	if messageType != pgMessageQuery && messageType != pgMessageParse && messageType != pgMessageBind {
 		return nil
 	}
 	n := len(in)
 	query := strings.Trim(string(in[5:n]), "\x00")
-	p.logger.Info(query, zap.String("cid", cid))
+	p.logger.Info(query, zap.String("message_type", string(messageType)), zap.String("cid", cid))
 	return nil
 }

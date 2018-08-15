@@ -5,6 +5,12 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	comQuery       = 0x03
+	comStmtPrepare = 0x16
+	comStmtExecute = 0x17
+)
+
 // MysqlDumper struct
 type MysqlDumper struct {
 	logger *zap.Logger
@@ -20,11 +26,12 @@ func NewMysqlDumper() *MysqlDumper {
 
 // Dump query of MySQL
 func (m *MysqlDumper) Dump(cid string, in []byte) error {
-	if in[4] != 0x03 {
+	commandID := in[4]
+	if commandID != comQuery && commandID != comStmtPrepare && commandID != comStmtExecute {
 		return nil
 	}
 	n := len(in)
 	query := string(in[5:n])
-	m.logger.Info(query, zap.String("cid", cid))
+	m.logger.Info(query, zap.String("command_id", string(in[4])), zap.String("cid", cid))
 	return nil
 }

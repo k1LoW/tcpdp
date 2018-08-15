@@ -14,7 +14,7 @@ import (
 // NewLogger returns logger
 func NewLogger() *zap.Logger {
 	encoderConfig := zapcore.EncoderConfig{
-		TimeKey:        "time",
+		TimeKey:        "ts",
 		LevelKey:       "level",
 		NameKey:        "logger",
 		CallerKey:      "caller",
@@ -107,7 +107,7 @@ func NewDumpLogger() *zap.Logger {
 // NewQueryLogger returns logger
 func NewQueryLogger() *zap.Logger {
 	encoderConfig := zapcore.EncoderConfig{
-		TimeKey:        "time",
+		TimeKey:        "ts",
 		MessageKey:     "query",
 		EncodeLevel:    zapcore.LowercaseLevelEncoder,
 		EncodeTime:     zapcore.ISO8601TimeEncoder,
