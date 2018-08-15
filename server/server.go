@@ -135,15 +135,12 @@ func (s *Server) GracefulShutdown() {
 }
 
 func (s *Server) handleConn(conn *net.TCPConn) {
-	defer func() {
-		conn.Close()
-		s.Wg.Done()
-	}()
+	defer s.Wg.Done()
 
 	remoteConn, err := net.DialTCP("tcp", nil, s.remoteAddr)
-	defer remoteConn.Close()
 	if err != nil {
-		log.Println(err)
+		s.logger.WithOptions(zap.AddCaller()).Error("remoteAddr DialTCP error", zap.Error(err))
+		conn.Close()
 		return
 	}
 
