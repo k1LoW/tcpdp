@@ -11,7 +11,6 @@ import (
 	"github.com/lestrrat-go/server-starter/listener"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 // Server struct
@@ -74,7 +73,7 @@ func (s *Server) Start() error {
 	if useServerSterter {
 		listeners, err := listener.ListenAll()
 		if listeners == nil || err != nil {
-			s.logger.WithOptions(zap.AddCaller(), zap.AddStacktrace(zapcore.DebugLevel)).Fatal("server-starter listen error", zap.Error(err))
+			s.logger.WithOptions(zap.AddCaller()).Fatal("server-starter listen error", zap.Error(err))
 			return err
 		}
 		lt := listeners[0].(*net.TCPListener)
@@ -82,7 +81,7 @@ func (s *Server) Start() error {
 	} else {
 		lt, err := net.ListenTCP("tcp", s.listenAddr)
 		if err != nil {
-			s.logger.WithOptions(zap.AddCaller(), zap.AddStacktrace(zapcore.DebugLevel)).Fatal("listenAddr ListenTCP error", zap.Error(err))
+			s.logger.WithOptions(zap.AddCaller()).Fatal("listenAddr ListenTCP error", zap.Error(err))
 			return err
 		}
 		s.listener = lt
@@ -105,7 +104,7 @@ func (s *Server) Start() error {
 					case <-s.ctx.Done():
 						break
 					default:
-						s.logger.WithOptions(zap.AddCaller(), zap.AddStacktrace(zapcore.DebugLevel)).Fatal("listener AcceptTCP error", zap.Error(err))
+						s.logger.WithOptions(zap.AddCaller()).Fatal("listener AcceptTCP error", zap.Error(err))
 					}
 				}
 			}

@@ -7,7 +7,6 @@ import (
 
 	"github.com/rs/xid"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 // Proxy struct
@@ -58,7 +57,7 @@ func (p *Proxy) pipe(cid string, srcConn, destConn *net.TCPConn) {
 		n, err := srcConn.Read(buff)
 		if err != nil {
 			if err.Error() != "EOF" && !strings.Contains(err.Error(), "use of closed network connection") {
-				p.server.logger.WithOptions(zap.AddCaller(), zap.AddStacktrace(zapcore.DebugLevel)).Error("strCon Read error", zap.Error(err))
+				p.server.logger.WithOptions(zap.AddCaller()).Error("strCon Read error", zap.Error(err))
 			}
 			break
 		}
@@ -66,13 +65,13 @@ func (p *Proxy) pipe(cid string, srcConn, destConn *net.TCPConn) {
 
 		err = p.server.Dumper.Dump(cid, b)
 		if err != nil {
-			p.server.logger.WithOptions(zap.AddCaller(), zap.AddStacktrace(zapcore.DebugLevel)).Error("dumber Dump error", zap.Error(err))
+			p.server.logger.WithOptions(zap.AddCaller()).Error("dumber Dump error", zap.Error(err))
 			break
 		}
 
 		n, err = destConn.Write(b)
 		if err != nil {
-			p.server.logger.WithOptions(zap.AddCaller(), zap.AddStacktrace(zapcore.DebugLevel)).Error("destCon Write error", zap.Error(err))
+			p.server.logger.WithOptions(zap.AddCaller()).Error("destCon Write error", zap.Error(err))
 			break
 		}
 
