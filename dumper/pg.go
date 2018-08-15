@@ -1,8 +1,6 @@
 package dumper
 
 import (
-	"bytes"
-	"fmt"
 	"strings"
 
 	"go.uber.org/zap"
@@ -18,11 +16,8 @@ func (p *PgDumper) Dump(cid string, in []byte) error {
 	if in[0] != 'Q' {
 		return nil
 	}
-	buff := bytes.NewBuffer(in)
-	_, _ = buff.ReadByte()
-	_, _ = buff.Read(make([]byte, 4))
-	str, _ := buff.ReadString(0x00)
-	query := strings.Trim(str, "\x00")
-	p.Logger.Info(fmt.Sprintf("%s", query), zap.String("cid", cid))
+	n := len(in)
+	query := strings.Trim(string(in[5:n]), "\x00")
+	p.Logger.Info(query, zap.String("cid", cid))
 	return nil
 }
