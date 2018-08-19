@@ -2,6 +2,7 @@ package dumper
 
 import (
 	"encoding/hex"
+	"fmt"
 	"time"
 
 	"github.com/k1LoW/tcprxy/logger"
@@ -30,6 +31,10 @@ func (h *HexDumper) Dump(in []byte, kvs []DumpValue) error {
 	}
 	fields = append(fields, zap.Time("ts", time.Now()))
 
-	h.logger.Info(hex.Dump(in), fields...)
+	dump := hex.Dump(in)
+
+	fmt.Printf("%s\n", dump) // FIXME: Easy to Read
+
+	h.logger.Info(dump, fields...)
 	return nil
 }
