@@ -35,6 +35,8 @@ func NewLogger() *zap.Logger {
 		rotatelogs.WithClock(rotatelogs.Local),
 		rotatelogs.WithLinkName(path),
 		rotatelogs.WithRotationTime(24*time.Hour),
+		rotatelogs.WithMaxAge(-1),
+		rotatelogs.WithRotationCount(7),
 	)
 	if err != nil {
 		log.Fatalf("Log setting error %v", err)
@@ -79,6 +81,8 @@ func NewDumpLogger() *zap.Logger {
 		rotatelogs.WithClock(rotatelogs.Local),
 		rotatelogs.WithLinkName(path),
 		rotatelogs.WithRotationTime(24*time.Hour),
+		rotatelogs.WithMaxAge(-1),
+		rotatelogs.WithRotationCount(7),
 	)
 	if err != nil {
 		log.Fatalf("Log setting error %v", err)
