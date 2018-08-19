@@ -5,6 +5,7 @@ import (
 
 	"github.com/k1LoW/tcprxy/logger"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 const (
@@ -27,13 +28,20 @@ func NewPgDumper() *PgDumper {
 }
 
 // Dump query of PostgreSQL
-func (p *PgDumper) Dump(cid string, in []byte) error {
+func (p *PgDumper) Dump(in []byte, kvs []DumpValue) error {
 	messageType := in[0]
 	if messageType != pgMessageQuery && messageType != pgMessageParse && messageType != pgMessageBind {
 		return nil
 	}
 	n := len(in)
 	query := strings.Trim(string(in[5:n]), "\x00")
-	p.logger.Info(query, zap.String("message_type", string(messageType)), zap.String("cid", cid))
+	fields := []zapcore.Field{
+		zap.String("message_type", string(messageType)),
+	}
+	for _, kv := range kvs {
+		fields = append(fields, zap.String(kv.Key, kv.Value))
+	}
+
+	p.logger.Info(query, fields...)
 	return nil
 }

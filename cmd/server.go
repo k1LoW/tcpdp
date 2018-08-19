@@ -22,12 +22,12 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"fmt"
 	"github.com/k1LoW/tcprxy/server"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"

@@ -6,6 +6,7 @@ import (
 
 	"github.com/k1LoW/tcprxy/logger"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 // HexDumper ...
@@ -22,7 +23,13 @@ func NewHexDumper() *HexDumper {
 }
 
 // Dump TCP
-func (h *HexDumper) Dump(cid string, in []byte) error {
-	h.logger.Info(hex.Dump(in), zap.String("cid", cid), zap.Time("ts", time.Now()))
+func (h *HexDumper) Dump(in []byte, kvs []DumpValue) error {
+	fields := []zapcore.Field{}
+	for _, kv := range kvs {
+		fields = append(fields, zap.String(kv.Key, kv.Value))
+	}
+	fields = append(fields, zap.Time("ts", time.Now()))
+
+	h.logger.Info(hex.Dump(in), fields...)
 	return nil
 }

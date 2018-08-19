@@ -22,7 +22,7 @@ type Server struct {
 	ClosedChan chan struct{}
 	listener   *net.TCPListener
 	logger     *zap.Logger
-	Dumper     dumper.Dumper
+	dumper     dumper.Dumper
 }
 
 // NewServer returns a new Server
@@ -53,7 +53,7 @@ func NewServer(ctx context.Context, lAddr, rAddr *net.TCPAddr, logger *zap.Logge
 		Wg:         wg,
 		ClosedChan: closedChan,
 		logger:     logger,
-		Dumper:     d,
+		dumper:     d,
 	}
 }
 

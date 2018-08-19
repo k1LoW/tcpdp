@@ -3,6 +3,7 @@ package dumper
 import (
 	"github.com/k1LoW/tcprxy/logger"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 const (
@@ -25,13 +26,20 @@ func NewMysqlDumper() *MysqlDumper {
 }
 
 // Dump query of MySQL
-func (m *MysqlDumper) Dump(cid string, in []byte) error {
+func (m *MysqlDumper) Dump(in []byte, kvs []DumpValue) error {
 	commandID := in[4]
 	if commandID != comQuery && commandID != comStmtPrepare && commandID != comStmtExecute {
 		return nil
 	}
 	n := len(in)
 	query := string(in[5:n])
-	m.logger.Info(query, zap.String("command_id", string(in[4])), zap.String("cid", cid))
+	fields := []zapcore.Field{
+		zap.String("command_id", string(in[4])),
+	}
+	for _, kv := range kvs {
+		fields = append(fields, zap.String(kv.Key, kv.Value))
+	}
+
+	m.logger.Info(query, fields...)
 	return nil
 }
