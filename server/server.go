@@ -32,9 +32,9 @@ func NewServer(ctx context.Context, lAddr, rAddr *net.TCPAddr, logger *zap.Logge
 	closedChan := make(chan struct{})
 
 	var d dumper.Dumper
-	dFlag := viper.GetString("dumper")
+	dumpType := viper.GetString("proxy.dumper")
 
-	switch dFlag {
+	switch dumpType {
 	case "hex":
 		d = dumper.NewHexDumper()
 	case "pg":
@@ -59,7 +59,7 @@ func NewServer(ctx context.Context, lAddr, rAddr *net.TCPAddr, logger *zap.Logge
 
 // Start server.
 func (s *Server) Start() error {
-	useServerSterter := viper.GetBool("useServerSterter")
+	useServerSterter := viper.GetBool("proxy.useServerSterter")
 
 	if useServerSterter {
 		listeners, err := listener.ListenAll()

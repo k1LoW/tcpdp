@@ -25,11 +25,13 @@ import (
 
 	l "github.com/k1LoW/tcprxy/logger"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
 
 var (
-	logger *zap.Logger
+	cfgFile string
+	logger  *zap.Logger
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -49,5 +51,33 @@ func Execute() {
 }
 
 func init() {
+	cobra.OnInitialize(initConfig)
+	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file path")
+}
+
+func initConfig() {
+	viper.SetDefault("log.dir", ".")
+	viper.SetDefault("log.rotateEnable", true)
+	viper.SetDefault("log.rotationTime", "daily")
+	viper.SetDefault("log.rotationCount", 7)
+
+	viper.SetDefault("dumpLog.dir", "./")
+	viper.SetDefault("dumpLog.rotateEnable", true)
+	viper.SetDefault("dumpLog.rotationTime", "daily")
+	viper.SetDefault("dumpLog.rotationCount", 7)
+
+	if cfgFile != "" {
+		viper.SetConfigFile(cfgFile)
+	} else {
+		viper.SetConfigName("tcprxy")
+		viper.AddConfigPath("/etc/tcprxy/")
+		viper.AddConfigPath("$HOME/.tcprxy")
+		viper.AddConfigPath(".")
+	}
+	err := viper.ReadInConfig()
 	logger = l.NewLogger()
+
+	if err != nil {
+		logger.Warn("Config file not found.", zap.Error(err))
+	}
 }

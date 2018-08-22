@@ -35,10 +35,7 @@ import (
 )
 
 var (
-	listenAddr       string
-	remoteAddr       string
-	dumper           string
-	useServerSterter bool
+	dumper string
 )
 
 // serverCmd represents the server command
@@ -47,6 +44,10 @@ var serverCmd = &cobra.Command{
 	Short: "server",
 	Long:  `server`,
 	Run: func(cmd *cobra.Command, args []string) {
+		listenAddr := viper.GetString("proxy.listenAddr")
+		remoteAddr := viper.GetString("proxy.remoteAddr")
+		useServerSterter := viper.GetBool("proxy.useServerSterter")
+
 		defer logger.Sync()
 
 		lAddr, err := net.ResolveTCPAddr("tcp", listenAddr)
@@ -94,11 +95,15 @@ var serverCmd = &cobra.Command{
 }
 
 func init() {
+	serverCmd.Flags().StringP("listen", "l", "localhost:8080", "listen address")
+	serverCmd.Flags().StringP("remote", "r", "localhost:80", "remote address")
+	serverCmd.Flags().StringP("dumper", "d", "hex", "dumper")
+	serverCmd.Flags().BoolP("use-server-starter", "s", false, "use server_starter")
+
+	viper.BindPFlag("proxy.listenAddr", serverCmd.Flags().Lookup("listen"))
+	viper.BindPFlag("proxy.remoteAddr", serverCmd.Flags().Lookup("remote"))
+
+	viper.BindPFlag("proxy.useServerSterter", serverCmd.Flags().Lookup("use-server-starter"))
+	viper.BindPFlag("proxy.dumper", serverCmd.Flags().Lookup("dumper"))
 	rootCmd.AddCommand(serverCmd)
-	serverCmd.Flags().StringVarP(&listenAddr, "listen", "l", "localhost:8080", "listen address")
-	serverCmd.Flags().StringVarP(&remoteAddr, "remote", "r", "localhost:80", "remote address")
-	serverCmd.Flags().StringVarP(&dumper, "dumper", "d", "hex", "dumper")
-	serverCmd.Flags().BoolVarP(&useServerSterter, "use-server-starter", "s", false, "use server_starter")
-	viper.BindPFlag("useServerSterter", serverCmd.Flags().Lookup("use-server-starter"))
-	viper.BindPFlag("dumper", serverCmd.Flags().Lookup("dumper"))
 }

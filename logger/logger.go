@@ -1,14 +1,16 @@
 package logger
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/lestrrat-go/file-rotatelogs"
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"io"
 )
 
 // NewLogger returns logger
@@ -26,21 +28,7 @@ func NewLogger() *zap.Logger {
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
 
-	path, err := filepath.Abs("tcprxy.log")
-	if err != nil {
-		log.Fatalf("Log setting error %v", err)
-	}
-	rl, err := rotatelogs.New(
-		path+".%Y%m%d",
-		rotatelogs.WithClock(rotatelogs.Local),
-		rotatelogs.WithLinkName(path),
-		rotatelogs.WithRotationTime(24*time.Hour),
-		rotatelogs.WithMaxAge(-1),
-		rotatelogs.WithRotationCount(7),
-	)
-	if err != nil {
-		log.Fatalf("Log setting error %v", err)
-	}
+	w := newLogWriter("log")
 
 	consoleCore := zapcore.NewCore(
 		zapcore.NewConsoleEncoder(encoderConfig),
@@ -50,7 +38,7 @@ func NewLogger() *zap.Logger {
 
 	logCore := zapcore.NewCore(
 		zapcore.NewJSONEncoder(encoderConfig),
-		zapcore.AddSync(rl),
+		zapcore.AddSync(w),
 		zapcore.InfoLevel,
 	)
 
@@ -72,25 +60,11 @@ func NewDumpLogger() *zap.Logger {
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
 
-	path, err := filepath.Abs("dump.log")
-	if err != nil {
-		log.Fatalf("Log setting error %v", err)
-	}
-	rl, err := rotatelogs.New(
-		path+".%Y%m%d",
-		rotatelogs.WithClock(rotatelogs.Local),
-		rotatelogs.WithLinkName(path),
-		rotatelogs.WithRotationTime(24*time.Hour),
-		rotatelogs.WithMaxAge(-1),
-		rotatelogs.WithRotationCount(7),
-	)
-	if err != nil {
-		log.Fatalf("Log setting error %v", err)
-	}
+	w := newLogWriter("dumpLog")
 
 	logCore := zapcore.NewCore(
 		zapcore.NewJSONEncoder(encoderConfig),
-		zapcore.AddSync(rl),
+		zapcore.AddSync(w),
 		zapcore.InfoLevel,
 	)
 
@@ -110,27 +84,74 @@ func NewQueryLogger() *zap.Logger {
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
 
-	path, err := filepath.Abs("query.log")
-	if err != nil {
-		log.Fatalf("Log setting error %v", err)
-	}
-	rl, err := rotatelogs.New(
-		path+".%Y%m%d",
-		rotatelogs.WithClock(rotatelogs.Local),
-		rotatelogs.WithLinkName(path),
-		rotatelogs.WithRotationTime(24*time.Hour),
-	)
-	if err != nil {
-		log.Fatalf("Log setting error %v", err)
-	}
+	w := newLogWriter("dumpLog")
 
 	logCore := zapcore.NewCore(
 		zapcore.NewJSONEncoder(encoderConfig),
-		zapcore.AddSync(rl),
+		zapcore.AddSync(w),
 		zapcore.InfoLevel,
 	)
 
 	logger := zap.New(logCore)
 
 	return logger
+}
+
+func newLogWriter(logType string) io.Writer {
+
+	dir := viper.GetString(fmt.Sprintf("%s.dir", logType))
+	rotateEnable := viper.GetBool(fmt.Sprintf("%s.rotateEnable", logType))
+	rotationTime := viper.GetString(fmt.Sprintf("%s.rotationTime", logType))
+	rotationCount := uint(viper.GetInt(fmt.Sprintf("%s.rotationCount", logType)))
+
+	var filename string
+	switch logType {
+	case "log":
+		filename = "tcprxy.log"
+	case "dumpLog":
+		filename = "dump.log"
+	}
+
+	path, err := filepath.Abs(fmt.Sprintf("%s/%s", dir, filename))
+	if err != nil {
+		log.Fatalf("Log setting error %v", err)
+	}
+
+	logSuffix := ""
+	options := []rotatelogs.Option{
+		rotatelogs.WithClock(rotatelogs.Local),
+		rotatelogs.WithMaxAge(-1),
+	}
+	if rotationCount > 0 {
+		options = append(options, rotatelogs.WithRotationCount(rotationCount))
+	}
+
+	var w io.Writer
+	if rotateEnable {
+		switch rotationTime {
+		case "hourly":
+			logSuffix = ".%Y%m%d%H"
+			options = append(options, rotatelogs.WithLinkName(path))
+		case "daily":
+			logSuffix = ".%Y%m%d"
+			options = append(options, rotatelogs.WithLinkName(path))
+		case "monthly":
+			logSuffix = ".%Y%m"
+			options = append(options, rotatelogs.WithLinkName(path))
+		}
+		w, err = rotatelogs.New(
+			path+logSuffix,
+			options...,
+		)
+		if err != nil {
+			log.Fatalf("Log setting error %v", err)
+		}
+	} else {
+		w, err = os.Open(path)
+		if err != nil {
+			log.Fatalf("Log setting error %v", err)
+		}
+	}
+
+	return w
 }
