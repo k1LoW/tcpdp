@@ -2,16 +2,29 @@ package logger
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
 
+	"github.com/hnakamur/zap-ltsv"
 	"github.com/lestrrat-go/file-rotatelogs"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"io"
 )
+
+// LogFormatJSON for format JSON
+const LogFormatJSON = "json"
+
+// LogFormatLTSV for format LTSV
+const LogFormatLTSV = "ltsv"
+
+// LogTypeLog for tcprxy.log
+const LogTypeLog = "log"
+
+// LogTypeDumpLog for dump.log
+const LogTypeDumpLog = "dumpLog"
 
 // NewLogger returns logger
 func NewLogger() *zap.Logger {
@@ -28,7 +41,8 @@ func NewLogger() *zap.Logger {
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
 
-	w := newLogWriter("log")
+	format := viper.GetString(fmt.Sprintf("%s.format", LogTypeLog))
+	w := newLogWriter(LogTypeLog)
 
 	consoleCore := zapcore.NewCore(
 		zapcore.NewConsoleEncoder(encoderConfig),
@@ -36,8 +50,16 @@ func NewLogger() *zap.Logger {
 		zapcore.DebugLevel,
 	)
 
+	var encoder zapcore.Encoder
+	switch format {
+	case LogFormatJSON:
+		encoder = zapcore.NewJSONEncoder(encoderConfig)
+	case LogFormatLTSV:
+		encoder = ltsv.NewLTSVEncoder(encoderConfig)
+	}
+
 	logCore := zapcore.NewCore(
-		zapcore.NewJSONEncoder(encoderConfig),
+		encoder,
 		zapcore.AddSync(w),
 		zapcore.InfoLevel,
 	)
@@ -60,10 +82,19 @@ func NewDumpLogger() *zap.Logger {
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
 
+	format := viper.GetString(fmt.Sprintf("%s.format", LogTypeLog))
 	w := newLogWriter("dumpLog")
 
+	var encoder zapcore.Encoder
+	switch format {
+	case LogFormatJSON:
+		encoder = zapcore.NewJSONEncoder(encoderConfig)
+	case LogFormatLTSV:
+		encoder = ltsv.NewLTSVEncoder(encoderConfig)
+	}
+
 	logCore := zapcore.NewCore(
-		zapcore.NewJSONEncoder(encoderConfig),
+		encoder,
 		zapcore.AddSync(w),
 		zapcore.InfoLevel,
 	)
@@ -84,7 +115,7 @@ func NewQueryLogger() *zap.Logger {
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
 
-	w := newLogWriter("dumpLog")
+	w := newLogWriter(LogTypeDumpLog)
 
 	logCore := zapcore.NewCore(
 		zapcore.NewJSONEncoder(encoderConfig),
@@ -106,9 +137,9 @@ func newLogWriter(logType string) io.Writer {
 
 	var filename string
 	switch logType {
-	case "log":
+	case LogTypeLog:
 		filename = "tcprxy.log"
-	case "dumpLog":
+	case LogTypeDumpLog:
 		filename = "dump.log"
 	}
 

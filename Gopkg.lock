@@ -29,6 +29,14 @@
   revision = "ef8a98b0bbce4a65b5aa4c368430a80ddc533168"
 
 [[projects]]
+  digest = "1:f2201a6f8987cced78445162ba94c117aa943390b5017b8a60f7c2be87a9379d"
+  name = "github.com/hnakamur/zap-ltsv"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "dc7450951c52b749e2e18933c95ba13f448b3f65"
+  version = "v0.2"
+
+[[projects]]
   digest = "1:870d441fe217b8e689d7949fef6e43efbc787e50f200cb1e70dbca9204a1d6be"
   name = "github.com/inconshreveable/mousetrap"
   packages = ["."]
@@ -223,6 +231,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/hnakamur/zap-ltsv",
     "github.com/lestrrat-go/file-rotatelogs",
     "github.com/lestrrat-go/server-starter/listener",
     "github.com/rs/xid",

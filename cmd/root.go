@@ -57,11 +57,13 @@ func init() {
 
 func initConfig() {
 	viper.SetDefault("log.dir", ".")
+	viper.SetDefault("log.format", "json")
 	viper.SetDefault("log.rotateEnable", true)
 	viper.SetDefault("log.rotationTime", "daily")
 	viper.SetDefault("log.rotationCount", 7)
 
 	viper.SetDefault("dumpLog.dir", "./")
+	viper.SetDefault("dumpLog.format", "json")
 	viper.SetDefault("dumpLog.rotateEnable", true)
 	viper.SetDefault("dumpLog.rotationTime", "daily")
 	viper.SetDefault("dumpLog.rotationCount", 7)
