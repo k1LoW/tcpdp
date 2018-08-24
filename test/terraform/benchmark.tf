@@ -69,12 +69,12 @@ resource "aws_route_table" "public-rt" {
 }
 
 resource "aws_route_table_association" "rta-1b" {
-    subnet_id = "${aws_subnet.private_b.id}"
+    subnet_id = "${aws_subnet.public_b.id}"
     route_table_id = "${aws_route_table.public-rt.id}"
 }
 
 resource "aws_route_table_association" "rta-1c" {
-    subnet_id = "${aws_subnet.private_c.id}"
+    subnet_id = "${aws_subnet.public_c.id}"
     route_table_id = "${aws_route_table.public-rt.id}"
 }
 
@@ -98,7 +98,7 @@ resource "aws_security_group" "ec2" {
   }
 
   tags {
-    Name = "your_project"
+    Name = "sg_ec2_tcprxy"
   }
 
   lifecycle {
@@ -127,7 +127,7 @@ resource "aws_security_group" "rds" {
   }
 
   tags {
-    Name = "sg_tcprxy"
+    Name = "sg_rds_tcprxy"
   }
 
   lifecycle {
@@ -137,7 +137,7 @@ resource "aws_security_group" "rds" {
 
 resource "aws_key_pair" "default" {
   key_name   = "key_tcprxy"
-  public_key = "${file("~/.ssh/id_rsa")}"
+  public_key = "${file("~/.ssh/id_rsa.pub")}"
 }
 
 resource "aws_instance" "default" {
