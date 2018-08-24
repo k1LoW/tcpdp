@@ -27,6 +27,9 @@ func NewMysqlDumper() *MysqlDumper {
 
 // Dump query of MySQL
 func (m *MysqlDumper) Dump(in []byte, kvs []DumpValue) error {
+	if len(in) < 6 {
+		return nil
+	}
 	commandID := in[4]
 	if commandID != comQuery && commandID != comStmtPrepare && commandID != comStmtExecute {
 		return nil

@@ -8,6 +8,7 @@ import (
 	"github.com/k1LoW/tcprxy/dumper"
 	"github.com/rs/xid"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 // Direction of TCP commnication
@@ -120,7 +121,8 @@ func (p *Proxy) pipe(srcConn, destConn *net.TCPConn) {
 		n, err := srcConn.Read(buff)
 		if err != nil {
 			if err.Error() != "EOF" && !strings.Contains(err.Error(), "use of closed network connection") {
-				p.server.logger.WithOptions(zap.AddCaller()).Error("strCon Read error", zap.Error(err))
+				fields := p.fieldsWithErrorAndDirection(err, direction)
+				p.server.logger.WithOptions(zap.AddCaller()).Error("strCon Read error", fields...)
 			}
 			break
 		}
@@ -128,13 +130,15 @@ func (p *Proxy) pipe(srcConn, destConn *net.TCPConn) {
 
 		err = p.dump(b, direction)
 		if err != nil {
-			p.server.logger.WithOptions(zap.AddCaller()).Error("dumber Dump error", zap.Error(err))
+			fields := p.fieldsWithErrorAndDirection(err, direction)
+			p.server.logger.WithOptions(zap.AddCaller()).Error("dumber Dump error", fields...)
 			break
 		}
 
 		n, err = destConn.Write(b)
 		if err != nil {
-			p.server.logger.WithOptions(zap.AddCaller()).Error("destCon Write error", zap.Error(err))
+			fields := p.fieldsWithErrorAndDirection(err, direction)
+			p.server.logger.WithOptions(zap.AddCaller()).Error("destCon Write error", fields...)
 			break
 		}
 
@@ -144,4 +148,17 @@ func (p *Proxy) pipe(srcConn, destConn *net.TCPConn) {
 		default:
 		}
 	}
+}
+
+func (p *Proxy) fieldsWithErrorAndDirection(err error, direction Direction) []zapcore.Field {
+	fields := []zapcore.Field{
+		zap.Error(err),
+		zap.String("direction", direction.String()),
+	}
+
+	for _, kv := range p.dumpValues {
+		fields = append(fields, zap.String(kv.Key, kv.Value))
+	}
+
+	return fields
 }

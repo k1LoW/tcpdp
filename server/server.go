@@ -10,6 +10,7 @@ import (
 	"github.com/lestrrat-go/server-starter/listener"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 // Server struct
@@ -130,11 +131,22 @@ func (s *Server) handleConn(conn *net.TCPConn) {
 
 	remoteConn, err := net.DialTCP("tcp", nil, s.remoteAddr)
 	if err != nil {
-		s.logger.WithOptions(zap.AddCaller()).Error("remoteAddr DialTCP error", zap.Error(err))
+		fields := s.fieldsWithErrorAndConn(err, conn)
+		s.logger.WithOptions(zap.AddCaller()).Error("remoteAddr DialTCP error", fields...)
 		conn.Close()
 		return
 	}
 
 	p := NewProxy(s, conn, remoteConn)
 	p.Start()
+}
+
+func (s *Server) fieldsWithErrorAndConn(err error, conn *net.TCPConn) []zapcore.Field {
+	fields := []zapcore.Field{
+		zap.Error(err),
+		zap.String("client_addr", conn.RemoteAddr().String()),
+		zap.String("proxy_listen_addr", conn.LocalAddr().String()),
+		zap.String("remote_addr", s.remoteAddr.String()),
+	}
+	return fields
 }
