@@ -114,6 +114,8 @@ func (p *Proxy) pipe(srcConn, destConn *net.TCPConn) {
 	var direction Direction
 	if p.server.remoteAddr.String() == destConn.RemoteAddr().String() {
 		direction = ClientToRemote
+	} else {
+		direction = RemoteToClient
 	}
 
 	buff := make([]byte, 0xFFFF)
