@@ -11,27 +11,6 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// Direction of TCP commnication
-type Direction int
-
-const (
-	// ClientToRemote is client->proxy->remote
-	ClientToRemote Direction = iota
-	// RemoteToClient is client<-proxy<-remote
-	RemoteToClient
-)
-
-func (d Direction) String() string {
-	switch d {
-	case ClientToRemote:
-		return "->"
-	case RemoteToClient:
-		return "<-"
-	default:
-		return "?"
-	}
-}
-
 // Proxy struct
 type Proxy struct {
 	server     *Server
@@ -101,7 +80,7 @@ func (p *Proxy) Start() {
 	}
 }
 
-func (p *Proxy) dump(b []byte, direction Direction) error {
+func (p *Proxy) dump(b []byte, direction dumper.Direction) error {
 	kvs := append(p.dumpValues, dumper.DumpValue{
 		Key:   "sequence_number",
 		Value: p.seqNum,
@@ -111,17 +90,17 @@ func (p *Proxy) dump(b []byte, direction Direction) error {
 		Value: direction.String(),
 	})
 
-	return p.server.dumper.Dump(b, kvs)
+	return p.server.dumper.Dump(b, direction, kvs)
 }
 
 func (p *Proxy) pipe(srcConn, destConn *net.TCPConn) {
 	defer p.Close()
 
-	var direction Direction
+	var direction dumper.Direction
 	if p.server.remoteAddr.String() == destConn.RemoteAddr().String() {
-		direction = ClientToRemote
+		direction = dumper.ClientToRemote
 	} else {
-		direction = RemoteToClient
+		direction = dumper.RemoteToClient
 	}
 
 	buff := make([]byte, 0xFFFF)
@@ -159,7 +138,7 @@ func (p *Proxy) pipe(srcConn, destConn *net.TCPConn) {
 	}
 }
 
-func (p *Proxy) fieldsWithErrorAndDirection(err error, direction Direction) []zapcore.Field {
+func (p *Proxy) fieldsWithErrorAndDirection(err error, direction dumper.Direction) []zapcore.Field {
 	fields := []zapcore.Field{
 		zap.Error(err),
 		zap.Uint64("sequence_number", p.seqNum),

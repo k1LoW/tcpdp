@@ -26,7 +26,10 @@ func NewMysqlDumper() *MysqlDumper {
 }
 
 // Dump query of MySQL
-func (m *MysqlDumper) Dump(in []byte, kvs []DumpValue) error {
+func (m *MysqlDumper) Dump(in []byte, direction Direction, kvs []DumpValue) error {
+	if direction == RemoteToClient {
+		return nil
+	}
 	if len(in) < 6 {
 		return nil
 	}

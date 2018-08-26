@@ -28,7 +28,10 @@ func NewPgDumper() *PgDumper {
 }
 
 // Dump query of PostgreSQL
-func (p *PgDumper) Dump(in []byte, kvs []DumpValue) error {
+func (p *PgDumper) Dump(in []byte, direction Direction, kvs []DumpValue) error {
+	if direction == RemoteToClient {
+		return nil
+	}
 	messageType := in[0]
 	if messageType != pgMessageQuery && messageType != pgMessageParse && messageType != pgMessageBind {
 		return nil
