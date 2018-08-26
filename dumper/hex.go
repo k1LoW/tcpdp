@@ -27,7 +27,7 @@ func NewHexDumper() *HexDumper {
 func (h *HexDumper) Dump(in []byte, kvs []DumpValue) error {
 	fields := []zapcore.Field{}
 	for _, kv := range kvs {
-		fields = append(fields, zap.String(kv.Key, kv.Value))
+		fields = append(fields, zap.Any(kv.Key, kv.Value))
 	}
 	fields = append(fields, zap.Time("ts", time.Now()))
 

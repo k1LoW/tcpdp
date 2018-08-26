@@ -39,7 +39,7 @@ func (p *PgDumper) Dump(in []byte, kvs []DumpValue) error {
 		zap.String("message_type", string(messageType)),
 	}
 	for _, kv := range kvs {
-		fields = append(fields, zap.String(kv.Key, kv.Value))
+		fields = append(fields, zap.Any(kv.Key, kv.Value))
 	}
 
 	p.logger.Info(query, fields...)

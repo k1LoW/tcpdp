@@ -40,7 +40,7 @@ func (m *MysqlDumper) Dump(in []byte, kvs []DumpValue) error {
 		zap.String("command_id", string(in[4])),
 	}
 	for _, kv := range kvs {
-		fields = append(fields, zap.String(kv.Key, kv.Value))
+		fields = append(fields, zap.Any(kv.Key, kv.Value))
 	}
 
 	m.logger.Info(query, fields...)

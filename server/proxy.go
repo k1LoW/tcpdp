@@ -41,6 +41,7 @@ type Proxy struct {
 	conn       *net.TCPConn
 	remoteConn *net.TCPConn
 	dumpValues []dumper.DumpValue
+	seqNum     uint64
 }
 
 // NewProxy returns a new Proxy
@@ -80,6 +81,7 @@ func NewProxy(s *Server, conn, remoteConn *net.TCPConn) *Proxy {
 		conn:       conn,
 		remoteConn: remoteConn,
 		dumpValues: dumpValues,
+		seqNum:     0,
 	}
 }
 
@@ -101,6 +103,10 @@ func (p *Proxy) Start() {
 
 func (p *Proxy) dump(b []byte, direction Direction) error {
 	kvs := append(p.dumpValues, dumper.DumpValue{
+		Key:   "sequence_number",
+		Value: p.seqNum,
+	})
+	kvs = append(kvs, dumper.DumpValue{
 		Key:   "direction",
 		Value: direction.String(),
 	})
@@ -148,6 +154,7 @@ func (p *Proxy) pipe(srcConn, destConn *net.TCPConn) {
 		case <-p.ctx.Done():
 			break
 		default:
+			p.seqNum++
 		}
 	}
 }
@@ -155,11 +162,12 @@ func (p *Proxy) pipe(srcConn, destConn *net.TCPConn) {
 func (p *Proxy) fieldsWithErrorAndDirection(err error, direction Direction) []zapcore.Field {
 	fields := []zapcore.Field{
 		zap.Error(err),
+		zap.Uint64("sequence_number", p.seqNum),
 		zap.String("direction", direction.String()),
 	}
 
 	for _, kv := range p.dumpValues {
-		fields = append(fields, zap.String(kv.Key, kv.Value))
+		fields = append(fields, zap.Any(kv.Key, kv.Value))
 	}
 
 	return fields

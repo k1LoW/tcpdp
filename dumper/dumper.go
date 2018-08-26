@@ -3,7 +3,7 @@ package dumper
 // DumpValue ...
 type DumpValue struct {
 	Key   string
-	Value string
+	Value interface{}
 }
 
 // Dumper interface
