@@ -31,7 +31,7 @@ func NewProxy(s *Server, conn, remoteConn *net.TCPConn) *Proxy {
 
 	dumpValues := []dumper.DumpValue{
 		dumper.DumpValue{
-			Key:   "connection_id",
+			Key:   "conn_id",
 			Value: connID,
 		},
 		dumper.DumpValue{
@@ -82,7 +82,7 @@ func (p *Proxy) Start() {
 
 func (p *Proxy) dump(b []byte, direction dumper.Direction) error {
 	kvs := append(p.dumpValues, dumper.DumpValue{
-		Key:   "sequence_number",
+		Key:   "conn_seq_num",
 		Value: p.seqNum,
 	})
 	kvs = append(kvs, dumper.DumpValue{
@@ -141,7 +141,7 @@ func (p *Proxy) pipe(srcConn, destConn *net.TCPConn) {
 func (p *Proxy) fieldsWithErrorAndDirection(err error, direction dumper.Direction) []zapcore.Field {
 	fields := []zapcore.Field{
 		zap.Error(err),
-		zap.Uint64("sequence_number", p.seqNum),
+		zap.Uint64("conn_seq_num", p.seqNum),
 		zap.String("direction", direction.String()),
 	}
 
