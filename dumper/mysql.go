@@ -1,6 +1,8 @@
 package dumper
 
 import (
+	"strings"
+
 	"github.com/k1LoW/tcprxy/logger"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -37,8 +39,7 @@ func (m *MysqlDumper) Dump(in []byte, direction Direction, kvs []DumpValue) erro
 	if commandID != comQuery && commandID != comStmtPrepare && commandID != comStmtExecute {
 		return nil
 	}
-	n := len(in)
-	query := string(in[5:n])
+	query := strings.Trim(string(in[5:]), "\x00")
 	fields := []zapcore.Field{
 		zap.String("command_id", string(in[4])),
 	}
