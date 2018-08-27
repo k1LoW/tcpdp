@@ -52,17 +52,21 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
-	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file path")
 }
 
 func initConfig() {
+	viper.SetDefault("proxy.useServerSterter", false)
+	viper.SetDefault("proxy.listenAddr", "localhost:8080")
+	viper.SetDefault("proxy.remoteAddr", "localhost:80")
+	viper.SetDefault("proxy.dumper", "hex")
+
 	viper.SetDefault("log.dir", ".")
 	viper.SetDefault("log.format", "json")
 	viper.SetDefault("log.rotateEnable", true)
 	viper.SetDefault("log.rotationTime", "daily")
 	viper.SetDefault("log.rotationCount", 7)
 
-	viper.SetDefault("dumpLog.dir", "./")
+	viper.SetDefault("dumpLog.dir", ".")
 	viper.SetDefault("dumpLog.format", "json")
 	viper.SetDefault("dumpLog.rotateEnable", true)
 	viper.SetDefault("dumpLog.rotationTime", "daily")

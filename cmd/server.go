@@ -95,6 +95,7 @@ var serverCmd = &cobra.Command{
 }
 
 func init() {
+	serverCmd.Flags().StringVarP(&cfgFile, "config", "c", "", "config file path")
 	serverCmd.Flags().StringP("listen", "l", "localhost:8080", "listen address")
 	serverCmd.Flags().StringP("remote", "r", "localhost:80", "remote address")
 	serverCmd.Flags().StringP("dumper", "d", "hex", "dumper")
@@ -102,8 +103,8 @@ func init() {
 
 	viper.BindPFlag("proxy.listenAddr", serverCmd.Flags().Lookup("listen"))
 	viper.BindPFlag("proxy.remoteAddr", serverCmd.Flags().Lookup("remote"))
-
 	viper.BindPFlag("proxy.useServerSterter", serverCmd.Flags().Lookup("use-server-starter"))
 	viper.BindPFlag("proxy.dumper", serverCmd.Flags().Lookup("dumper"))
+
 	rootCmd.AddCommand(serverCmd)
 }
