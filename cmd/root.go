@@ -80,10 +80,6 @@ func initConfig() {
 		viper.AddConfigPath("$HOME/.tcprxy")
 		viper.AddConfigPath(".")
 	}
-	err := viper.ReadInConfig()
+	_ = viper.ReadInConfig()
 	logger = l.NewLogger()
-
-	if err != nil {
-		logger.Warn("Config file not found.", zap.Error(err))
-	}
 }

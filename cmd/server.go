@@ -44,6 +44,11 @@ var serverCmd = &cobra.Command{
 	Short: "server",
 	Long:  `server`,
 	Run: func(cmd *cobra.Command, args []string) {
+		err := viper.ReadInConfig()
+		if err != nil {
+			logger.Warn("Config file not found.", zap.Error(err))
+		}
+
 		listenAddr := viper.GetString("proxy.listenAddr")
 		remoteAddr := viper.GetString("proxy.remoteAddr")
 		useServerSterter := viper.GetBool("proxy.useServerSterter")
