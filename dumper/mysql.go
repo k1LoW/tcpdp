@@ -69,7 +69,7 @@ func (m *MysqlDumper) Dump(in []byte, direction Direction, persistent *DumpValue
 	if len(in) >= 37 {
 		clientCapabilities := binary.LittleEndian.Uint32(in[4:8])
 
-		// Protocol::HandshakeResponse41
+		// parse Protocol::HandshakeResponse41 to get username
 		if clientCapabilities&clientProtocol41 > 0 && bytes.Compare(in[13:36], []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}) == 0 {
 			buff := bytes.NewBuffer(in[36:])
 			readed, _ := buff.ReadString(0x00)
@@ -78,13 +78,6 @@ func (m *MysqlDumper) Dump(in []byte, direction Direction, persistent *DumpValue
 				Key:   "username",
 				Value: username,
 			})
-			fields := []zapcore.Field{}
-			for _, kv := range persistent.Values {
-				fields = append(fields, zap.Any(kv.Key, kv.Value))
-			}
-			for _, kv := range additional {
-				fields = append(fields, zap.Any(kv.Key, kv.Value))
-			}
 			return nil
 		}
 	}

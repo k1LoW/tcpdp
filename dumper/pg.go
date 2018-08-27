@@ -34,7 +34,7 @@ func (p *PgDumper) Dump(in []byte, direction Direction, persistent *DumpValues, 
 		return nil
 	}
 
-	// StartupMessage
+	// parse StartupMessage to get username, database
 	if len(in) > 9 {
 		splited := bytes.Split(in[8:], []byte{0x00})
 		if len(splited) > 0 && string(splited[0]) == "user" {
@@ -50,13 +50,6 @@ func (p *PgDumper) Dump(in []byte, direction Direction, persistent *DumpValues, 
 						Value: string(splited[i+1]),
 					})
 				}
-			}
-			fields := []zapcore.Field{}
-			for _, kv := range persistent.Values {
-				fields = append(fields, zap.Any(kv.Key, kv.Value))
-			}
-			for _, kv := range additional {
-				fields = append(fields, zap.Any(kv.Key, kv.Value))
 			}
 			return nil
 		}
