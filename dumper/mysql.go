@@ -72,7 +72,8 @@ func (m *MysqlDumper) Dump(in []byte, direction Direction, kvs []DumpValue) erro
 		// Protocol::HandshakeResponse41
 		if clientCapabilities&clientProtocol41 > 0 && bytes.Compare(in[13:36], []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}) == 0 {
 			buff := bytes.NewBuffer(in[36:])
-			username, _ := buff.ReadString(0x00)
+			readed, _ := buff.ReadString(0x00)
+			username := strings.Trim(readed, "\x00")
 			fields := []zapcore.Field{
 				zap.String("username", username),
 			}
