@@ -58,7 +58,7 @@ func NewMysqlDumper() *MysqlDumper {
 }
 
 // Dump query of MySQL
-func (m *MysqlDumper) Dump(in []byte, direction Direction, kvs []DumpValue) error {
+func (m *MysqlDumper) Dump(in []byte, direction Direction, persistent *DumpValues, additional []DumpValue) error {
 	if direction == RemoteToClient {
 		return nil
 	}
@@ -74,14 +74,17 @@ func (m *MysqlDumper) Dump(in []byte, direction Direction, kvs []DumpValue) erro
 			buff := bytes.NewBuffer(in[36:])
 			readed, _ := buff.ReadString(0x00)
 			username := strings.Trim(readed, "\x00")
-			fields := []zapcore.Field{
-				zap.String("username", username),
-			}
-			for _, kv := range kvs {
+			persistent.Values = append(persistent.Values, DumpValue{
+				Key:   "username",
+				Value: username,
+			})
+			fields := []zapcore.Field{}
+			for _, kv := range persistent.Values {
 				fields = append(fields, zap.Any(kv.Key, kv.Value))
 			}
-
-			m.logger.Info("", fields...)
+			for _, kv := range additional {
+				fields = append(fields, zap.Any(kv.Key, kv.Value))
+			}
 			return nil
 		}
 	}
@@ -96,7 +99,10 @@ func (m *MysqlDumper) Dump(in []byte, direction Direction, kvs []DumpValue) erro
 		zap.Int64("seq_num", seqNum),
 		zap.String("command_id", string(commandID)),
 	}
-	for _, kv := range kvs {
+	for _, kv := range persistent.Values {
+		fields = append(fields, zap.Any(kv.Key, kv.Value))
+	}
+	for _, kv := range additional {
 		fields = append(fields, zap.Any(kv.Key, kv.Value))
 	}
 

@@ -19,7 +19,7 @@ type Proxy struct {
 	connID     string
 	conn       *net.TCPConn
 	remoteConn *net.TCPConn
-	dumpValues []dumper.DumpValue
+	dumpValues *dumper.DumpValues
 	seqNum     uint64
 }
 
@@ -29,26 +29,28 @@ func NewProxy(s *Server, conn, remoteConn *net.TCPConn) *Proxy {
 
 	connID := xid.New().String()
 
-	dumpValues := []dumper.DumpValue{
-		dumper.DumpValue{
-			Key:   "conn_id",
-			Value: connID,
-		},
-		dumper.DumpValue{
-			Key:   "client_addr",
-			Value: conn.RemoteAddr().String(),
-		},
-		dumper.DumpValue{
-			Key:   "proxy_listen_addr",
-			Value: conn.LocalAddr().String(),
-		},
-		dumper.DumpValue{
-			Key:   "proxy_client_addr",
-			Value: remoteConn.LocalAddr().String(),
-		},
-		dumper.DumpValue{
-			Key:   "remote_addr",
-			Value: remoteConn.RemoteAddr().String(),
+	dumpValues := &dumper.DumpValues{
+		Values: []dumper.DumpValue{
+			dumper.DumpValue{
+				Key:   "conn_id",
+				Value: connID,
+			},
+			dumper.DumpValue{
+				Key:   "client_addr",
+				Value: conn.RemoteAddr().String(),
+			},
+			dumper.DumpValue{
+				Key:   "proxy_listen_addr",
+				Value: conn.LocalAddr().String(),
+			},
+			dumper.DumpValue{
+				Key:   "proxy_client_addr",
+				Value: remoteConn.LocalAddr().String(),
+			},
+			dumper.DumpValue{
+				Key:   "remote_addr",
+				Value: remoteConn.RemoteAddr().String(),
+			},
 		},
 	}
 
@@ -81,16 +83,18 @@ func (p *Proxy) Start() {
 }
 
 func (p *Proxy) dump(b []byte, direction dumper.Direction) error {
-	kvs := append(p.dumpValues, dumper.DumpValue{
-		Key:   "conn_seq_num",
-		Value: p.seqNum,
-	})
-	kvs = append(kvs, dumper.DumpValue{
-		Key:   "direction",
-		Value: direction.String(),
-	})
+	kvs := []dumper.DumpValue{
+		dumper.DumpValue{
+			Key:   "conn_seq_num",
+			Value: p.seqNum,
+		},
+		dumper.DumpValue{
+			Key:   "direction",
+			Value: direction.String(),
+		},
+	}
 
-	return p.server.dumper.Dump(b, direction, kvs)
+	return p.server.dumper.Dump(b, direction, p.dumpValues, kvs)
 }
 
 func (p *Proxy) pipe(srcConn, destConn *net.TCPConn) {
@@ -146,7 +150,7 @@ func (p *Proxy) fieldsWithErrorAndDirection(err error, direction dumper.Directio
 		zap.String("direction", direction.String()),
 	}
 
-	for _, kv := range p.dumpValues {
+	for _, kv := range p.dumpValues.Values {
 		fields = append(fields, zap.Any(kv.Key, kv.Value))
 	}
 

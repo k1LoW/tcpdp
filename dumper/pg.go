@@ -29,7 +29,7 @@ func NewPgDumper() *PgDumper {
 }
 
 // Dump query of PostgreSQL
-func (p *PgDumper) Dump(in []byte, direction Direction, kvs []DumpValue) error {
+func (p *PgDumper) Dump(in []byte, direction Direction, persistent *DumpValues, additional []DumpValue) error {
 	if direction == RemoteToClient {
 		return nil
 	}
@@ -39,19 +39,25 @@ func (p *PgDumper) Dump(in []byte, direction Direction, kvs []DumpValue) error {
 		splited := bytes.Split(in[8:], []byte{0x00})
 		if len(splited) > 0 && string(splited[0]) == "user" {
 			username := string(splited[1])
-			fields := []zapcore.Field{
-				zap.String("username", username),
-			}
+			persistent.Values = append(persistent.Values, DumpValue{
+				Key:   "username",
+				Value: username,
+			})
 			for i, keyOrValue := range splited {
 				if string(keyOrValue) == "database" {
-					fields = append(fields, zap.String("database", string(splited[i+1])))
+					persistent.Values = append(persistent.Values, DumpValue{
+						Key:   "database",
+						Value: string(splited[i+1]),
+					})
 				}
 			}
-			for _, kv := range kvs {
+			fields := []zapcore.Field{}
+			for _, kv := range persistent.Values {
 				fields = append(fields, zap.Any(kv.Key, kv.Value))
 			}
-
-			p.logger.Info("", fields...)
+			for _, kv := range additional {
+				fields = append(fields, zap.Any(kv.Key, kv.Value))
+			}
 			return nil
 		}
 	}
@@ -66,7 +72,10 @@ func (p *PgDumper) Dump(in []byte, direction Direction, kvs []DumpValue) error {
 	fields := []zapcore.Field{
 		zap.String("message_type", string(messageType)),
 	}
-	for _, kv := range kvs {
+	for _, kv := range persistent.Values {
+		fields = append(fields, zap.Any(kv.Key, kv.Value))
+	}
+	for _, kv := range additional {
 		fields = append(fields, zap.Any(kv.Key, kv.Value))
 	}
 

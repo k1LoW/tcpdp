@@ -27,7 +27,12 @@ type DumpValue struct {
 	Value interface{}
 }
 
+// DumpValues ...
+type DumpValues struct {
+	Values []DumpValue
+}
+
 // Dumper interface
 type Dumper interface {
-	Dump(in []byte, direction Direction, kvs []DumpValue) error
+	Dump(in []byte, direction Direction, persistent *DumpValues, additional []DumpValue) error
 }

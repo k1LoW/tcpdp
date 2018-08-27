@@ -24,9 +24,12 @@ func NewHexDumper() *HexDumper {
 }
 
 // Dump TCP
-func (h *HexDumper) Dump(in []byte, direction Direction, kvs []DumpValue) error {
+func (h *HexDumper) Dump(in []byte, direction Direction, persistent *DumpValues, additional []DumpValue) error {
 	fields := []zapcore.Field{}
-	for _, kv := range kvs {
+	for _, kv := range persistent.Values {
+		fields = append(fields, zap.Any(kv.Key, kv.Value))
+	}
+	for _, kv := range additional {
 		fields = append(fields, zap.Any(kv.Key, kv.Value))
 	}
 	fields = append(fields, zap.Time("ts", time.Now()))
