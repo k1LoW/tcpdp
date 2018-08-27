@@ -115,6 +115,7 @@ func (p *Proxy) pipe(srcConn, destConn *net.TCPConn) {
 		}
 		b := buff[:n]
 
+		// TODO: block invalid query/data
 		err = p.dump(b, direction)
 		if err != nil {
 			fields := p.fieldsWithErrorAndDirection(err, direction)
