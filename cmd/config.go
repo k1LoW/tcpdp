@@ -42,6 +42,8 @@ dumper = "{{ .proxy.dumper }}"
 
 [log]
 dir = "{{ .log.dir }}"
+enable = "{{ .log.enable }}"
+stdout = "{{ .log.stdout }}"
 format = "{{ .log.format }}"
 rotateEnable = {{ .log.rotateenable }}
 rotationTime = "{{ .log.rotationtime }}"
@@ -49,6 +51,8 @@ rotationCount = {{ .log.rotationcount }}
 
 [dumpLog]
 dir = "{{ .dumplog.dir }}"
+enable = "{{ .dumpLog.enable }}"
+stdout = "{{ .dumpLog.stdout }}"
 format = "{{ .dumplog.format }}"
 rotateEnable = {{ .dumplog.rotateenable }}
 rotationTime = "{{ .dumplog.rotationtime }}"
