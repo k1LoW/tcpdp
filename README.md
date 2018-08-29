@@ -1,4 +1,4 @@
-# [WIP] tcprxy
+# tcprxy
 
 tcprxy is TCP proxy with custom dumper written in Go.
 
