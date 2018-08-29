@@ -61,12 +61,16 @@ func initConfig() {
 	viper.SetDefault("proxy.dumper", "hex")
 
 	viper.SetDefault("log.dir", ".")
+	viper.SetDefault("log.enable", true)
+	viper.SetDefault("log.stdout", true)
 	viper.SetDefault("log.format", "json")
 	viper.SetDefault("log.rotateEnable", true)
 	viper.SetDefault("log.rotationTime", "daily")
 	viper.SetDefault("log.rotationCount", 7)
 
 	viper.SetDefault("dumpLog.dir", ".")
+	viper.SetDefault("dumpLog.enable", true)
+	viper.SetDefault("dumpLog.stdout", false)
 	viper.SetDefault("dumpLog.format", "json")
 	viper.SetDefault("dumpLog.rotateEnable", true)
 	viper.SetDefault("dumpLog.rotationTime", "daily")

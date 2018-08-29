@@ -53,6 +53,8 @@ dumper = "mysql"
 
 [log]
 dir = "/var/log/tcprxy"
+enable = true
+stdout = true
 format = "ltsv"
 rotateEnable = true
 rotationTime = "daily"
@@ -60,6 +62,8 @@ rotationCount = 7
 
 [dumpLog]
 dir = "/var/log/dump"
+enable = true
+stdout = false
 format = "json"
 rotateEnable = true
 rotationTime = "hourly"

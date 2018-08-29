@@ -18,7 +18,7 @@ type HexDumper struct {
 // NewHexDumper returns a HexDumper
 func NewHexDumper() *HexDumper {
 	dumper := &HexDumper{
-		logger: logger.NewDumpLogger(),
+		logger: logger.NewHexLogger(),
 	}
 	return dumper
 }
