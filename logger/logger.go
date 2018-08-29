@@ -41,39 +41,45 @@ func NewLogger() *zap.Logger {
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
 
+	stdout := viper.GetBool(fmt.Sprintf("%s.stdout", LogTypeLog))
+	enable := viper.GetBool(fmt.Sprintf("%s.enable", LogTypeLog))
 	format := viper.GetString(fmt.Sprintf("%s.format", LogTypeLog))
-	w := newLogWriter(LogTypeLog)
+	cores := []zapcore.Core{}
 
-	consoleCore := zapcore.NewCore(
-		zapcore.NewConsoleEncoder(encoderConfig),
-		zapcore.AddSync(os.Stdout),
-		zapcore.DebugLevel,
-	)
-
-	var encoder zapcore.Encoder
-	switch format {
-	case LogFormatJSON:
-		encoder = zapcore.NewJSONEncoder(encoderConfig)
-	case LogFormatLTSV:
-		encoder = ltsv.NewLTSVEncoder(encoderConfig)
+	if stdout {
+		stdoutCore := zapcore.NewCore(
+			zapcore.NewConsoleEncoder(encoderConfig),
+			zapcore.AddSync(os.Stdout),
+			zapcore.DebugLevel,
+		)
+		cores = append(cores, stdoutCore)
 	}
 
-	logCore := zapcore.NewCore(
-		encoder,
-		zapcore.AddSync(w),
-		zapcore.InfoLevel,
-	)
+	if enable {
+		w := newLogWriter(LogTypeLog)
+		var encoder zapcore.Encoder
+		switch format {
+		case LogFormatJSON:
+			encoder = zapcore.NewJSONEncoder(encoderConfig)
+		case LogFormatLTSV:
+			encoder = ltsv.NewLTSVEncoder(encoderConfig)
+		}
 
-	logger := zap.New(zapcore.NewTee(
-		consoleCore,
-		logCore,
-	))
+		logCore := zapcore.NewCore(
+			encoder,
+			zapcore.AddSync(w),
+			zapcore.InfoLevel,
+		)
+		cores = append(cores, logCore)
+	}
+
+	logger := zap.New(zapcore.NewTee(cores...))
 
 	return logger
 }
 
-// NewDumpLogger returns logger
-func NewDumpLogger() *zap.Logger {
+// NewHexLogger returns logger for hex
+func NewHexLogger() *zap.Logger {
 	encoderConfig := zapcore.EncoderConfig{
 		MessageKey:     "dump",
 		EncodeLevel:    zapcore.LowercaseLevelEncoder,
@@ -82,29 +88,10 @@ func NewDumpLogger() *zap.Logger {
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
 
-	format := viper.GetString(fmt.Sprintf("%s.format", LogTypeDumpLog))
-	w := newLogWriter("dumpLog")
-
-	var encoder zapcore.Encoder
-	switch format {
-	case LogFormatJSON:
-		encoder = zapcore.NewJSONEncoder(encoderConfig)
-	case LogFormatLTSV:
-		encoder = ltsv.NewLTSVEncoder(encoderConfig)
-	}
-
-	logCore := zapcore.NewCore(
-		encoder,
-		zapcore.AddSync(w),
-		zapcore.InfoLevel,
-	)
-
-	logger := zap.New(logCore)
-
-	return logger
+	return newDumpLogger(encoderConfig)
 }
 
-// NewQueryLogger returns logger
+// NewQueryLogger returns logger for mysql/pg
 func NewQueryLogger() *zap.Logger {
 	encoderConfig := zapcore.EncoderConfig{
 		TimeKey:        "ts",
@@ -115,15 +102,43 @@ func NewQueryLogger() *zap.Logger {
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
 
-	w := newLogWriter(LogTypeDumpLog)
+	return newDumpLogger(encoderConfig)
+}
 
-	logCore := zapcore.NewCore(
-		zapcore.NewJSONEncoder(encoderConfig),
-		zapcore.AddSync(w),
-		zapcore.InfoLevel,
-	)
+func newDumpLogger(encoderConfig zapcore.EncoderConfig) *zap.Logger {
+	stdout := viper.GetBool(fmt.Sprintf("%s.stdout", LogTypeDumpLog))
+	enable := viper.GetBool(fmt.Sprintf("%s.enable", LogTypeDumpLog))
+	format := viper.GetString(fmt.Sprintf("%s.format", LogTypeDumpLog))
+	cores := []zapcore.Core{}
 
-	logger := zap.New(logCore)
+	if stdout {
+		stdoutCore := zapcore.NewCore(
+			zapcore.NewConsoleEncoder(encoderConfig),
+			zapcore.AddSync(os.Stdout),
+			zapcore.DebugLevel,
+		)
+		cores = append(cores, stdoutCore)
+	}
+
+	if enable {
+		w := newLogWriter(LogTypeDumpLog)
+		var encoder zapcore.Encoder
+		switch format {
+		case LogFormatJSON:
+			encoder = zapcore.NewJSONEncoder(encoderConfig)
+		case LogFormatLTSV:
+			encoder = ltsv.NewLTSVEncoder(encoderConfig)
+		}
+
+		logCore := zapcore.NewCore(
+			encoder,
+			zapcore.AddSync(w),
+			zapcore.InfoLevel,
+		)
+		cores = append(cores, logCore)
+	}
+
+	logger := zap.New(zapcore.NewTee(cores...))
 
 	return logger
 }
