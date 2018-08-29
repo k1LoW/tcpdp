@@ -82,7 +82,7 @@ func NewDumpLogger() *zap.Logger {
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
 
-	format := viper.GetString(fmt.Sprintf("%s.format", LogTypeLog))
+	format := viper.GetString(fmt.Sprintf("%s.format", LogTypeDumpLog))
 	w := newLogWriter("dumpLog")
 
 	var encoder zapcore.Encoder
