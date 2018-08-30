@@ -1,0 +1,17 @@
+language: go
+go:
+  - 1.10.x
+  - master
+services:
+  - docker
+addons:
+  apt:
+    update: true
+before_install:
+  - make depsdev
+  - docker-compose up -d
+  - sleep 20s
+script:
+  - make test
+after_script:
+  - make cover
