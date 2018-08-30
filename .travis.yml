@@ -1,4 +1,5 @@
 language: go
+sudo: required
 go:
   - 1.10.x
   - master
@@ -8,10 +9,9 @@ addons:
   apt:
     update: true
 before_install:
-  - make depsdev
   - docker-compose up -d
   - sleep 20s
 script:
-  - make test
+  - make ci
 after_script:
   - make cover

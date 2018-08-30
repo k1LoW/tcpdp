@@ -2,9 +2,15 @@ package server
 
 import (
 	"context"
+	"fmt"
+	"io/ioutil"
 	"net"
+	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 
 	"github.com/k1LoW/tcprxy/dumper"
 	"github.com/lestrrat-go/server-starter/listener"
@@ -15,6 +21,7 @@ import (
 
 // Server struct
 type Server struct {
+	pidfile    string
 	listenAddr *net.TCPAddr
 	remoteAddr *net.TCPAddr
 	ctx        context.Context
@@ -46,7 +53,13 @@ func NewServer(ctx context.Context, lAddr, rAddr *net.TCPAddr, logger *zap.Logge
 		d = dumper.NewHexDumper()
 	}
 
+	pidfile, err := filepath.Abs(viper.GetString("proxy.pidfile"))
+	if err != nil {
+		logger.WithOptions(zap.AddCaller()).Fatal("pidfile path error", zap.Error(err))
+	}
+
 	return &Server{
+		pidfile:    pidfile,
 		listenAddr: lAddr,
 		remoteAddr: rAddr,
 		ctx:        innerCtx,
@@ -60,6 +73,12 @@ func NewServer(ctx context.Context, lAddr, rAddr *net.TCPAddr, logger *zap.Logge
 
 // Start server.
 func (s *Server) Start() error {
+	err := s.writePID()
+	if err != nil {
+		s.logger.WithOptions(zap.AddCaller()).Fatal(fmt.Sprintf("can not write %s", s.pidfile), zap.Error(err))
+		return err
+	}
+	defer s.deletePID()
 	useServerSterter := viper.GetBool("proxy.useServerSterter")
 
 	if useServerSterter {
@@ -149,4 +168,24 @@ func (s *Server) fieldsWithErrorAndConn(err error, conn *net.TCPConn) []zapcore.
 		zap.String("remote_addr", s.remoteAddr.String()),
 	}
 	return fields
+}
+
+// https://gist.github.com/davidnewhall/3627895a9fc8fa0affbd747183abca39
+func (s *Server) writePID() error {
+	if data, err := ioutil.ReadFile(s.pidfile); err == nil {
+		if pid, err := strconv.Atoi(string(data)); err == nil {
+			if process, err := os.FindProcess(pid); err == nil {
+				if err := process.Signal(syscall.Signal(0)); err == nil {
+					return fmt.Errorf("pid already running: %d", pid)
+				}
+			}
+		}
+	}
+	return ioutil.WriteFile(s.pidfile, []byte(fmt.Sprintf("%d\n", os.Getpid())), 0664)
+}
+
+func (s *Server) deletePID() {
+	if err := os.Remove(s.pidfile); err != nil {
+		s.logger.WithOptions(zap.AddCaller()).Fatal(fmt.Sprintf("can not delete %s", s.pidfile), zap.Error(err))
+	}
 }

@@ -35,6 +35,7 @@ var configCmd = &cobra.Command{
 	Long:  `show currnt config.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		const cfgTemplate = `[proxy]
+pidfile = "{{ .proxy.pidfile }}"
 useServerSterter = {{ .proxy.useserversterter }}
 listenAddr = "{{ .proxy.listenaddr }}"
 remoteAddr = "{{ .proxy.remoteaddr }}"
