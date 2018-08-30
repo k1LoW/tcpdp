@@ -46,6 +46,7 @@ $ tcprxy config
 
 ``` toml
 [proxy]
+pidfile = "/var/run/tcprxy.pid"
 useServerSterter = false
 listenAddr = "localhost:3306"
 remoteAddr = "db.example.com:3306"

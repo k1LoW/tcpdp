@@ -55,6 +55,7 @@ func init() {
 }
 
 func initConfig() {
+	viper.SetDefault("proxy.pidfile", "./tcprxy.pid")
 	viper.SetDefault("proxy.useServerSterter", false)
 	viper.SetDefault("proxy.listenAddr", "localhost:8080")
 	viper.SetDefault("proxy.remoteAddr", "localhost:80")
