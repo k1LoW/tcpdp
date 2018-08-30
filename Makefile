@@ -11,9 +11,14 @@ BUILD_LDFLAGS = -X $(PKG).commit=$(COMMIT) -X $(PKG).date=$(DATE)
 RELEASE_BUILD_LDFLAGS = -s -w $(BUILD_LDFLAGS)
 
 default: test
+ci: depsdev test integration
 
 test:
 	go test -cover -v $(shell go list ./... | grep -v vendor)
+
+integration: depsdev build
+	./tcprxy server &
+	kill `cat ./tcprxy.pid`
 
 cover: depsdev
 	goveralls -service=travis-ci
