@@ -62,7 +62,7 @@ func TestAnalyzeUsernameAndDatabase(t *testing.T) {
 	}
 }
 
-// NewTestLogger ...
+// NewTestLogger return zap.Logger for test
 func NewTestLogger(out io.Writer) *zap.Logger {
 	encoderConfig := zapcore.EncoderConfig{
 		TimeKey:        "ts",
