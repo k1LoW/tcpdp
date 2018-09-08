@@ -69,7 +69,7 @@ func (m *MysqlDumper) Dump(in []byte, direction Direction, persistent *DumpValue
 	if len(in) >= 37 {
 		clientCapabilities := binary.LittleEndian.Uint32(in[4:8])
 
-		// parse Protocol::HandshakeResponse41 to get username
+		// parse Protocol::HandshakeResponse41 to get username, database
 		if clientCapabilities&clientProtocol41 > 0 && bytes.Compare(in[13:36], []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}) == 0 {
 			buff := bytes.NewBuffer(in[36:])
 			readed, _ := buff.ReadString(0x00)
@@ -78,6 +78,32 @@ func (m *MysqlDumper) Dump(in []byte, direction Direction, persistent *DumpValue
 				Key:   "username",
 				Value: username,
 			})
+			if clientCapabilities&clientPluginAuthLenEncClientData > 0 {
+				l, _ := buff.ReadByte()
+				if l == 0xfc {
+					_, _ = buff.Read(make([]byte, 2))
+				}
+				if l == 0xfd {
+					_, _ = buff.Read(make([]byte, 3))
+				}
+				if l == 0xfe {
+					_, _ = buff.Read(make([]byte, 8))
+				}
+			} else if clientCapabilities&clientSecureConnection > 0 {
+				l, _ := buff.ReadByte()
+				_, _ = buff.Read(make([]byte, l))
+			} else {
+				_, _ = buff.ReadString(0x00)
+			}
+			if clientCapabilities&clientConnectWithDB > 0 {
+				readed, _ := buff.ReadString(0x00)
+				database := strings.Trim(readed, "\x00")
+				persistent.Values = append(persistent.Values, DumpValue{
+					Key:   "database",
+					Value: database,
+				})
+			}
+
 			return nil
 		}
 	}
