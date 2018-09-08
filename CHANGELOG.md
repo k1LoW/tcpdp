@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.3.0](https://github.com/k1LoW/tcprxy/compare/v0.2.1...v0.3.0) (2018-09-08)
+
+* Analyze database name via Protocol::HandshakeResponse41 [#6](https://github.com/k1LoW/tcprxy/pull/6) ([k1LoW](https://github.com/k1LoW))
+
 ## [v0.2.1](https://github.com/k1LoW/tcprxy/compare/v0.2.0...v0.2.1) (2018-09-06)
 
 * Fix `tcprxy config` output [#5](https://github.com/k1LoW/tcprxy/pull/5) ([k1LoW](https://github.com/k1LoW))
