@@ -113,7 +113,7 @@ rotationCount = 24
 | dump | dump data by hex.Dump | hex |
 | query | SQL query | mysql, pg |
 | username | username | mysql, pg |
-| database | database | pg |
+| database | database | mysql, pg |
 | seq_num | sequence number by MySQL | mysql |
 | command_id | [command_id](https://dev.mysql.com/doc/internals/en/com-query.html) for MySQL | mysql |
 | message_type | [message type](https://www.postgresql.org/docs/current/static/protocol-overview.html#PROTOCOL-MESSAGE-CONCEPTS) for PostgreSQL | pg |
