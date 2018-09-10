@@ -9,6 +9,7 @@ addons:
   apt:
     update: true
 before_install:
+  - sudo apt-get install libpcap-dev
   - docker-compose up -d
   - sleep 20s
 script:
