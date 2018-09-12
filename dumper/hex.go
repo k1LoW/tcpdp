@@ -12,15 +12,22 @@ import (
 
 // HexDumper ...
 type HexDumper struct {
+	name   string
 	logger *zap.Logger
 }
 
 // NewHexDumper returns a HexDumper
 func NewHexDumper() *HexDumper {
 	dumper := &HexDumper{
+		name:   "hex",
 		logger: logger.NewHexLogger(),
 	}
 	return dumper
+}
+
+// Name return dumper name
+func (h *HexDumper) Name() string {
+	return h.name
 }
 
 // Dump TCP
@@ -34,10 +41,23 @@ func (h *HexDumper) Dump(in []byte, direction Direction, persistent *DumpValues,
 	}
 	fields = append(fields, zap.Time("ts", time.Now()))
 
-	dump := hex.Dump(in)
+	values := h.Read(in)
+	for _, kv := range values {
+		fields = append(fields, zap.Any(kv.Key, kv.Value))
+	}
 
-	fmt.Printf("%s\n", dump) // FIXME: Easy to Read
+	fmt.Printf("%s\n", values[0].Value) // FIXME: Easy to Read
 
-	h.logger.Info(dump, fields...)
+	h.logger.Info("-", fields...)
 	return nil
+}
+
+// Read return byte to analyzed string
+func (h *HexDumper) Read(in []byte) []DumpValue {
+	return []DumpValue{
+		DumpValue{
+			Key:   "dump",
+			Value: hex.Dump(in),
+		},
+	}
 }
