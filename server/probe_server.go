@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -76,15 +77,23 @@ func (s *ProbeServer) Start() error {
 		close(s.ClosedChan)
 	}()
 
-	device := "lo0"
+	device := viper.GetString("probe.interface")
+	target := viper.GetString("probe.target")
+
+	lAddr, err := net.ResolveTCPAddr("tcp", target)
+	if err != nil {
+		s.logger.Fatal("error", zap.Error(err))
+		return err
+	}
+	host := lAddr.IP
+	port := lAddr.Port
+
 	snapshot := 0xFFFF
 	promiscuous := true
-	dumpValues := &dumper.DumpValues{
-		Values: []dumper.DumpValue{
-			dumper.DumpValue{
-				Key:   "device",
-				Value: device,
-			},
+	pValues := []dumper.DumpValue{
+		dumper.DumpValue{
+			Key:   "device",
+			Value: device,
 		},
 	}
 
@@ -100,11 +109,12 @@ func (s *ProbeServer) Start() error {
 	}
 	defer handle.Close()
 
-	if err := handle.SetBPFFilter("tcp port 33306"); err != nil {
+	if err := handle.SetBPFFilter(fmt.Sprintf("tcp and host %s and port %d", host.String(), port)); err != nil {
 		s.logger.WithOptions(zap.AddCaller()).Fatal("BPF Filter error", zap.Error(err))
 		return err
 	}
 
+	vMap := map[string][]dumper.DumpValue{}
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 	packetChan := packetSource.Packets()
 	for {
@@ -112,17 +122,73 @@ func (s *ProbeServer) Start() error {
 		case <-s.ctx.Done():
 			return nil
 		case packet := <-packetChan:
-			if tcpLayer := packet.Layer(layers.LayerTypeTCP); tcpLayer != nil {
-				if len(tcpLayer.LayerPayload()) == 0 {
-					continue
-				}
-				in := tcpLayer.LayerPayload()
-				err = s.dumper.Dump(in, dumper.ClientToRemote, dumpValues, []dumper.DumpValue{})
-				if err != nil {
-					s.logger.WithOptions(zap.AddCaller()).Error("dumber Dump error", zap.Error(err))
-					return nil
+			ipLayer := packet.Layer(layers.LayerTypeIPv4)
+			if ipLayer == nil {
+				continue
+			}
+			tcpLayer := packet.Layer(layers.LayerTypeTCP)
+			if tcpLayer == nil {
+				continue
+			}
+			ip, _ := ipLayer.(*layers.IPv4)
+			tcp, _ := tcpLayer.(*layers.TCP)
+
+			var key string
+			var direction dumper.Direction
+			if ip.DstIP.String() == host.String() && uint16(tcp.DstPort) == uint16(port) {
+				key = fmt.Sprintf("%s:%d", ip.SrcIP.String(), tcp.SrcPort)
+				direction = dumper.SrcToDst
+			} else {
+				key = fmt.Sprintf("%s:%d", ip.DstIP.String(), tcp.DstPort)
+				direction = dumper.DstToSrc
+			}
+			if tcp.SYN || tcp.FIN {
+				// TCP connection start or end
+				_, ok := vMap[key]
+				if ok {
+					delete(vMap, key)
 				}
 			}
+
+			in := tcpLayer.LayerPayload()
+			if len(in) == 0 {
+				continue
+			}
+
+			v := s.dumper.ReadPersistentValues(in)
+			if len(v) > 0 {
+				vMap[key] = v
+			}
+
+			values := []dumper.DumpValue{
+				dumper.DumpValue{
+					Key:   "src_addr",
+					Value: fmt.Sprintf("%s:%d", ip.SrcIP.String(), tcp.SrcPort),
+				},
+				dumper.DumpValue{
+					Key:   "dst_addr",
+					Value: fmt.Sprintf("%s:%d", ip.DstIP.String(), tcp.DstPort),
+				},
+				dumper.DumpValue{
+					Key:   "direction",
+					Value: direction.String(),
+				},
+			}
+
+			read := s.dumper.Read(in)
+			if len(read) == 0 {
+				continue
+			}
+
+			values = append(values, read...)
+			values = append(values, pValues...)
+			v, ok := vMap[key]
+			if ok {
+				values = append(values, v...)
+			}
+
+			s.dumper.Log(values)
+
 		default:
 		}
 	}

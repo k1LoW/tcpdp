@@ -81,7 +81,6 @@ func NewLogger() *zap.Logger {
 // NewHexLogger returns logger for hex
 func NewHexLogger() *zap.Logger {
 	encoderConfig := zapcore.EncoderConfig{
-		MessageKey:     "dump",
 		EncodeLevel:    zapcore.LowercaseLevelEncoder,
 		EncodeTime:     zapcore.ISO8601TimeEncoder,
 		EncodeDuration: zapcore.StringDurationEncoder,
@@ -95,7 +94,6 @@ func NewHexLogger() *zap.Logger {
 func NewQueryLogger() *zap.Logger {
 	encoderConfig := zapcore.EncoderConfig{
 		TimeKey:        "ts",
-		MessageKey:     "query",
 		EncodeLevel:    zapcore.LowercaseLevelEncoder,
 		EncodeTime:     zapcore.ISO8601TimeEncoder,
 		EncodeDuration: zapcore.StringDurationEncoder,

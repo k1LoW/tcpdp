@@ -35,7 +35,7 @@ import (
 )
 
 var (
-	dumper string
+	serverDumper string
 )
 
 // serverCmd represents the server command
@@ -48,6 +48,7 @@ var serverCmd = &cobra.Command{
 		if err != nil {
 			logger.Warn("Config file not found.", zap.Error(err))
 		}
+		viper.Set("proxy.dumper", serverDumper) // because share with `probe`
 
 		listenAddr := viper.GetString("proxy.listenAddr")
 		remoteAddr := viper.GetString("proxy.remoteAddr")
@@ -103,7 +104,7 @@ func init() {
 	serverCmd.Flags().StringVarP(&cfgFile, "config", "c", "", "config file path")
 	serverCmd.Flags().StringP("listen", "l", "localhost:8080", "listen address")
 	serverCmd.Flags().StringP("remote", "r", "localhost:80", "remote address")
-	serverCmd.Flags().StringP("dumper", "d", "hex", "dumper")
+	serverCmd.Flags().StringVarP(&serverDumper, "dumper", "d", "hex", "dumper")
 	serverCmd.Flags().BoolP("use-server-starter", "s", false, "use server_starter")
 
 	viper.BindPFlag("proxy.listenAddr", serverCmd.Flags().Lookup("listen"))

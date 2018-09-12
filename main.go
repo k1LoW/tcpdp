@@ -20,8 +20,16 @@
 
 package main
 
-import "github.com/k1LoW/tcprxy/cmd"
+import (
+	"net/http"
+	_ "net/http/pprof"
+
+	"github.com/k1LoW/tcprxy/cmd"
+)
 
 func main() {
+	go func() {
+		http.ListenAndServe("0.0.0.0:6060", nil)
+	}()
 	cmd.Execute()
 }

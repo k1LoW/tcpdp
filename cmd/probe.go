@@ -32,6 +32,10 @@ import (
 	"go.uber.org/zap"
 )
 
+var (
+	probeDumper string
+)
+
 // probeCmd represents the probe command
 var probeCmd = &cobra.Command{
 	Use:   "probe",
@@ -42,6 +46,7 @@ var probeCmd = &cobra.Command{
 		if err != nil {
 			logger.Warn("Config file not found.", zap.Error(err))
 		}
+		viper.Set("proxy.dumper", probeDumper) // because share with `server`
 
 		defer logger.Sync()
 
@@ -68,5 +73,13 @@ var probeCmd = &cobra.Command{
 }
 
 func init() {
+	probeCmd.Flags().StringVarP(&cfgFile, "config", "c", "", "config file path")
+	probeCmd.Flags().StringP("target", "t", "localhost:80", "target addr")
+	probeCmd.Flags().StringP("interface", "i", "", "interface")
+	probeCmd.Flags().StringVarP(&probeDumper, "dumper", "d", "hex", "dumper")
+
+	viper.BindPFlag("probe.target", probeCmd.Flags().Lookup("target"))
+	viper.BindPFlag("probe.interface", probeCmd.Flags().Lookup("interface"))
+
 	rootCmd.AddCommand(probeCmd)
 }
