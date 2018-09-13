@@ -26,7 +26,7 @@ test:
 	go test -cover -v $(shell go list ./... | grep -v vendor)
 
 integration: build
-	./tcprxy server -l localhost:54321 -r localhost:$(POSTGRES_PORT) -d pg &
+	./tcprxy proxy -l localhost:54321 -r localhost:$(POSTGRES_PORT) -d pg &
 	@sleep 1
 	PGPASSWORD=$(POSTGRES_PASSWORD) pgbench -h 127.0.0.1 -p 54321 -U$(POSTGRES_USER) -i $(POSTGRES_DB)
 	PGPASSWORD=$(POSTGRES_PASSWORD) pgbench -h 127.0.0.1 -p 54321 -U$(POSTGRES_USER) -c 100 -t 10 $(POSTGRES_DB) 2>&1 > ./result
@@ -36,7 +36,7 @@ integration: build
 	@cat ./result | grep "number of transactions actually processed: 1000/1000" || (echo "pgbench faild" && exit 1)
 	test `grep -c '' ./tcprxy.log` -eq 3 || (cat ./tcprxy.log && exit 1)
 	rm ./result
-	./tcprxy server -l localhost:33065 -r localhost:$(MYSQL_PORT) -d mysql &
+	./tcprxy proxy -l localhost:33065 -r localhost:$(MYSQL_PORT) -d mysql &
 	@sleep 1
 	mysqlslap --no-defaults --concurrency=100 --iterations=1 --auto-generate-sql --auto-generate-sql-add-autoincrement --auto-generate-sql-load-type=mixed --auto-generate-sql-write-number=100 --number-of-queries=1000 --host=127.0.0.1 --port=33065 --user=root --password=$(MYSQL_ROOT_PASSWORD) --skip-ssl 2>&1 > ./result
 	kill `cat ./tcprxy.pid`

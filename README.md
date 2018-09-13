@@ -5,15 +5,15 @@ tcprxy is TCP proxy with custom dumper written in Go.
 ## Usage
 
 ``` console
-$ tcprxy server -l localhost:12345 -r localhost:1234 -d hex # hex.Dump()
+$ tcprxy proxy -l localhost:12345 -r localhost:1234 -d hex # hex.Dump()
 ```
 
 ``` console
-$ tcprxy server -l localhost:55432 -r localhost:5432 -d pg # Dump query of PostgreSQL
+$ tcprxy proxy -l localhost:55432 -r localhost:5432 -d pg # Dump query of PostgreSQL
 ```
 
 ``` console
-$ tcprxy server -l localhost:33306 -r localhost:3306 -d mysql # Dump query of MySQL
+$ tcprxy proxy -l localhost:33306 -r localhost:3306 -d mysql # Dump query of MySQL
 ```
 
 ### With server-starter
@@ -21,13 +21,13 @@ $ tcprxy server -l localhost:33306 -r localhost:3306 -d mysql # Dump query of My
 https://github.com/lestrrat-go/server-starter
 
 ``` console
-$ start_server --port 33306 -- tcprxy server -s -r localhost:3306 -d mysql
+$ start_server --port 33306 -- tcprxy proxy -s -r localhost:3306 -d mysql
 ```
 
 ### With config file
 
 ``` console
-$ tcprxy server -c config.toml
+$ tcprxy proxy -c config.toml
 ```
 
 #### Create config
