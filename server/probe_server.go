@@ -114,7 +114,7 @@ func (s *ProbeServer) Start() error {
 	defer handle.Close()
 
 	if err := handle.SetBPFFilter(fmt.Sprintf("tcp and host %s and port %d", host.String(), port)); err != nil {
-		s.logger.WithOptions(zap.AddCaller()).Fatal("BPF Filter error", zap.Error(err))
+		s.logger.WithOptions(zap.AddCaller()).Fatal("BPF error", zap.Error(err))
 		return err
 	}
 

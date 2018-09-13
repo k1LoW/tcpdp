@@ -4,7 +4,7 @@ tcpdp is TCP dump tool with custom dumper written in Go.
 
 ## Usage
 
-### `tcpdp proxy`
+### `tcpdp proxy` : Proxy mode
 
 ``` console
 $ tcpdp proxy -l localhost:12345 -r localhost:1234 -d hex # hex.Dump()
@@ -32,7 +32,7 @@ $ start_server --port 33306 -- tcpdp proxy -s -r localhost:3306 -d mysql
 $ tcpdp proxy -c config.toml
 ```
 
-### `tcpdp probe`
+### `tcpdp probe` : Probe mode (like tcpdump)
 
 ``` console
 $ tcpdp probe -i lo0 -t localhost:3306 -d mysql
@@ -85,7 +85,7 @@ rotationTime = "hourly"
 rotationCount = 24
 ```
 
-## tcpdp connection diagram
+## tcpdp proxy connection diagram
 
 ```
       client_addr
@@ -108,29 +108,45 @@ rotationCount = 24
       remote_addr
 ```
 
+## tcpdp probe <-> tcpdump
+
+``` console
+$ tcpdp probe -i lo0 -t localhost:3306 -d hex
+```
+
+is almost the same setting as
+
+``` console
+$ tcpdump -i lo0 host 127.0.0.1 and tcp port 3306
+```
+
 ## log
 
-| key | description | tcpdp.log / dump.log (dumper type) |
-| --- | ----------- | ----------------------------------- |
-| ts | timestamp | tcpdp.log, hex, mysql, pg |
-| level | log level | tcpdp.log |
-| msg | log message | tcpdp.log |
-| error | error info | tcpdp.log |
-| caller | error caller | tcpdp.log |
-| conn_id | TCP connection ID by tcpdp | tcpdp.log, hex, mysql, pg |
-| conn_seq_num | TCP comunication sequence number by tcpdp | tcpdp.log, hex, mysql, pg |
-| client_addr | client address | tcpdp.log, hex, mysql, pg |
-| proxy_listen_addr | listen address| tcpdp.log, hex, mysql, pg |
-| proxy_client_addr | proxy client address | hex, mysql, pg |
-| remote_addr | remote address | tcpdp.log, hex, mysql, pg |
-| direction | client to remote: `->` / remote to client: `<-` | tcpdp.log, hex, mysql, pg |
-| dump | dump data by hex.Dump | hex |
-| query | SQL query | mysql, pg |
-| username | username | mysql, pg |
-| database | database | mysql, pg |
-| seq_num | sequence number by MySQL | mysql |
-| command_id | [command_id](https://dev.mysql.com/doc/internals/en/com-query.html) for MySQL | mysql |
-| message_type | [message type](https://www.postgresql.org/docs/current/static/protocol-overview.html#PROTOCOL-MESSAGE-CONCEPTS) for PostgreSQL | pg |
+| key | description | tcpdp.log / dump.log (dumper type) | mode |
+| --- | ----------- | ---------------------------------- | ---- |
+| ts | timestamp | tcpdp.log, hex, mysql, pg | proxy / probe |
+| level | log level | tcpdp.log | proxy / probe |
+| msg | log message | tcpdp.log | proxy / probe |
+| error | error info | tcpdp.log | proxy / probe |
+| caller | error caller | tcpdp.log | proxy / probe |
+| conn_id | TCP connection ID by tcpdp | tcpdp.log, hex, mysql, pg | proxy |
+| conn_seq_num | TCP comunication sequence number by tcpdp | tcpdp.log, hex, mysql, pg | proxy |
+| client_addr | client address | tcpdp.log, hex, mysql, pg | proxy |
+| proxy_listen_addr | listen address| tcpdp.log, hex, mysql, pg | proxy |
+| proxy_client_addr | proxy client address | hex, mysql, pg | proxy |
+| remote_addr | remote address | tcpdp.log, hex, mysql, pg | proxy |
+| direction | client to remote: `->` / remote to client: `<-` | tcpdp.log, hex, mysql, pg | proxy |
+| interface | probe target interface | tcpdp.log, hex, mysql, pg | probe |
+| src_addr | src address | tcpdp.log, hex, mysql, pg | probe |
+| dst_addr | dst address | tcpdp.log, hex, mysql, pg | probe |
+| probe_target_addr | probe target address | tcpdp.log, hex, mysql, pg | probe |
+| dump | dump data by hex.Dump | hex | proxy / probe |
+| query | SQL query | mysql, pg | proxy / probe |
+| username | username | mysql, pg | proxy / probe |
+| database | database | mysql, pg | proxy / probe |
+| seq_num | sequence number by MySQL | mysql | proxy / probe |
+| command_id | [command_id](https://dev.mysql.com/doc/internals/en/com-query.html) for MySQL | mysql | proxy / probe |
+| message_type | [message type](https://www.postgresql.org/docs/current/static/protocol-overview.html#PROTOCOL-MESSAGE-CONCEPTS) for PostgreSQL | pg | proxy / probe |
 
 ## References
 
