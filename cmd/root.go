@@ -56,10 +56,14 @@ func init() {
 
 func initConfig() {
 	viper.SetDefault("proxy.pidfile", "./tcprxy.pid")
+	viper.SetDefault("proxy.dumper", "hex")
+
 	viper.SetDefault("proxy.useServerSterter", false)
 	viper.SetDefault("proxy.listenAddr", "localhost:8080")
 	viper.SetDefault("proxy.remoteAddr", "localhost:80")
-	viper.SetDefault("proxy.dumper", "hex")
+
+	viper.SetDefault("probe.target", "localhost:80")
+	viper.SetDefault("probe.interface", "")
 
 	viper.SetDefault("log.dir", ".")
 	viper.SetDefault("log.enable", true)

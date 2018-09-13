@@ -50,23 +50,17 @@ func (p *PgDumper) Dump(in []byte, direction Direction, persistent *DumpValues, 
 		return nil
 	}
 
-	values := p.Read(in)
-	if len(values) == 0 {
+	read := p.Read(in)
+	if len(read) == 0 {
 		return nil
 	}
 
-	fields := []zapcore.Field{}
-	for _, kv := range values {
-		fields = append(fields, zap.Any(kv.Key, kv.Value))
-	}
-	for _, kv := range persistent.Values {
-		fields = append(fields, zap.Any(kv.Key, kv.Value))
-	}
-	for _, kv := range additional {
-		fields = append(fields, zap.Any(kv.Key, kv.Value))
-	}
+	values := []DumpValue{}
+	values = append(values, read...)
+	values = append(values, persistent.Values...)
+	values = append(values, additional...)
 
-	p.logger.Info("-", fields...)
+	p.Log(values)
 	return nil
 }
 
@@ -113,4 +107,13 @@ func (p *PgDumper) ReadPersistentValues(in []byte) []DumpValue {
 		}
 	}
 	return values
+}
+
+// Log values
+func (p *PgDumper) Log(values []DumpValue) {
+	fields := []zapcore.Field{}
+	for _, kv := range values {
+		fields = append(fields, zap.Any(kv.Key, kv.Value))
+	}
+	p.logger.Info("-", fields...)
 }

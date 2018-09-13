@@ -8,13 +8,17 @@ const (
 	ClientToRemote Direction = iota
 	// RemoteToClient is client<-proxy<-remote
 	RemoteToClient
+	// SrcToDst is src->dst
+	SrcToDst
+	// DstToSrc is dst->src
+	DstToSrc
 )
 
 func (d Direction) String() string {
 	switch d {
-	case ClientToRemote:
+	case ClientToRemote, SrcToDst:
 		return "->"
-	case RemoteToClient:
+	case RemoteToClient, DstToSrc:
 		return "<-"
 	default:
 		return "?"
@@ -37,4 +41,6 @@ type Dumper interface {
 	Name() string
 	Dump(in []byte, direction Direction, persistent *DumpValues, additional []DumpValue) error
 	Read(in []byte) []DumpValue
+	ReadPersistentValues(in []byte) []DumpValue
+	Log(values []DumpValue)
 }

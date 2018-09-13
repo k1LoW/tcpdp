@@ -81,23 +81,17 @@ func (m *MysqlDumper) Dump(in []byte, direction Direction, persistent *DumpValue
 		return nil
 	}
 
-	values := m.Read(in)
-	if len(values) == 0 {
+	read := m.Read(in)
+	if len(read) == 0 {
 		return nil
 	}
 
-	fields := []zapcore.Field{}
-	for _, kv := range values {
-		fields = append(fields, zap.Any(kv.Key, kv.Value))
-	}
-	for _, kv := range persistent.Values {
-		fields = append(fields, zap.Any(kv.Key, kv.Value))
-	}
-	for _, kv := range additional {
-		fields = append(fields, zap.Any(kv.Key, kv.Value))
-	}
+	values := []DumpValue{}
+	values = append(values, read...)
+	values = append(values, persistent.Values...)
+	values = append(values, additional...)
 
-	m.logger.Info("-", fields...)
+	m.Log(values)
 	return nil
 }
 
@@ -147,15 +141,27 @@ func (m *MysqlDumper) ReadPersistentValues(in []byte) []DumpValue {
 		})
 		if clientCapabilities&clientPluginAuthLenEncClientData > 0 {
 			l, _ := buff.ReadByte()
+			padding := make([]byte, 8-1)
+			n := binary.LittleEndian.Uint64(append([]byte{l}, padding...))
 			if l == 0xfc {
-				_, _ = buff.Read(make([]byte, 2))
+				b := make([]byte, 2)
+				_, _ = buff.Read(b)
+				padding := make([]byte, 8-len(b))
+				n = binary.LittleEndian.Uint64(append(b, padding...))
 			}
 			if l == 0xfd {
-				_, _ = buff.Read(make([]byte, 3))
+				b := make([]byte, 3)
+				_, _ = buff.Read(b)
+				padding := make([]byte, 8-len(b))
+				n = binary.LittleEndian.Uint64(append(b, padding...))
 			}
 			if l == 0xfe {
-				_, _ = buff.Read(make([]byte, 8))
+				b := make([]byte, 8)
+				_, _ = buff.Read(b)
+				padding := make([]byte, 8-len(b))
+				n = binary.LittleEndian.Uint64(append(b, padding...))
 			}
+			_, _ = buff.Read(make([]byte, n))
 		} else if clientCapabilities&clientSecureConnection > 0 {
 			l, _ := buff.ReadByte()
 			_, _ = buff.Read(make([]byte, l))
@@ -173,4 +179,13 @@ func (m *MysqlDumper) ReadPersistentValues(in []byte) []DumpValue {
 	}
 
 	return values
+}
+
+// Log values
+func (m *MysqlDumper) Log(values []DumpValue) {
+	fields := []zapcore.Field{}
+	for _, kv := range values {
+		fields = append(fields, zap.Any(kv.Key, kv.Value))
+	}
+	m.logger.Info("-", fields...)
 }
