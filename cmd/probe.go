@@ -26,6 +26,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"fmt"
 	"github.com/k1LoW/tcprxy/server"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -48,6 +49,9 @@ var probeCmd = &cobra.Command{
 		}
 		viper.Set("proxy.dumper", probeDumper) // because share with `server`
 
+		target := viper.GetString("probe.target")
+		device := viper.GetString("probe.interface")
+
 		defer logger.Sync()
 
 		signalChan := make(chan os.Signal, 1)
@@ -56,13 +60,14 @@ var probeCmd = &cobra.Command{
 
 		s := server.NewProbeServer(context.Background(), logger)
 
+		logger.Info(fmt.Sprintf("Starting probe. %s %s", device, target))
 		go s.Start()
 
 		sc := <-signalChan
 
 		switch sc {
 		case syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM:
-			logger.Info("Shutting down server...")
+			logger.Info("Shutting down probe...")
 			s.Shutdown()
 			<-s.ClosedChan
 		default:
