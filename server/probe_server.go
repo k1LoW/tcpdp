@@ -138,10 +138,13 @@ func (s *ProbeServer) Start() error {
 			tcp, _ := tcpLayer.(*layers.TCP)
 
 			var key string
+			var direction dumper.Direction
 			if ip.DstIP.String() == host.String() && uint16(tcp.DstPort) == uint16(port) {
 				key = fmt.Sprintf("%s:%d", ip.SrcIP.String(), tcp.SrcPort)
+				direction = dumper.SrcToDst
 			} else {
 				key = fmt.Sprintf("%s:%d", ip.DstIP.String(), tcp.DstPort)
+				direction = dumper.DstToSrc
 			}
 			if tcp.SYN || tcp.FIN {
 				// TCP connection start or end
@@ -170,6 +173,10 @@ func (s *ProbeServer) Start() error {
 					Key:   "dst_addr",
 					Value: fmt.Sprintf("%s:%d", ip.DstIP.String(), tcp.DstPort),
 				},
+			}
+
+			if s.dumper.Name() != "hex" && direction != dumper.SrcToDst {
+				continue
 			}
 
 			read := s.dumper.Read(in)
