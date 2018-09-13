@@ -24,7 +24,7 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
-	"github.com/k1LoW/tcprxy/cmd"
+	"github.com/k1LoW/tcpdp/cmd"
 )
 
 func main() {

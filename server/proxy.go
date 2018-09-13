@@ -5,7 +5,7 @@ import (
 	"net"
 	"strings"
 
-	"github.com/k1LoW/tcprxy/dumper"
+	"github.com/k1LoW/tcpdp/dumper"
 	"github.com/rs/xid"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"

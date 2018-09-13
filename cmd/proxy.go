@@ -28,7 +28,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/k1LoW/tcprxy/server"
+	"github.com/k1LoW/tcpdp/server"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -48,7 +48,7 @@ var proxyCmd = &cobra.Command{
 		if err != nil {
 			logger.Warn("Config file not found.", zap.Error(err))
 		}
-		viper.Set("proxy.dumper", proxyDumper) // because share with `probe`
+		viper.Set("tcpdp.dumper", proxyDumper) // because share with `probe`
 
 		listenAddr := viper.GetString("proxy.listenAddr")
 		remoteAddr := viper.GetString("proxy.remoteAddr")
@@ -110,7 +110,7 @@ func init() {
 	viper.BindPFlag("proxy.listenAddr", proxyCmd.Flags().Lookup("listen"))
 	viper.BindPFlag("proxy.remoteAddr", proxyCmd.Flags().Lookup("remote"))
 	viper.BindPFlag("proxy.useProxySterter", proxyCmd.Flags().Lookup("use-proxy-starter"))
-	viper.BindPFlag("proxy.dumper", proxyCmd.Flags().Lookup("dumper"))
+	viper.BindPFlag("tcpdp.dumper", proxyCmd.Flags().Lookup("dumper"))
 
 	rootCmd.AddCommand(proxyCmd)
 }

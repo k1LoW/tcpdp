@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"strings"
 
-	"github.com/k1LoW/tcprxy/logger"
+	"github.com/k1LoW/tcpdp/logger"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )

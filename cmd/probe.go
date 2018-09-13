@@ -27,7 +27,7 @@ import (
 	"syscall"
 
 	"fmt"
-	"github.com/k1LoW/tcprxy/server"
+	"github.com/k1LoW/tcpdp/server"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -47,7 +47,7 @@ var probeCmd = &cobra.Command{
 		if err != nil {
 			logger.Warn("Config file not found.", zap.Error(err))
 		}
-		viper.Set("proxy.dumper", probeDumper) // because share with `server`
+		viper.Set("tcpdp.dumper", probeDumper) // because share with `server`
 
 		target := viper.GetString("probe.target")
 		device := viper.GetString("probe.interface")

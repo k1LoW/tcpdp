@@ -23,7 +23,7 @@ package cmd
 import (
 	"os"
 
-	l "github.com/k1LoW/tcprxy/logger"
+	l "github.com/k1LoW/tcpdp/logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -36,9 +36,9 @@ var (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "tcprxy",
-	Short: "tcprxy",
-	Long:  `tcprxy`,
+	Use:   "tcpdp",
+	Short: "tcpdp",
+	Long:  `tcpdp`,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -55,8 +55,8 @@ func init() {
 }
 
 func initConfig() {
-	viper.SetDefault("proxy.pidfile", "./tcprxy.pid")
-	viper.SetDefault("proxy.dumper", "hex")
+	viper.SetDefault("tcpdp.pidfile", "./tcpdp.pid")
+	viper.SetDefault("tcpdp.dumper", "hex")
 
 	viper.SetDefault("proxy.useServerSterter", false)
 	viper.SetDefault("proxy.listenAddr", "localhost:8080")
@@ -84,9 +84,9 @@ func initConfig() {
 	if cfgFile != "" {
 		viper.SetConfigFile(cfgFile)
 	} else {
-		viper.SetConfigName("tcprxy")
-		viper.AddConfigPath("/etc/tcprxy/")
-		viper.AddConfigPath("$HOME/.tcprxy")
+		viper.SetConfigName("tcpdp")
+		viper.AddConfigPath("/etc/tcpdp/")
+		viper.AddConfigPath("$HOME/.tcpdp")
 		viper.AddConfigPath(".")
 	}
 	_ = viper.ReadInConfig()

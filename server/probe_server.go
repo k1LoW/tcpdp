@@ -14,7 +14,7 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
-	"github.com/k1LoW/tcprxy/dumper"
+	"github.com/k1LoW/tcpdp/dumper"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
@@ -36,7 +36,7 @@ func NewProbeServer(ctx context.Context, logger *zap.Logger) *ProbeServer {
 	closedChan := make(chan struct{})
 
 	var d dumper.Dumper
-	dumpType := viper.GetString("proxy.dumper")
+	dumpType := viper.GetString("tcpdp.dumper")
 
 	switch dumpType {
 	case "hex":
@@ -49,7 +49,7 @@ func NewProbeServer(ctx context.Context, logger *zap.Logger) *ProbeServer {
 		d = dumper.NewHexDumper()
 	}
 
-	pidfile, err := filepath.Abs(viper.GetString("proxy.pidfile"))
+	pidfile, err := filepath.Abs(viper.GetString("tcpdp.pidfile"))
 	if err != nil {
 		logger.WithOptions(zap.AddCaller()).Fatal("pidfile path error", zap.Error(err))
 	}
