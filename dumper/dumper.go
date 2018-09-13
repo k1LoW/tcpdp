@@ -8,17 +8,13 @@ const (
 	ClientToRemote Direction = iota
 	// RemoteToClient is client<-proxy<-remote
 	RemoteToClient
-	// SrcToDst is src->dst
-	SrcToDst
-	// DstToSrc is dst->src
-	DstToSrc
 )
 
 func (d Direction) String() string {
 	switch d {
-	case ClientToRemote, SrcToDst:
+	case ClientToRemote:
 		return "->"
-	case RemoteToClient, DstToSrc:
+	case RemoteToClient:
 		return "<-"
 	default:
 		return "?"

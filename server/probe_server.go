@@ -80,20 +80,24 @@ func (s *ProbeServer) Start() error {
 	device := viper.GetString("probe.interface")
 	target := viper.GetString("probe.target")
 
-	lAddr, err := net.ResolveTCPAddr("tcp", target)
+	tAddr, err := net.ResolveTCPAddr("tcp", target)
 	if err != nil {
 		s.logger.Fatal("error", zap.Error(err))
 		return err
 	}
-	host := lAddr.IP
-	port := lAddr.Port
+	host := tAddr.IP
+	port := tAddr.Port
 
 	snapshot := 0xFFFF
 	promiscuous := true
 	pValues := []dumper.DumpValue{
 		dumper.DumpValue{
-			Key:   "device",
+			Key:   "interface",
 			Value: device,
+		},
+		dumper.DumpValue{
+			Key:   "probe_target_addr",
+			Value: target,
 		},
 	}
 
@@ -134,13 +138,10 @@ func (s *ProbeServer) Start() error {
 			tcp, _ := tcpLayer.(*layers.TCP)
 
 			var key string
-			var direction dumper.Direction
 			if ip.DstIP.String() == host.String() && uint16(tcp.DstPort) == uint16(port) {
 				key = fmt.Sprintf("%s:%d", ip.SrcIP.String(), tcp.SrcPort)
-				direction = dumper.SrcToDst
 			} else {
 				key = fmt.Sprintf("%s:%d", ip.DstIP.String(), tcp.DstPort)
-				direction = dumper.DstToSrc
 			}
 			if tcp.SYN || tcp.FIN {
 				// TCP connection start or end
@@ -168,10 +169,6 @@ func (s *ProbeServer) Start() error {
 				dumper.DumpValue{
 					Key:   "dst_addr",
 					Value: fmt.Sprintf("%s:%d", ip.DstIP.String(), tcp.DstPort),
-				},
-				dumper.DumpValue{
-					Key:   "direction",
-					Value: direction.String(),
 				},
 			}
 
