@@ -6,14 +6,14 @@ resource "aws_vpc" "default" {
   cidr_block = "10.0.0.0/16"
   enable_dns_hostnames = true
   tags {
-    Name = "vpc_tcprxy"
+    Name = "vpc_tcpdp"
   }
 }
 
 resource "aws_internet_gateway" "igw" {
     vpc_id = "${aws_vpc.default.id}"
     tags {
-        Name = "igw_tcprxy"
+        Name = "igw_tcpdp"
     }
 }
 
@@ -23,7 +23,7 @@ resource "aws_subnet" "public_b" {
   availability_zone = "ap-northeast-1b"
 
   tags {
-    Name = "subnet_tcprxy_public_a"
+    Name = "subnet_tcpdp_public_a"
   }
 }
 
@@ -33,7 +33,7 @@ resource "aws_subnet" "public_c" {
   availability_zone = "ap-northeast-1c"
 
   tags {
-    Name = "subnet_tcprxy_public_c"
+    Name = "subnet_tcpdp_public_c"
   }
 }
 
@@ -43,7 +43,7 @@ resource "aws_subnet" "private_b" {
   availability_zone = "ap-northeast-1b"
 
   tags {
-    Name = "subnet_tcprxy_private_a"
+    Name = "subnet_tcpdp_private_a"
   }
 }
 
@@ -53,7 +53,7 @@ resource "aws_subnet" "private_c" {
   availability_zone = "ap-northeast-1c"
 
   tags {
-    Name = "subnet_tcprxy_private_c"
+    Name = "subnet_tcpdp_private_c"
   }
 }
 
@@ -79,7 +79,7 @@ resource "aws_route_table_association" "rta-1c" {
 }
 
 resource "aws_security_group" "ec2" {
-  name = "sg_ec2_tcprxy"
+  name = "sg_ec2_tcpdp"
   vpc_id = "${aws_vpc.default.id}"
 
   ingress {
@@ -98,7 +98,7 @@ resource "aws_security_group" "ec2" {
   }
 
   tags {
-    Name = "sg_ec2_tcprxy"
+    Name = "sg_ec2_tcpdp"
   }
 
   lifecycle {
@@ -107,14 +107,14 @@ resource "aws_security_group" "ec2" {
 }
 
 resource "aws_security_group" "rds" {
-  name = "sg_rds_tcprxy"
+  name = "sg_rds_tcpdp"
   vpc_id = "${aws_vpc.default.id}"
 
   ingress {
     from_port = 3306
     to_port = 3306
     protocol = "tcp"
-    description = "tcprxy"
+    description = "tcpdp"
     security_groups = ["${aws_security_group.ec2.id}"]
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -127,7 +127,7 @@ resource "aws_security_group" "rds" {
   }
 
   tags {
-    Name = "sg_rds_tcprxy"
+    Name = "sg_rds_tcpdp"
   }
 
   lifecycle {
@@ -136,7 +136,7 @@ resource "aws_security_group" "rds" {
 }
 
 resource "aws_key_pair" "default" {
-  key_name   = "key_tcprxy"
+  key_name   = "key_tcpdp"
   public_key = "${file("~/.ssh/id_rsa.pub")}"
 }
 
@@ -155,21 +155,21 @@ resource "aws_instance" "default" {
   }
 
   tags {
-    "Name" = "tcprxy"
+    "Name" = "tcpdp"
   }
 }
 
 resource "aws_db_subnet_group" "default" {
-  name = "db_subnet_group_tcprxy"
+  name = "db_subnet_group_tcpdp"
   subnet_ids = ["${aws_subnet.private_b.id}", "${aws_subnet.private_c.id}"]
 
   tags {
-    Name = "db_subnet_group_tcprxy"
+    Name = "db_subnet_group_tcpdp"
   }
 }
 
 resource "aws_db_parameter_group" "default" {
-  name   = "pgtcprxy"
+  name   = "pgtcpdp"
   family = "mysql5.7"
 
   parameter {
@@ -178,15 +178,15 @@ resource "aws_db_parameter_group" "default" {
   }
 }
 
-resource "aws_db_instance" "tcprxy" {
+resource "aws_db_instance" "tcpdp" {
   allocated_storage    = 10
   storage_type         = "gp2"
   engine               = "mysql"
   engine_version       = "5.7.22"
   instance_class       = "db.m4.large"
-  name                 = "tcprxy"
-  username             = "tcprxy"
-  password             = "tcprxypass"
+  name                 = "tcpdp"
+  username             = "tcpdp"
+  password             = "tcpdppass"
   parameter_group_name = "${aws_db_parameter_group.default.id}"
   apply_immediately    = true
   skip_final_snapshot = true

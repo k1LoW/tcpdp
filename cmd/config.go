@@ -34,12 +34,18 @@ var configCmd = &cobra.Command{
 	Short: "show currnt config",
 	Long:  `show currnt config.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		const cfgTemplate = `[proxy]
-pidfile = "{{ .proxy.pidfile }}"
+		const cfgTemplate = `[tcpdp]
+pidfile = "{{ .tcpdp.pidfile }}"
+dumper = "{{ .tcpdp.dumper }}"
+
+[probe]
+target = "{{ .probe.target }}"
+interface = "{{ .probe.interface}}"
+
+[proxy]
 useServerSterter = {{ .proxy.useserversterter }}
 listenAddr = "{{ .proxy.listenaddr }}"
 remoteAddr = "{{ .proxy.remoteaddr }}"
-dumper = "{{ .proxy.dumper }}"
 
 [log]
 dir = "{{ .log.dir }}"

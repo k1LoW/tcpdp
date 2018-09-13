@@ -1,59 +1,73 @@
-# tcprxy
+# tcpdp
 
-tcprxy is TCP proxy with custom dumper written in Go.
+tcpdp is TCP dump tool with custom dumper written in Go.
 
 ## Usage
 
+### `tcpdp proxy`
+
 ``` console
-$ tcprxy proxy -l localhost:12345 -r localhost:1234 -d hex # hex.Dump()
+$ tcpdp proxy -l localhost:12345 -r localhost:1234 -d hex # hex.Dump()
 ```
 
 ``` console
-$ tcprxy proxy -l localhost:55432 -r localhost:5432 -d pg # Dump query of PostgreSQL
+$ tcpdp proxy -l localhost:55432 -r localhost:5432 -d pg # Dump query of PostgreSQL
 ```
 
 ``` console
-$ tcprxy proxy -l localhost:33306 -r localhost:3306 -d mysql # Dump query of MySQL
+$ tcpdp proxy -l localhost:33306 -r localhost:3306 -d mysql # Dump query of MySQL
 ```
 
-### With server-starter
+#### With server-starter
 
 https://github.com/lestrrat-go/server-starter
 
 ``` console
-$ start_server --port 33306 -- tcprxy proxy -s -r localhost:3306 -d mysql
+$ start_server --port 33306 -- tcpdp proxy -s -r localhost:3306 -d mysql
 ```
 
-### With config file
+#### With config file
 
 ``` console
-$ tcprxy proxy -c config.toml
+$ tcpdp proxy -c config.toml
 ```
 
-#### Create config
+### `tcpdp probe`
 
 ``` console
-$ tcprxy config > myconfig.toml
+$ tcpdp probe -i lo0 -t localhost:3306 -d mysql
+```
+
+### Create config
+
+``` console
+$ tcpdp config > myconfig.toml
 ```
 
 #### Show current config
 
 ``` console
-$ tcprxy config
+$ tcpdp config
 ```
 
 #### config format
 
 ``` toml
+[tcpdp]
+pidfile = "/var/run/tcpdp.pid"
+dumper = "mysql"
+
+[probe]
+target = "db.example.com:3306"
+interface = "en0"
+
 [proxy]
-pidfile = "/var/run/tcprxy.pid"
 useServerSterter = false
 listenAddr = "localhost:3306"
 remoteAddr = "db.example.com:3306"
-dumper = "mysql"
 
 [log]
-dir = "/var/log/tcprxy"
+dir = "/var/log/tcpdp"
 enable = true
 stdout = true
 format = "ltsv"
@@ -71,12 +85,12 @@ rotationTime = "hourly"
 rotationCount = 24
 ```
 
-## tcprxy connection diagram
+## tcpdp connection diagram
 
 ```
       client_addr
            ^
-           |        tcprxy
+           |        tcpdp
 +----------|---------------+
 |          v               |
 |  proxy_listen_addr       |
@@ -96,20 +110,20 @@ rotationCount = 24
 
 ## log
 
-| key | description | tcprxy.log / dump.log (dumper type) |
+| key | description | tcpdp.log / dump.log (dumper type) |
 | --- | ----------- | ----------------------------------- |
-| ts | timestamp | tcprxy.log, hex, mysql, pg |
-| level | log level | tcprxy.log |
-| msg | log message | tcprxy.log |
-| error | error info | tcprxy.log |
-| caller | error caller | tcprxy.log |
-| conn_id | TCP connection ID by tcprxy | tcprxy.log, hex, mysql, pg |
-| conn_seq_num | TCP comunication sequence number by tcprxy | tcprxy.log, hex, mysql, pg |
-| client_addr | client address | tcprxy.log, hex, mysql, pg |
-| proxy_listen_addr | listen address| tcprxy.log, hex, mysql, pg |
+| ts | timestamp | tcpdp.log, hex, mysql, pg |
+| level | log level | tcpdp.log |
+| msg | log message | tcpdp.log |
+| error | error info | tcpdp.log |
+| caller | error caller | tcpdp.log |
+| conn_id | TCP connection ID by tcpdp | tcpdp.log, hex, mysql, pg |
+| conn_seq_num | TCP comunication sequence number by tcpdp | tcpdp.log, hex, mysql, pg |
+| client_addr | client address | tcpdp.log, hex, mysql, pg |
+| proxy_listen_addr | listen address| tcpdp.log, hex, mysql, pg |
 | proxy_client_addr | proxy client address | hex, mysql, pg |
-| remote_addr | remote address | tcprxy.log, hex, mysql, pg |
-| direction | client to remote: `->` / remote to client: `<-` | tcprxy.log, hex, mysql, pg |
+| remote_addr | remote address | tcpdp.log, hex, mysql, pg |
+| direction | client to remote: `->` / remote to client: `<-` | tcpdp.log, hex, mysql, pg |
 | dump | dump data by hex.Dump | hex |
 | query | SQL query | mysql, pg |
 | username | username | mysql, pg |

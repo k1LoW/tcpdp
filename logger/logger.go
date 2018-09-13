@@ -20,7 +20,7 @@ const LogFormatJSON = "json"
 // LogFormatLTSV for format LTSV
 const LogFormatLTSV = "ltsv"
 
-// LogTypeLog for tcprxy.log
+// LogTypeLog for tcpdp.log
 const LogTypeLog = "log"
 
 // LogTypeDumpLog for dump.log
@@ -151,7 +151,7 @@ func newLogWriter(logType string) io.Writer {
 	var filename string
 	switch logType {
 	case LogTypeLog:
-		filename = "tcprxy.log"
+		filename = "tcpdp.log"
 	case LogTypeDumpLog:
 		filename = "dump.log"
 	}

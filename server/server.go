@@ -12,7 +12,7 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/k1LoW/tcprxy/dumper"
+	"github.com/k1LoW/tcpdp/dumper"
 	"github.com/lestrrat-go/server-starter/listener"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -40,7 +40,7 @@ func NewServer(ctx context.Context, lAddr, rAddr *net.TCPAddr, logger *zap.Logge
 	closedChan := make(chan struct{})
 
 	var d dumper.Dumper
-	dumpType := viper.GetString("proxy.dumper")
+	dumpType := viper.GetString("tcpdp.dumper")
 
 	switch dumpType {
 	case "hex":
@@ -53,7 +53,7 @@ func NewServer(ctx context.Context, lAddr, rAddr *net.TCPAddr, logger *zap.Logge
 		d = dumper.NewHexDumper()
 	}
 
-	pidfile, err := filepath.Abs(viper.GetString("proxy.pidfile"))
+	pidfile, err := filepath.Abs(viper.GetString("tcpdp.pidfile"))
 	if err != nil {
 		logger.WithOptions(zap.AddCaller()).Fatal("pidfile path error", zap.Error(err))
 	}
