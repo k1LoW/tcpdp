@@ -66,7 +66,7 @@ depsdev: deps
 
 crossbuild: deps depsdev
 	$(eval ver = v$(shell gobump show -r version/))
-	goxz -pv=$(ver) -arch=386,amd64 -build-ldflags="$(RELEASE_BUILD_LDFLAGS)" \
+	goxz -pv=$(ver) -os=linux,darwin -arch=386,amd64 -build-ldflags="$(RELEASE_BUILD_LDFLAGS)" \
 	  -d=./dist/$(ver)
 
 prerelease:
