@@ -164,6 +164,10 @@ func (s *ProbeServer) Start() error {
 				vMap[key] = v
 			}
 
+			if s.dumper.Name() != "hex" && direction != dumper.SrcToDst { // FIXME: dumper should detect
+				continue
+			}
+
 			values := []dumper.DumpValue{
 				dumper.DumpValue{
 					Key:   "src_addr",
@@ -173,10 +177,6 @@ func (s *ProbeServer) Start() error {
 					Key:   "dst_addr",
 					Value: fmt.Sprintf("%s:%d", ip.DstIP.String(), tcp.DstPort),
 				},
-			}
-
-			if s.dumper.Name() != "hex" && direction != dumper.SrcToDst {
-				continue
 			}
 
 			read := s.dumper.Read(in)
