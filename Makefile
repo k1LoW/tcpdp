@@ -34,7 +34,7 @@ integration: build
 	@sleep 1
 	cat ./result
 	@cat ./result | grep "number of transactions actually processed: 1000/1000" || (echo "pgbench faild" && exit 1)
-	test `grep -c '' ./tcpdp.log` -eq 3 || (cat ./tcpdp.log && exit 1)
+	test `grep -c '' ./tcpdp.log` -eq 4 || (cat ./tcpdp.log && exit 1)
 	rm ./result
 	./tcpdp proxy -l localhost:33065 -r localhost:$(MYSQL_PORT) -d mysql &
 	@sleep 1
@@ -43,7 +43,7 @@ integration: build
 	@sleep 1
 	cat ./result
 	@cat ./result | grep "Number of clients running queries: 100" || (echo "mysqlslap faild" && exit 1)
-	test `grep -c '' ./tcpdp.log` -eq 6 || (cat ./tcpdp.log && exit 1)
+	test `grep -c '' ./tcpdp.log` -eq 8 || (cat ./tcpdp.log && exit 1)
 
 cover: depsdev
 	goveralls -service=travis-ci
