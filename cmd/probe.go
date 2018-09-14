@@ -62,7 +62,9 @@ var probeCmd = &cobra.Command{
 
 		s := server.NewProbeServer(context.Background(), logger)
 
-		logger.Info(fmt.Sprintf("Starting probe. %s %s", device, target))
+		logger.Info(fmt.Sprintf("Starting probe. interface: %s, target: %s", device, target))
+		logger.Info(fmt.Sprintf("Select dumper %s.", viper.GetString("tcpdp.dumper")))
+
 		go s.Start()
 
 		sc := <-signalChan

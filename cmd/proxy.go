@@ -76,10 +76,12 @@ var proxyCmd = &cobra.Command{
 		s := server.NewServer(context.Background(), lAddr, rAddr, logger)
 
 		if useProxySterter {
-			logger.Info(fmt.Sprintf("Starting proxy. [proxy_starter] <-> %s:%d", rAddr.IP, rAddr.Port))
+			logger.Info(fmt.Sprintf("Starting proxy. [server_starter] <-> %s:%d", rAddr.IP, rAddr.Port))
 		} else {
 			logger.Info(fmt.Sprintf("Starting proxy. %s:%d <-> %s:%d", lAddr.IP, lAddr.Port, rAddr.IP, rAddr.Port))
 		}
+		logger.Info(fmt.Sprintf("Select dumper %s.", viper.GetString("tcpdp.dumper")))
+
 		go s.Start()
 
 		sc := <-signalChan
