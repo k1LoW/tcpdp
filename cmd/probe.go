@@ -22,11 +22,11 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"fmt"
 	"github.com/k1LoW/tcpdp/server"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"

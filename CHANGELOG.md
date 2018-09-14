@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.5.0](https://github.com/k1LoW/tcpdp/compare/v0.4.1...v0.5.0) (2018-09-14)
+
+* `--target` can set port only [#13](https://github.com/k1LoW/tcpdp/pull/13) ([k1LoW](https://github.com/k1LoW))
+
 ## [v0.4.1](https://github.com/k1LoW/tcpdp/compare/v0.4.0...v0.4.1) (2018-09-14)
 
 * Add `conn_id` to `probe` dump.log [#12](https://github.com/k1LoW/tcpdp/pull/12) ([k1LoW](https://github.com/k1LoW))
