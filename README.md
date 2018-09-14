@@ -38,6 +38,10 @@ $ tcpdp proxy -c config.toml
 $ tcpdp probe -i lo0 -t localhost:3306 -d mysql
 ```
 
+``` console
+$ tcpdp probe -i eth0 -t 5432 -d pg
+```
+
 ### Create config
 
 ``` console
@@ -111,13 +115,11 @@ rotationCount = 24
 ## tcpdp probe <-> tcpdump
 
 ``` console
-$ tcpdp probe -i lo0 -t localhost:3306 -d hex
+$ tcpdp probe -i lo0 -t localhost:3306 -d hex # is almost the same setting as 'tcpdump -i lo0 host 127.0.0.1 and tcp port 3306'
 ```
 
-is almost the same setting as
-
 ``` console
-$ tcpdump -i lo0 host 127.0.0.1 and tcp port 3306
+$ tcpdp probe -i eth0 -t 3306 -d hex # is almost the same setting as 'tcpdump -i eth0 tcp port 3306'
 ```
 
 ## log
