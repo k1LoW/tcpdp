@@ -48,7 +48,9 @@ var proxyCmd = &cobra.Command{
 		if err != nil {
 			logger.Warn("Config file not found.", zap.Error(err))
 		}
-		viper.Set("tcpdp.dumper", proxyDumper) // because share with `probe`
+		if cfgFile == "" {
+			viper.Set("tcpdp.dumper", proxyDumper) // because share with `probe`
+		}
 
 		listenAddr := viper.GetString("proxy.listenAddr")
 		remoteAddr := viper.GetString("proxy.remoteAddr")

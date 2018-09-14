@@ -47,7 +47,9 @@ var probeCmd = &cobra.Command{
 		if err != nil {
 			logger.Warn("Config file not found.", zap.Error(err))
 		}
-		viper.Set("tcpdp.dumper", probeDumper) // because share with `server`
+		if cfgFile == "" {
+			viper.Set("tcpdp.dumper", probeDumper) // because share with `server`
+		}
 
 		target := viper.GetString("probe.target")
 		device := viper.GetString("probe.interface")
