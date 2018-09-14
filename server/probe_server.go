@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 
@@ -81,13 +82,25 @@ func (s *ProbeServer) Start() error {
 	device := viper.GetString("probe.interface")
 	target := viper.GetString("probe.target")
 
-	tAddr, err := net.ResolveTCPAddr("tcp", target)
-	if err != nil {
-		s.logger.Fatal("error", zap.Error(err))
-		return err
+	var port uint16
+	var host string
+	if strings.Contains(target, ":") {
+		tAddr, err := net.ResolveTCPAddr("tcp", target)
+		if err != nil {
+			s.logger.Fatal("error", zap.Error(err))
+			return err
+		}
+		host = tAddr.IP.String()
+		port = uint16(tAddr.Port)
+	} else {
+		host = ""
+		port64, err := strconv.ParseUint(target, 10, 64)
+		if err != nil {
+			s.logger.Fatal("error", zap.Error(err))
+			return err
+		}
+		port = uint16(port64)
 	}
-	host := tAddr.IP
-	port := tAddr.Port
 
 	snapshot := 0xFFFF
 	promiscuous := true
@@ -114,7 +127,11 @@ func (s *ProbeServer) Start() error {
 	}
 	defer handle.Close()
 
-	if err := handle.SetBPFFilter(fmt.Sprintf("tcp and host %s and port %d", host.String(), port)); err != nil {
+	f := "tcp and host %s and port %d"
+	if host == "" {
+		f = "tcp %s port %d"
+	}
+	if err := handle.SetBPFFilter(fmt.Sprintf(f, host, port)); err != nil {
 		s.logger.WithOptions(zap.AddCaller()).Fatal("BPF error", zap.Error(err))
 		return err
 	}
@@ -140,7 +157,7 @@ func (s *ProbeServer) Start() error {
 
 			var key string
 			var direction dumper.Direction
-			if ip.DstIP.String() == host.String() && uint16(tcp.DstPort) == uint16(port) {
+			if (host == "" || ip.DstIP.String() == host) && uint16(tcp.DstPort) == port {
 				key = fmt.Sprintf("%s:%d", ip.SrcIP.String(), tcp.SrcPort)
 				direction = dumper.SrcToDst
 			} else {
