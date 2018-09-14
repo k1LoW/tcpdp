@@ -66,8 +66,15 @@ depsdev: deps
 
 crossbuild: deps depsdev
 	$(eval ver = v$(shell gobump show -r version/))
-	goxz -pv=$(ver) -os=linux,darwin -arch=386,amd64 -build-ldflags="$(RELEASE_BUILD_LDFLAGS)" \
+	goxz -pv=$(ver) -os=darwin -build-ldflags="$(RELEASE_BUILD_LDFLAGS)" \
 	  -d=./dist/$(ver)
+	docker build -t karalabe/xgo-latest .
+	xgo --targets=linux/amd64 -ldflags="$(RELEASE_BUILD_LDFLAGS)" github.com/k1LoW/tcpdp
+	mkdir tcpdp_$(ver)_linux_amd64
+	mv tcpdp-linux-amd64 ./tcpdp_$(ver)_linux_amd64/tcpdp
+	cp CHANGELOG.md README.md LICENSE ./tcpdp_$(ver)_linux_amd64
+	tar -zcvf ./dist/$(ver)/tcpdp_$(ver)_linux_amd64.tar.gz ./tcpdp_$(ver)_linux_amd64
+	rm -rf ./tcpdp_$(ver)_linux_amd64
 
 prerelease:
 	$(eval ver = v$(shell gobump show -r version/))
