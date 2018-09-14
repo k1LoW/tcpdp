@@ -129,7 +129,7 @@ $ tcpdump -i lo0 host 127.0.0.1 and tcp port 3306
 | msg | log message | tcpdp.log | proxy / probe |
 | error | error info | tcpdp.log | proxy / probe |
 | caller | error caller | tcpdp.log | proxy / probe |
-| conn_id | TCP connection ID by tcpdp | tcpdp.log, hex, mysql, pg | proxy |
+| conn_id | TCP connection ID by tcpdp | tcpdp.log, hex, mysql, pg | proxy / probe |
 | conn_seq_num | TCP comunication sequence number by tcpdp | tcpdp.log, hex, mysql, pg | proxy |
 | client_addr | client address | tcpdp.log, hex, mysql, pg | proxy |
 | proxy_listen_addr | listen address| tcpdp.log, hex, mysql, pg | proxy |

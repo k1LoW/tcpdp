@@ -15,6 +15,7 @@ import (
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 	"github.com/k1LoW/tcpdp/dumper"
+	"github.com/rs/xid"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
@@ -152,6 +153,16 @@ func (s *ProbeServer) Start() error {
 				if ok {
 					delete(vMap, key)
 				}
+				if tcp.SYN && tcp.ACK {
+					// TCP connection start ( hex )
+					connID := xid.New().String()
+					vMap[key] = []dumper.DumpValue{
+						dumper.DumpValue{
+							Key:   "conn_id",
+							Value: connID,
+						},
+					}
+				}
 			}
 
 			in := tcpLayer.LayerPayload()
@@ -161,7 +172,12 @@ func (s *ProbeServer) Start() error {
 
 			v := s.dumper.ReadPersistentValues(in)
 			if len(v) > 0 {
-				vMap[key] = v
+				// TCP dumper connection start ( mysql, pg )
+				connID := xid.New().String()
+				vMap[key] = append(v, dumper.DumpValue{
+					Key:   "conn_id",
+					Value: connID,
+				})
 			}
 
 			if s.dumper.Name() != "hex" && direction != dumper.SrcToDst { // FIXME: dumper should detect
