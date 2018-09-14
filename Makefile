@@ -63,6 +63,7 @@ depsdev: deps
 	go get github.com/Songmu/goxz/cmd/goxz
 	go get github.com/tcnksm/ghr
 	go get github.com/Songmu/ghch/cmd/ghch
+	go get github.com/karalabe/xgo
 
 crossbuild: deps depsdev
 	$(eval ver = v$(shell gobump show -r version/))
@@ -73,7 +74,7 @@ crossbuild: deps depsdev
 	mkdir tcpdp_$(ver)_linux_amd64
 	mv tcpdp-linux-amd64 ./tcpdp_$(ver)_linux_amd64/tcpdp
 	cp CHANGELOG.md README.md LICENSE ./tcpdp_$(ver)_linux_amd64
-	tar -zcvf ./dist/$(ver)/tcpdp_$(ver)_linux_amd64.tar.gz ./tcpdp_$(ver)_linux_amd64
+	COPYFILE_DISABLE=1 tar -zcvf -exclude=".DS_Store" ./dist/$(ver)/tcpdp_$(ver)_linux_amd64.tar.gz ./tcpdp_$(ver)_linux_amd64
 	rm -rf ./tcpdp_$(ver)_linux_amd64
 
 prerelease:
