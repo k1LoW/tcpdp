@@ -4,7 +4,7 @@ tcpdp is TCP dump tool with custom dumper written in Go.
 
 ## Usage
 
-### `tcpdp proxy` : Proxy mode
+### `tcpdp proxy` : TCP proxy server mode
 
 ``` console
 $ tcpdp proxy -l localhost:12345 -r localhost:1234 -d hex # hex.Dump()

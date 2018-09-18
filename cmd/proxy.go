@@ -41,8 +41,8 @@ var (
 // proxyCmd represents the proxy command
 var proxyCmd = &cobra.Command{
 	Use:   "proxy",
-	Short: "proxy",
-	Long:  `proxy`,
+	Short: "TCP proxy server mode",
+	Long:  "`tcpdp proxy` run TCP proxy server.",
 	Run: func(cmd *cobra.Command, args []string) {
 		err := viper.ReadInConfig()
 		if err != nil {
