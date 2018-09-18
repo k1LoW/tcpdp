@@ -31,8 +31,8 @@ import (
 // configCmd represents the config command
 var configCmd = &cobra.Command{
 	Use:   "config",
-	Short: "show currnt config",
-	Long:  `show currnt config.`,
+	Short: "Show currnt config",
+	Long:  `Show currnt config.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		const cfgTemplate = `[tcpdp]
 pidfile = "{{ .tcpdp.pidfile }}"

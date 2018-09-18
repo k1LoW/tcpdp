@@ -30,8 +30,8 @@ import (
 // versionCmd represents the version command
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "print tcpdp version",
-	Long:  `print tcpdp version.`,
+	Short: "Print tcpdp version",
+	Long:  `Print tcpdp version.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println(version.Version)
 	},
