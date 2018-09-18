@@ -41,7 +41,7 @@ var (
 var probeCmd = &cobra.Command{
 	Use:   "probe",
 	Short: "Probe mode",
-	Long:  "`tcp prove` dump packets like tcpdump",
+	Long:  "`tcp prove` dump packets like tcpdump.",
 	Run: func(cmd *cobra.Command, args []string) {
 		err := viper.ReadInConfig()
 		if err != nil {
