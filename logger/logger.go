@@ -93,7 +93,6 @@ func NewHexLogger() *zap.Logger {
 // NewQueryLogger returns logger for mysql/pg
 func NewQueryLogger() *zap.Logger {
 	encoderConfig := zapcore.EncoderConfig{
-		TimeKey:        "ts",
 		EncodeLevel:    zapcore.LowercaseLevelEncoder,
 		EncodeTime:     zapcore.ISO8601TimeEncoder,
 		EncodeDuration: zapcore.StringDurationEncoder,
@@ -107,11 +106,21 @@ func newDumpLogger(encoderConfig zapcore.EncoderConfig) *zap.Logger {
 	stdout := viper.GetBool(fmt.Sprintf("%s.stdout", LogTypeDumpLog))
 	enable := viper.GetBool(fmt.Sprintf("%s.enable", LogTypeDumpLog))
 	format := viper.GetString(fmt.Sprintf("%s.format", LogTypeDumpLog))
+	stdoutFormat := viper.GetString(fmt.Sprintf("%s.stdoutFormat", LogTypeDumpLog))
 	cores := []zapcore.Core{}
 
 	if stdout {
+		var encoder zapcore.Encoder
+		switch stdoutFormat {
+		case LogFormatJSON:
+			encoder = zapcore.NewJSONEncoder(encoderConfig)
+		case LogFormatLTSV:
+			encoder = ltsv.NewLTSVEncoder(encoderConfig)
+		default:
+			encoder = zapcore.NewConsoleEncoder(encoderConfig)
+		}
 		stdoutCore := zapcore.NewCore(
-			zapcore.NewConsoleEncoder(encoderConfig),
+			encoder,
 			zapcore.AddSync(os.Stdout),
 			zapcore.DebugLevel,
 		)
@@ -142,7 +151,6 @@ func newDumpLogger(encoderConfig zapcore.EncoderConfig) *zap.Logger {
 }
 
 func newLogWriter(logType string) io.Writer {
-
 	dir := viper.GetString(fmt.Sprintf("%s.dir", logType))
 	rotateEnable := viper.GetBool(fmt.Sprintf("%s.rotateEnable", logType))
 	rotationTime := viper.GetString(fmt.Sprintf("%s.rotationTime", logType))
