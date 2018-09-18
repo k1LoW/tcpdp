@@ -44,7 +44,7 @@ var (
 var readCmd = &cobra.Command{
 	Use:   "read [PCAP]",
 	Short: "Read pcap file mode",
-	Long:  "",
+	Long:  "Read pcap format file and dump.",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if terminal.IsTerminal(0) {
 			if len(args) != 1 {
