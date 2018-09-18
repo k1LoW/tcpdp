@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 	"strings"
+	"time"
 
 	"github.com/k1LoW/tcpdp/dumper"
 	"github.com/rs/xid"
@@ -91,6 +92,10 @@ func (p *Proxy) dump(b []byte, direction dumper.Direction) error {
 		dumper.DumpValue{
 			Key:   "direction",
 			Value: direction.String(),
+		},
+		dumper.DumpValue{
+			Key:   "ts",
+			Value: time.Now(),
 		},
 	}
 

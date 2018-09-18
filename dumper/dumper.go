@@ -12,6 +12,8 @@ const (
 	SrcToDst
 	// DstToSrc is dst->src
 	DstToSrc
+	// Unknown direction
+	Unknown Direction = 9
 )
 
 func (d Direction) String() string {

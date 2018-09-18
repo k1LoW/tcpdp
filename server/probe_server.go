@@ -4,19 +4,16 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"sync"
 	"syscall"
 
 	"github.com/google/gopacket"
-	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 	"github.com/k1LoW/tcpdp/dumper"
-	"github.com/rs/xid"
+	"github.com/k1LoW/tcpdp/reader"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
@@ -82,24 +79,9 @@ func (s *ProbeServer) Start() error {
 	device := viper.GetString("probe.interface")
 	target := viper.GetString("probe.target")
 
-	var port uint16
-	var host string
-	if strings.Contains(target, ":") {
-		tAddr, err := net.ResolveTCPAddr("tcp", target)
-		if err != nil {
-			s.logger.Fatal("error", zap.Error(err))
-			return err
-		}
-		host = tAddr.IP.String()
-		port = uint16(tAddr.Port)
-	} else {
-		host = ""
-		port64, err := strconv.ParseUint(target, 10, 64)
-		if err != nil {
-			s.logger.Fatal("error", zap.Error(err))
-			return err
-		}
-		port = uint16(port64)
+	host, port, err := reader.ParseTarget(target)
+	if err != nil {
+		return err
 	}
 
 	snapshot := 0xFFFF
@@ -127,108 +109,30 @@ func (s *ProbeServer) Start() error {
 	}
 	defer handle.Close()
 
-	f := "tcp and host %s and port %d"
-	if host == "" {
-		f = "tcp %s port %d"
+	f := fmt.Sprintf("tcp and host %s and port %d", host, port)
+	if host == "" && port > 0 {
+		f = fmt.Sprintf("tcp port %d", port)
+	} else if host != "" && port == 0 {
+		f = fmt.Sprintf("tcp and host %s", host)
+	} else {
+		f = "tcp"
 	}
-	if err := handle.SetBPFFilter(fmt.Sprintf(f, host, port)); err != nil {
+
+	if err := handle.SetBPFFilter(f); err != nil {
 		s.logger.WithOptions(zap.AddCaller()).Fatal("BPF error", zap.Error(err))
 		return err
 	}
 
-	vMap := map[string][]dumper.DumpValue{}
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
-	packetChan := packetSource.Packets()
-	for {
-		select {
-		case <-s.ctx.Done():
-			return nil
-		case packet := <-packetChan:
-			ipLayer := packet.Layer(layers.LayerTypeIPv4)
-			if ipLayer == nil {
-				continue
-			}
-			tcpLayer := packet.Layer(layers.LayerTypeTCP)
-			if tcpLayer == nil {
-				continue
-			}
-			ip, _ := ipLayer.(*layers.IPv4)
-			tcp, _ := tcpLayer.(*layers.TCP)
+	r := reader.NewPacketReader(
+		s.ctx,
+		packetSource,
+		s.dumper,
+		pValues,
+	)
 
-			var key string
-			var direction dumper.Direction
-			if (host == "" || ip.DstIP.String() == host) && uint16(tcp.DstPort) == port {
-				key = fmt.Sprintf("%s:%d", ip.SrcIP.String(), tcp.SrcPort)
-				direction = dumper.SrcToDst
-			} else {
-				key = fmt.Sprintf("%s:%d", ip.DstIP.String(), tcp.DstPort)
-				direction = dumper.DstToSrc
-			}
-			if tcp.SYN || tcp.FIN {
-				// TCP connection start or end
-				_, ok := vMap[key]
-				if ok {
-					delete(vMap, key)
-				}
-				if tcp.SYN && tcp.ACK {
-					// TCP connection start ( hex )
-					connID := xid.New().String()
-					vMap[key] = []dumper.DumpValue{
-						dumper.DumpValue{
-							Key:   "conn_id",
-							Value: connID,
-						},
-					}
-				}
-			}
-
-			in := tcpLayer.LayerPayload()
-			if len(in) == 0 {
-				continue
-			}
-
-			v := s.dumper.ReadPersistentValues(in)
-			if len(v) > 0 {
-				// TCP dumper connection start ( mysql, pg )
-				connID := xid.New().String()
-				vMap[key] = append(v, dumper.DumpValue{
-					Key:   "conn_id",
-					Value: connID,
-				})
-			}
-
-			if s.dumper.Name() != "hex" && direction != dumper.SrcToDst { // FIXME: dumper should detect
-				continue
-			}
-
-			values := []dumper.DumpValue{
-				dumper.DumpValue{
-					Key:   "src_addr",
-					Value: fmt.Sprintf("%s:%d", ip.SrcIP.String(), tcp.SrcPort),
-				},
-				dumper.DumpValue{
-					Key:   "dst_addr",
-					Value: fmt.Sprintf("%s:%d", ip.DstIP.String(), tcp.DstPort),
-				},
-			}
-
-			read := s.dumper.Read(in)
-			if len(read) == 0 {
-				continue
-			}
-
-			values = append(values, read...)
-			values = append(values, pValues...)
-			v, ok := vMap[key]
-			if ok {
-				values = append(values, v...)
-			}
-
-			s.dumper.Log(values)
-
-		default:
-		}
-	}
+	err = r.ReadAndDump(host, port)
+	return err
 }
 
 // Shutdown server.

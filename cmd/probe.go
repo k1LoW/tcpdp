@@ -40,8 +40,8 @@ var (
 // probeCmd represents the probe command
 var probeCmd = &cobra.Command{
 	Use:   "probe",
-	Short: "probe",
-	Long:  `probe`,
+	Short: "Probe mode",
+	Long:  "`tcp prove` dump packets like tcpdump.",
 	Run: func(cmd *cobra.Command, args []string) {
 		err := viper.ReadInConfig()
 		if err != nil {
@@ -83,7 +83,7 @@ var probeCmd = &cobra.Command{
 
 func init() {
 	probeCmd.Flags().StringVarP(&cfgFile, "config", "c", "", "config file path")
-	probeCmd.Flags().StringP("target", "t", "localhost:80", "target addr")
+	probeCmd.Flags().StringP("target", "t", "", "target addr. ex. localhost:80")
 	probeCmd.Flags().StringP("interface", "i", "", "interface")
 	probeCmd.Flags().StringVarP(&probeDumper, "dumper", "d", "hex", "dumper")
 
