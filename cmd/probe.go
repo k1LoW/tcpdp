@@ -83,7 +83,7 @@ var probeCmd = &cobra.Command{
 
 func init() {
 	probeCmd.Flags().StringVarP(&cfgFile, "config", "c", "", "config file path")
-	probeCmd.Flags().StringP("target", "t", "localhost:80", "target addr")
+	probeCmd.Flags().StringP("target", "t", "", "target addr. ex. localhost:80")
 	probeCmd.Flags().StringP("interface", "i", "", "interface")
 	probeCmd.Flags().StringVarP(&probeDumper, "dumper", "d", "hex", "dumper")
 
