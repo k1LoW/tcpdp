@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.6.0](https://github.com/k1LoW/tcpdp/compare/v0.5.0...v0.6.0) (2018-09-19)
+
+* Fix panic when exec root command with invalid option. [#16](https://github.com/k1LoW/tcpdp/pull/16) ([k1LoW](https://github.com/k1LoW))
+* Add `read` command for read pcap file. [#15](https://github.com/k1LoW/tcpdp/pull/15) ([k1LoW](https://github.com/k1LoW))
+
 ## [v0.5.0](https://github.com/k1LoW/tcpdp/compare/v0.4.1...v0.5.0) (2018-09-14)
 
 * `--target` can set port only [#13](https://github.com/k1LoW/tcpdp/pull/13) ([k1LoW](https://github.com/k1LoW))
