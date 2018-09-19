@@ -57,6 +57,7 @@ var readCmd = &cobra.Command{
 		viper.Set("tcpdp.dumper", readDumper) // because share with `server`
 		viper.Set("log.enable", false)
 		viper.Set("log.stdout", false)
+		viper.Set("dumpLog.enable", false)
 		viper.Set("dumpLog.stdout", true)
 
 		var pcapFile string
