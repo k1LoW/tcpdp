@@ -120,7 +120,7 @@ var readCmd = &cobra.Command{
 
 func init() {
 	readCmd.Flags().StringVarP(&readTarget, "target", "t", "", "target addr. ex. localhost:80")
-	readCmd.Flags().StringP("format", "f", "json", "STDOUT format. `console`, `json` or `ltsv`")
+	readCmd.Flags().StringP("format", "f", "json", "STDOUT format. (\"console\", \"json\" , \"ltsv\") ")
 	readCmd.Flags().StringVarP(&readDumper, "dumper", "d", "hex", "dumper")
 
 	viper.BindPFlag("dumpLog.stdoutFormat", readCmd.Flags().Lookup("format"))

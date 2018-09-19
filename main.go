@@ -20,16 +20,8 @@
 
 package main
 
-import (
-	"net/http"
-	_ "net/http/pprof"
-
-	"github.com/k1LoW/tcpdp/cmd"
-)
+import "github.com/k1LoW/tcpdp/cmd"
 
 func main() {
-	go func() {
-		http.ListenAndServe("0.0.0.0:6060", nil)
-	}()
 	cmd.Execute()
 }
