@@ -96,7 +96,15 @@ rotationTime = "hourly"
 rotationCount = 24
 ```
 
-## tcpdp proxy connection diagram
+## Installation
+
+```console
+$ go get github.com/k1LoW/tcpdp
+```
+
+## Architecture
+
+### tcpdp proxy connection diagram
 
 ```
       client_addr
@@ -119,7 +127,7 @@ rotationCount = 24
       remote_addr
 ```
 
-## tcpdp probe connection diagram
+### tcpdp probe connection diagram
 
 ```
                     server
@@ -137,7 +145,7 @@ rotationCount = 24
 +--------------------------+
 ```
 
-## log
+## Log keys
 
 | key | description | tcpdp.log / dump.log (dumper type) | mode |
 | --- | ----------- | ---------------------------------- | ---- |
