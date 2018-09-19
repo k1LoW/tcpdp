@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.6.1](https://github.com/k1LoW/tcpdp/compare/v0.6.0...v0.6.1) (2018-09-19)
+
+* Remove pprof [#18](https://github.com/k1LoW/tcpdp/pull/18) ([k1LoW](https://github.com/k1LoW))
+* Disable dump.log when execute `tcpdp read` [#17](https://github.com/k1LoW/tcpdp/pull/17) ([k1LoW](https://github.com/k1LoW))
+
 ## [v0.6.0](https://github.com/k1LoW/tcpdp/compare/v0.5.0...v0.6.0) (2018-09-19)
 
 * Fix panic when exec root command with invalid option. [#16](https://github.com/k1LoW/tcpdp/pull/16) ([k1LoW](https://github.com/k1LoW))
