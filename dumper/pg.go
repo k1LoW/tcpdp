@@ -37,12 +37,8 @@ func (p *PgDumper) Name() string {
 
 // Dump query of PostgreSQL
 func (p *PgDumper) Dump(in []byte, direction Direction, persistent *DumpValues, additional []DumpValue) error {
-	if direction == RemoteToClient {
-		return nil
-	}
-
 	// parse StartupMessage to get username, database
-	pValues := p.ReadPersistentValues(in)
+	pValues := p.ReadPersistentValues(in, direction)
 	if len(pValues) > 0 {
 		for _, kv := range pValues {
 			persistent.Values = append(persistent.Values, kv)
@@ -50,7 +46,7 @@ func (p *PgDumper) Dump(in []byte, direction Direction, persistent *DumpValues, 
 		return nil
 	}
 
-	read := p.Read(in)
+	read := p.Read(in, direction)
 	if len(read) == 0 {
 		return nil
 	}
@@ -65,7 +61,11 @@ func (p *PgDumper) Dump(in []byte, direction Direction, persistent *DumpValues, 
 }
 
 // Read return byte to analyzed string
-func (p *PgDumper) Read(in []byte) []DumpValue {
+func (p *PgDumper) Read(in []byte, direction Direction) []DumpValue {
+	if direction == RemoteToClient || direction == DstToSrc {
+		return []DumpValue{}
+	}
+
 	messageType := in[0]
 	if messageType != pgMessageQuery && messageType != pgMessageParse && messageType != pgMessageBind {
 		return []DumpValue{}
@@ -84,8 +84,12 @@ func (p *PgDumper) Read(in []byte) []DumpValue {
 }
 
 // ReadPersistentValues return persistent value each session
-func (p *PgDumper) ReadPersistentValues(in []byte) []DumpValue {
+func (p *PgDumper) ReadPersistentValues(in []byte, direction Direction) []DumpValue {
 	values := []DumpValue{}
+	if direction == RemoteToClient || direction == DstToSrc {
+		return values
+	}
+
 	// parse StartupMessage to get username, database
 	if len(in) < 10 {
 		return values

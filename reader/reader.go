@@ -117,7 +117,7 @@ func (r *PacketReader) ReadAndDump(host string, port uint16) error {
 				continue
 			}
 
-			v := r.dumper.ReadPersistentValues(in)
+			v := r.dumper.ReadPersistentValues(in, direction)
 			if len(v) > 0 {
 				// TCP dumper connection start ( mysql, pg )
 				connID := xid.New().String()
@@ -125,10 +125,6 @@ func (r *PacketReader) ReadAndDump(host string, port uint16) error {
 					Key:   "conn_id",
 					Value: connID,
 				})
-			}
-
-			if r.dumper.Name() != "hex" && direction == dumper.DstToSrc { // FIXME: dumper should detect
-				continue
 			}
 
 			ts := packet.Metadata().CaptureInfo.Timestamp
@@ -148,7 +144,7 @@ func (r *PacketReader) ReadAndDump(host string, port uint16) error {
 				},
 			}
 
-			read := r.dumper.Read(in)
+			read := r.dumper.Read(in, direction)
 			if len(read) == 0 {
 				continue
 			}

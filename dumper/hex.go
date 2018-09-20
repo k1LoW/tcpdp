@@ -33,7 +33,7 @@ func (h *HexDumper) Name() string {
 // Dump TCP
 func (h *HexDumper) Dump(in []byte, direction Direction, persistent *DumpValues, additional []DumpValue) error {
 	values := []DumpValue{}
-	read := h.Read(in)
+	read := h.Read(in, direction)
 	values = append(values, read...)
 	values = append(values, persistent.Values...)
 	values = append(values, additional...)
@@ -49,7 +49,7 @@ func (h *HexDumper) Dump(in []byte, direction Direction, persistent *DumpValues,
 }
 
 // Read return byte to analyzed string
-func (h *HexDumper) Read(in []byte) []DumpValue {
+func (h *HexDumper) Read(in []byte, direction Direction) []DumpValue {
 	return []DumpValue{
 		DumpValue{
 			Key:   "dump",
@@ -59,7 +59,7 @@ func (h *HexDumper) Read(in []byte) []DumpValue {
 }
 
 // ReadPersistentValues return persistent value each session
-func (h *HexDumper) ReadPersistentValues(in []byte) []DumpValue {
+func (h *HexDumper) ReadPersistentValues(in []byte, direction Direction) []DumpValue {
 	return []DumpValue{}
 }
 
