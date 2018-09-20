@@ -59,7 +59,7 @@ func (h *HexDumper) Read(in []byte, direction Direction) []DumpValue {
 }
 
 // ReadPersistentValues return persistent value each session
-func (h *HexDumper) ReadPersistentValues(in []byte) []DumpValue {
+func (h *HexDumper) ReadPersistentValues(in []byte, direction Direction) []DumpValue {
 	return []DumpValue{}
 }
 

@@ -66,14 +66,7 @@ func (m *MysqlDumper) Name() string {
 
 // Dump query of MySQL
 func (m *MysqlDumper) Dump(in []byte, direction Direction, persistent *DumpValues, additional []DumpValue) error {
-	if direction == RemoteToClient {
-		return nil
-	}
-	if len(in) < 6 {
-		return nil
-	}
-
-	pValues := m.ReadPersistentValues(in)
+	pValues := m.ReadPersistentValues(in, direction)
 	if len(pValues) > 0 {
 		for _, kv := range pValues {
 			persistent.Values = append(persistent.Values, kv)
@@ -97,6 +90,9 @@ func (m *MysqlDumper) Dump(in []byte, direction Direction, persistent *DumpValue
 
 // Read return byte to analyzed string
 func (m *MysqlDumper) Read(in []byte, direction Direction) []DumpValue {
+	if direction == RemoteToClient || direction == DstToSrc {
+		return []DumpValue{}
+	}
 	if len(in) < 6 {
 		return []DumpValue{}
 	}
@@ -123,8 +119,11 @@ func (m *MysqlDumper) Read(in []byte, direction Direction) []DumpValue {
 }
 
 // ReadPersistentValues return persistent value each session
-func (m *MysqlDumper) ReadPersistentValues(in []byte) []DumpValue {
+func (m *MysqlDumper) ReadPersistentValues(in []byte, direction Direction) []DumpValue {
 	values := []DumpValue{}
+	if direction == RemoteToClient || direction == DstToSrc {
+		return values
+	}
 	if len(in) < 37 {
 		return values
 	}
