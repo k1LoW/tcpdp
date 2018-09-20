@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"math"
 	"strings"
+	"time"
 
 	"github.com/k1LoW/tcpdp/logger"
 	"go.uber.org/zap"
@@ -15,6 +17,38 @@ const (
 	comQuery       = 0x03
 	comStmtPrepare = 0x16
 	comStmtExecute = 0x17
+
+	comStmtPrepareOK = 0x00
+)
+
+const (
+	mysqlTypeDecimal    = 0x00
+	mysqlTypeTiny       = 0x01
+	mysqlTypeShort      = 0x02
+	mysqlTypeLong       = 0x03
+	mysqlTypeFloat      = 0x04
+	mysqlTypeDouble     = 0x05
+	mysqlTypeNull       = 0x06
+	mysqlTypeTimestamp  = 0x07
+	mysqlTypeLonglong   = 0x08
+	mysqlTypeInt24      = 0x09
+	mysqlTypeDate       = 0x0a
+	mysqlTypeTime       = 0x0b
+	mysqlTypeDatetime   = 0x0c
+	mysqlTypeYear       = 0x0d
+	mysqlTypeNewdate    = 0x0e
+	mysqlTypeVarchar    = 0x0f
+	mysqlTypeBit        = 0x10
+	mysqlTypeNewdecimal = 0xf6
+	mysqlTypeEnum       = 0xf7
+	mysqlTypeSet        = 0xf8
+	mysqlTypeTinyBlob   = 0xf9
+	mysqlTypeMediumblob = 0xfa
+	mysqlTypeLongblob   = 0xfb
+	mysqlTypeBlob       = 0xfc
+	mysqlTypeVarString  = 0xfd
+	mysqlTypeString     = 0xfe
+	mysqlTypeGeometry   = 0xff
 )
 
 const (
@@ -47,15 +81,17 @@ const (
 
 // MysqlDumper struct
 type MysqlDumper struct {
-	name   string
-	logger *zap.Logger
+	name          string
+	logger        *zap.Logger
+	stmtNumParams map[int]int // statement_id:num_params
 }
 
 // NewMysqlDumper returns a MysqlDumper
 func NewMysqlDumper() *MysqlDumper {
 	dumper := &MysqlDumper{
-		name:   "mysql",
-		logger: logger.NewQueryLogger(),
+		name:          "mysql",
+		logger:        logger.NewQueryLogger(),
+		stmtNumParams: map[int]int{},
 	}
 	return dumper
 }
@@ -67,14 +103,7 @@ func (m *MysqlDumper) Name() string {
 
 // Dump query of MySQL
 func (m *MysqlDumper) Dump(in []byte, direction Direction, persistent *DumpValues, additional []DumpValue) error {
-	if direction == RemoteToClient {
-		return nil
-	}
-	if len(in) < 6 {
-		return nil
-	}
-
-	pValues := m.ReadPersistentValues(in)
+	pValues := m.ReadPersistentValues(in, direction)
 	if len(pValues) > 0 {
 		for _, kv := range pValues {
 			persistent.Values = append(persistent.Values, kv)
@@ -82,7 +111,7 @@ func (m *MysqlDumper) Dump(in []byte, direction Direction, persistent *DumpValue
 		return nil
 	}
 
-	read := m.Read(in)
+	read := m.Read(in, direction)
 	if len(read) == 0 {
 		return nil
 	}
@@ -97,32 +126,110 @@ func (m *MysqlDumper) Dump(in []byte, direction Direction, persistent *DumpValue
 }
 
 // Read return byte to analyzed string
-func (m *MysqlDumper) Read(in []byte) []DumpValue {
+func (m *MysqlDumper) Read(in []byte, direction Direction) []DumpValue {
+	if direction == RemoteToClient || direction == DstToSrc || direction == Unknown {
+		// COM_STMT_PREPARE Response https://dev.mysql.com/doc/internals/en/com-stmt-prepare-response.html
+		if len(in) >= 16 && in[4] == comStmtPrepareOK && in[13] == 0x00 {
+			buff := bytes.NewBuffer(in[5:])
+			stmtID := readBytes(buff, 4)
+			stmtIDNum := int(bytesToUint64(stmtID))
+			_ = readBytes(buff, 2)
+			numParams := readBytes(buff, 2)
+			numParamsNum := int(bytesToUint64(numParams))
+			m.stmtNumParams[stmtIDNum] = numParamsNum
+		}
+		if direction == RemoteToClient || direction == DstToSrc {
+			return []DumpValue{}
+		}
+	}
 	if len(in) < 6 {
 		return []DumpValue{}
 	}
 	seqNum := int64(in[3])
 	commandID := in[4]
-	if commandID != comQuery && commandID != comStmtPrepare && commandID != comStmtExecute {
+
+	var dumps = []DumpValue{}
+	switch commandID {
+	case comQuery:
+		query := strings.Trim(string(in[5:]), "\x00")
+		dumps = []DumpValue{
+			DumpValue{
+				Key:   "query",
+				Value: query,
+			},
+		}
+	case comStmtPrepare:
+		stmtPrepare := strings.Trim(string(in[5:]), "\x00")
+		dumps = []DumpValue{
+			DumpValue{
+				Key:   "stmt_prepare",
+				Value: stmtPrepare,
+			},
+		}
+	case comStmtExecute:
+		// https://dev.mysql.com/doc/internals/en/com-stmt-execute.html
+		buff := bytes.NewBuffer(in[5:])
+		stmtID := readBytes(buff, 4) // 4:stmt-id
+		stmtIDNum := int(bytesToUint64(stmtID))
+		numParamsNum, ok := m.stmtNumParams[stmtIDNum]
+		if ok && numParamsNum > 0 {
+			_ = readBytes(buff, 5)                  // 1:flags 4:iteration-count
+			_ = readBytes(buff, (numParamsNum+7)/8) // NULL-bitmap, length: (num-params+7)/8
+			newParamsBoundFlag, _ := buff.ReadByte()
+			if newParamsBoundFlag == 0x01 {
+				// type of each parameter, length: num-params * 2
+				mysqlTypes := []byte{}
+				for i := 0; i < numParamsNum; i++ {
+					mysqlType, _ := buff.ReadByte()
+					mysqlTypes = append(mysqlTypes, mysqlType)
+					_, _ = buff.ReadByte()
+				}
+				// value of each parameter
+				values := []interface{}{}
+				for i := 0; i < numParamsNum; i++ {
+					// https://dev.mysql.com/doc/internals/en/binary-protocol-value.html
+					v := readBinaryProtocolValue(buff, mysqlTypes[i])
+					values = append(values, v)
+				}
+				dumps = []DumpValue{
+					DumpValue{
+						Key:   "stmt_id",
+						Value: stmtIDNum,
+					},
+					DumpValue{
+						Key:   "stmt_execute_values",
+						Value: values,
+					},
+				}
+			} else {
+				dumps = []DumpValue{
+					DumpValue{
+						Key:   "stmt_id",
+						Value: stmtIDNum,
+					},
+					DumpValue{
+						Key:   "stmt_execute_values",
+						Value: []interface{}{},
+					},
+				}
+			}
+		} else {
+			dumps = []DumpValue{
+				DumpValue{
+					Key:   "stmt_id",
+					Value: stmtIDNum,
+				},
+				DumpValue{
+					Key:   "stmt_execute_values",
+					Value: []interface{}{},
+				},
+			}
+		}
+	default:
 		return []DumpValue{}
 	}
-	var query string
-	if commandID == comStmtExecute {
-		fmt.Printf("%v\n", in[5:])
-		buff := bytes.NewBuffer(in[5:])
-		header := make([]byte, 9)
-		_, _ = buff.Read(header) // 4:stmt-id 1:flags 4:iteration-count
-		_, _ = buff.ReadBytes(0x01)
-		r, _ := buff.ReadBytes(0x00)
-		fmt.Printf("%v\n", r)
-	} else {
-		query = strings.Trim(string(in[5:]), "\x00")
-	}
-	return []DumpValue{
-		DumpValue{
-			Key:   "query",
-			Value: query,
-		},
+
+	return append(dumps, []DumpValue{
 		DumpValue{
 			Key:   "seq_num",
 			Value: seqNum,
@@ -131,12 +238,15 @@ func (m *MysqlDumper) Read(in []byte) []DumpValue {
 			Key:   "command_id",
 			Value: commandID,
 		},
-	}
+	}...)
 }
 
 // ReadPersistentValues return persistent value each session
-func (m *MysqlDumper) ReadPersistentValues(in []byte) []DumpValue {
+func (m *MysqlDumper) ReadPersistentValues(in []byte, direction Direction) []DumpValue {
 	values := []DumpValue{}
+	if direction == RemoteToClient || direction == DstToSrc {
+		return values
+	}
 	if len(in) < 37 {
 		return values
 	}
@@ -152,27 +262,7 @@ func (m *MysqlDumper) ReadPersistentValues(in []byte) []DumpValue {
 			Value: username,
 		})
 		if clientCapabilities&clientPluginAuthLenEncClientData > 0 {
-			l, _ := buff.ReadByte()
-			padding := make([]byte, 8-1)
-			n := binary.LittleEndian.Uint64(append([]byte{l}, padding...))
-			if l == 0xfc {
-				b := make([]byte, 2)
-				_, _ = buff.Read(b)
-				padding := make([]byte, 8-len(b))
-				n = binary.LittleEndian.Uint64(append(b, padding...))
-			}
-			if l == 0xfd {
-				b := make([]byte, 3)
-				_, _ = buff.Read(b)
-				padding := make([]byte, 8-len(b))
-				n = binary.LittleEndian.Uint64(append(b, padding...))
-			}
-			if l == 0xfe {
-				b := make([]byte, 8)
-				_, _ = buff.Read(b)
-				padding := make([]byte, 8-len(b))
-				n = binary.LittleEndian.Uint64(append(b, padding...))
-			}
+			n := readLengthEncodedInteger(buff)
 			_, _ = buff.Read(make([]byte, n))
 		} else if clientCapabilities&clientSecureConnection > 0 {
 			l, _ := buff.ReadByte()
@@ -200,4 +290,139 @@ func (m *MysqlDumper) Log(values []DumpValue) {
 		fields = append(fields, zap.Any(kv.Key, kv.Value))
 	}
 	m.logger.Info("-", fields...)
+}
+
+func readBytes(buff *bytes.Buffer, len int) []byte {
+	b := make([]byte, len)
+	_, _ = buff.Read(b)
+	return b
+}
+
+// https://dev.mysql.com/doc/internals/en/integer.html#length-encoded-integer
+func readLengthEncodedInteger(buff *bytes.Buffer) uint64 {
+	l, _ := buff.ReadByte()
+	n := bytesToUint64([]byte{l})
+	if l == 0xfc {
+		n = bytesToUint64(readBytes(buff, 2))
+	}
+	if l == 0xfd {
+		n = bytesToUint64(readBytes(buff, 3))
+	}
+	if l == 0xfe {
+		n = bytesToUint64(readBytes(buff, 8))
+	}
+	return n
+}
+
+// ProtocolBinary::MYSQL_TYPE_DATE, ProtocolBinary::MYSQL_TYPE_DATETIME, ProtocolBinary::MYSQL_TYPE_TIMESTAMP
+func readDatetime(buff *bytes.Buffer, mysqlType byte) string {
+	l := bytesToUint64(readBytes(buff, 1))
+	year := 0
+	var month time.Month
+	day := 0
+	hour := 0
+	min := 0
+	sec := 0
+	microSecond := 0
+	switch l {
+	case 0:
+	case 4:
+		year = int(bytesToUint64(readBytes(buff, 2)))
+		month = time.Month(int(bytesToUint64(readBytes(buff, 1))))
+		day = int(bytesToUint64(readBytes(buff, 1)))
+	case 7:
+		year = int(bytesToUint64(readBytes(buff, 2)))
+		month = time.Month(int(bytesToUint64(readBytes(buff, 1))))
+		day = int(bytesToUint64(readBytes(buff, 1)))
+		hour = int(bytesToUint64(readBytes(buff, 1)))
+		min = int(bytesToUint64(readBytes(buff, 1)))
+		sec = int(bytesToUint64(readBytes(buff, 1)))
+	case 11:
+		year = int(bytesToUint64(readBytes(buff, 2)))
+		month = time.Month(int(bytesToUint64(readBytes(buff, 1))))
+		day = int(bytesToUint64(readBytes(buff, 1)))
+		hour = int(bytesToUint64(readBytes(buff, 1)))
+		min = int(bytesToUint64(readBytes(buff, 1)))
+		sec = int(bytesToUint64(readBytes(buff, 1)))
+		microSecond = int(bytesToUint64(readBytes(buff, 4)))
+	}
+	t := time.Date(year, month, day, hour, min, sec, microSecond*1000, time.UTC)
+
+	if mysqlType == mysqlTypeDate {
+		return t.Format("2006-01-02")
+	}
+	ms := fmt.Sprintf("%06d", microSecond)
+	return fmt.Sprintf("%s.%s %s", t.Format("2006-01-02 15:04:05"), ms[0:3], ms[3:6])
+}
+
+// ProtocolBinary::MYSQL_TYPE_TIME
+func readTime(buff *bytes.Buffer) string {
+	l := bytesToUint64(readBytes(buff, 1))
+	days := 0
+	negative := 0
+	hour := 0
+	min := 0
+	sec := 0
+	microSecond := 0
+	switch l {
+	case 0:
+	case 8:
+		negative = int(bytesToUint64(readBytes(buff, 1)))
+		days = int(bytesToUint64(readBytes(buff, 4)))
+		hour = int(bytesToUint64(readBytes(buff, 1)))
+		min = int(bytesToUint64(readBytes(buff, 1)))
+		sec = int(bytesToUint64(readBytes(buff, 1)))
+	case 12:
+		negative = int(bytesToUint64(readBytes(buff, 1)))
+		days = int(bytesToUint64(readBytes(buff, 4)))
+		hour = int(bytesToUint64(readBytes(buff, 1)))
+		min = int(bytesToUint64(readBytes(buff, 1)))
+		sec = int(bytesToUint64(readBytes(buff, 1)))
+		microSecond = int(bytesToUint64(readBytes(buff, 4)))
+	}
+	op := ""
+	if negative == 1 {
+		op = "-"
+	}
+	t := time.Date(0, time.January, 0, hour, min, sec, microSecond*1000, time.UTC)
+	ms := fmt.Sprintf("%06d", microSecond)
+	return fmt.Sprintf("%s%dd%s.%s %s", op, days, t.Format("15:04:05"), ms[0:3], ms[3:6])
+}
+
+// https://dev.mysql.com/doc/internals/en/binary-protocol-value.html
+func readBinaryProtocolValue(buff *bytes.Buffer, mysqlType byte) interface{} {
+	switch mysqlType {
+	case mysqlTypeLonglong:
+		v := readBytes(buff, 8)
+		return binary.LittleEndian.Uint64(v)
+	case mysqlTypeLong, mysqlTypeInt24:
+		return bytesToUint64(readBytes(buff, 4))
+	case mysqlTypeShort, mysqlTypeYear:
+		return bytesToUint64(readBytes(buff, 2))
+	case mysqlTypeTiny:
+		return bytesToUint64(readBytes(buff, 1))
+	case mysqlTypeDouble:
+		bits := bytesToUint64(readBytes(buff, 8))
+		float := math.Float64frombits(bits)
+		return float
+	case mysqlTypeFloat:
+		bits := bytesToUint64(readBytes(buff, 4))
+		float := math.Float64frombits(bits)
+		return float
+	case mysqlTypeDate, mysqlTypeDatetime, mysqlTypeTimestamp:
+		return readDatetime(buff, mysqlType)
+	case mysqlTypeTime:
+		return readTime(buff)
+	case mysqlTypeNull:
+		return nil
+	default:
+		l := readLengthEncodedInteger(buff)
+		v := readBytes(buff, int(l))
+		return string(v)
+	}
+}
+
+func bytesToUint64(b []byte) uint64 {
+	padding := make([]byte, 8-len(b))
+	return binary.LittleEndian.Uint64(append(b, padding...))
 }

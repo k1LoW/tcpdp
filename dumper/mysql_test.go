@@ -11,12 +11,15 @@ import (
 )
 
 var mysqlValueTests = []struct {
+	description   string
 	in            []byte
+	direction     Direction
 	expected      []DumpValue
 	expectedQuery []DumpValue
 	logContain    string
 }{
 	{
+		"Parse username/database from HandshakeResponse41 packet (https://dev.mysql.com/doc/internals/en/connection-phase-packets.html)",
 		// https://dev.mysql.com/doc/internals/en/connection-phase-packets.html
 		[]byte{
 			0x54, 0x00, 0x00, 0x01, 0x8d, 0xa6, 0x0f, 0x00, 0x00, 0x00, 0x00, 0x01, 0x08, 0x00, 0x00, 0x00,
@@ -26,6 +29,7 @@ var mysqlValueTests = []struct {
 			0x74, 0x00, 0x6d, 0x79, 0x73, 0x71, 0x6c, 0x5f, 0x6e, 0x61, 0x74, 0x69, 0x76, 0x65, 0x5f, 0x70,
 			0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x00,
 		},
+		SrcToDst,
 		[]DumpValue{
 			DumpValue{
 				Key:   "username",
@@ -40,6 +44,7 @@ var mysqlValueTests = []struct {
 		"",
 	},
 	{
+		"Parse username/database from HandshakeResponse41 packet",
 		[]byte{
 			0xc1, 0x00, 0x00, 0x01, 0x0d, 0xa6, 0xff, 0x01, 0x00, 0x00, 0x00, 0x01, 0x21, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -55,6 +60,7 @@ var mysqlValueTests = []struct {
 			0x36, 0x34, 0x0c, 0x70, 0x72, 0x6f, 0x67, 0x72, 0x61, 0x6d, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x05,
 			0x6d, 0x79, 0x73, 0x71, 0x6c,
 		},
+		SrcToDst,
 		[]DumpValue{
 			DumpValue{
 				Key:   "username",
@@ -69,10 +75,12 @@ var mysqlValueTests = []struct {
 		"",
 	},
 	{
+		"Parse query from COM_QUERY packet",
 		[]byte{
 			0x14, 0x00, 0x00, 0x00, 0x03, 0x73, 0x65, 0x6c, 0x65, 0x63, 0x74, 0x20, 0x2a, 0x20, 0x66, 0x72,
 			0x6f, 0x6d, 0x20, 0x70, 0x6f, 0x73, 0x74, 0x73,
 		},
+		SrcToDst,
 		[]DumpValue{},
 		[]DumpValue{
 			DumpValue{
@@ -91,16 +99,33 @@ var mysqlValueTests = []struct {
 		"",
 	},
 	{
+		"When direction = RemoteToClient do not parse query",
+		[]byte{
+			0x14, 0x00, 0x00, 0x00, 0x03, 0x73, 0x65, 0x6c, 0x65, 0x63, 0x74, 0x20, 0x2a, 0x20, 0x66, 0x72,
+			0x6f, 0x6d, 0x20, 0x70, 0x6f, 0x73, 0x74, 0x73,
+		},
+		RemoteToClient,
+		[]DumpValue{},
+		[]DumpValue{},
+		"",
+	},
+	{
+		"",
 		[]byte{
 			0x25, 0x00, 0x00, 0x00, 0x17, 0x05, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x01,
 			0xfe, 0x00, 0xfe, 0x00, 0x06, 0x74, 0x65, 0x73, 0x74, 0x64, 0x62, 0x0d, 0x63, 0x6f, 0x6d, 0x6d,
 			0x65, 0x6e, 0x74, 0x5f, 0x73, 0x74, 0x61, 0x72, 0x73,
 		},
+		ClientToRemote,
 		[]DumpValue{},
 		[]DumpValue{
 			DumpValue{
-				Key:   "query",
-				Value: "testdb,comment_stars",
+				Key:   "stmt_id",
+				Value: 5,
+			},
+			DumpValue{
+				Key:   "stmt_execute_values",
+				Value: []interface{}{"testdb", "comment_stars"},
 			},
 			DumpValue{
 				Key:   "seq_num",
@@ -119,22 +144,32 @@ func TestMysqlReadPersistentValuesHandshakeResponse41(t *testing.T) {
 	for _, tt := range mysqlValueTests {
 		out := new(bytes.Buffer)
 		dumper := &MysqlDumper{
-			logger: NewTestLogger(out),
+			logger:        NewTestLogger(out),
+			stmtNumParams: map[int]int{5: 2},
 		}
 		in := tt.in
+		direction := tt.direction
 
-		actual := dumper.ReadPersistentValues(in)
+		actual := dumper.ReadPersistentValues(in, direction)
 		expected := tt.expected
 
 		if len(actual) != len(expected) {
 			t.Errorf("actual %v\nwant %v", actual, expected)
 		}
-		if len(actual) == 2 {
-			if actual[0] != expected[0] {
-				t.Errorf("actual %v\nwant %v", actual, expected)
-			}
-			if actual[1] != expected[1] {
-				t.Errorf("actual %v\nwant %v", actual, expected)
+		for i := 0; i < len(actual); i++ {
+			v := actual[i].Value
+			ev := expected[i].Value
+			switch v.(type) {
+			case []interface{}:
+				for j := 0; j < len(v.([]interface{})); j++ {
+					if v.([]interface{})[j] != ev.([]interface{})[j] {
+						t.Errorf("actual %#v\nwant %#v", v.([]interface{})[j], ev.([]interface{})[j])
+					}
+				}
+			default:
+				if actual[i] != expected[i] {
+					t.Errorf("actual %#v\nwant %#v", actual[i], expected[i])
+				}
 			}
 		}
 	}
@@ -144,25 +179,32 @@ func TestMysqlRead(t *testing.T) {
 	for _, tt := range mysqlValueTests {
 		out := new(bytes.Buffer)
 		dumper := &MysqlDumper{
-			logger: NewTestLogger(out),
+			logger:        NewTestLogger(out),
+			stmtNumParams: map[int]int{5: 2},
 		}
 		in := tt.in
+		direction := tt.direction
 
-		actual := dumper.Read(in)
+		actual := dumper.Read(in, direction)
 		expected := tt.expectedQuery
 
 		if len(actual) != len(expected) {
 			t.Errorf("actual %v\nwant %v", actual, expected)
 		}
-		if len(actual) == 3 {
-			if actual[0] != expected[0] {
-				t.Errorf("actual %#v\nwant %#v", actual[0], expected[0])
-			}
-			if actual[1] != expected[1] {
-				t.Errorf("actual %#v\nwant %#v", actual[1], expected[1])
-			}
-			if actual[2] != expected[2] {
-				t.Errorf("actual %#v\nwant %#v", actual[2], expected[2])
+		for i := 0; i < len(actual); i++ {
+			v := actual[i].Value
+			ev := expected[i].Value
+			switch v.(type) {
+			case []interface{}:
+				for j := 0; j < len(v.([]interface{})); j++ {
+					if v.([]interface{})[j] != ev.([]interface{})[j] {
+						t.Errorf("actual %#v\nwant %#v", v.([]interface{})[j], ev.([]interface{})[j])
+					}
+				}
+			default:
+				if actual[i] != expected[i] {
+					t.Errorf("actual %#v\nwant %#v", actual[i], expected[i])
+				}
 			}
 		}
 	}
@@ -172,7 +214,8 @@ func TestMysqlAnalyzeUsernameAndDatabase(t *testing.T) {
 	for _, tt := range mysqlValueTests {
 		out := new(bytes.Buffer)
 		dumper := &MysqlDumper{
-			logger: NewTestLogger(out),
+			logger:        NewTestLogger(out),
+			stmtNumParams: map[int]int{5: 2},
 		}
 		in := tt.in
 		direction := ClientToRemote
@@ -190,12 +233,20 @@ func TestMysqlAnalyzeUsernameAndDatabase(t *testing.T) {
 		if len(actual) != len(expected) {
 			t.Errorf("actual %v\nwant %v", actual, expected)
 		}
-		if len(actual) == 2 {
-			if actual[0] != expected[0] {
-				t.Errorf("actual %v\nwant %v", actual, expected)
-			}
-			if actual[1] != expected[1] {
-				t.Errorf("actual %v\nwant %v", actual, expected)
+		for i := 0; i < len(actual); i++ {
+			v := actual[i].Value
+			ev := expected[i].Value
+			switch v.(type) {
+			case []interface{}:
+				for j := 0; j < len(v.([]interface{})); j++ {
+					if v.([]interface{})[j] != ev.([]interface{})[j] {
+						t.Errorf("actual %#v\nwant %#v", v.([]interface{})[j], ev.([]interface{})[j])
+					}
+				}
+			default:
+				if actual[i] != expected[i] {
+					t.Errorf("actual %#v\nwant %#v", actual[i], expected[i])
+				}
 			}
 		}
 
