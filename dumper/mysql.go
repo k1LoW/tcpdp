@@ -3,6 +3,7 @@ package dumper
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"strings"
 
 	"github.com/k1LoW/tcpdp/logger"
@@ -105,7 +106,18 @@ func (m *MysqlDumper) Read(in []byte) []DumpValue {
 	if commandID != comQuery && commandID != comStmtPrepare && commandID != comStmtExecute {
 		return []DumpValue{}
 	}
-	query := strings.Trim(string(in[5:]), "\x00")
+	var query string
+	if commandID == comStmtExecute {
+		fmt.Printf("%v\n", in[5:])
+		buff := bytes.NewBuffer(in[5:])
+		header := make([]byte, 9)
+		_, _ = buff.Read(header) // 4:stmt-id 1:flags 4:iteration-count
+		_, _ = buff.ReadBytes(0x01)
+		r, _ := buff.ReadBytes(0x00)
+		fmt.Printf("%v\n", r)
+	} else {
+		query = strings.Trim(string(in[5:]), "\x00")
+	}
 	return []DumpValue{
 		DumpValue{
 			Key:   "query",
