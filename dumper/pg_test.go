@@ -7,6 +7,7 @@ import (
 
 var pgValueTests = []struct {
 	in            []byte
+	direction     Direction
 	expected      []DumpValue
 	expectedQuery []DumpValue
 }{
@@ -19,6 +20,7 @@ var pgValueTests = []struct {
 			0x6e, 0x74, 0x5f, 0x65, 0x6e, 0x63, 0x6f, 0x64, 0x69, 0x6e, 0x67, 0x00, 0x55, 0x54, 0x46, 0x38,
 			0x00, 0x00,
 		},
+		SrcToDst,
 		[]DumpValue{
 			DumpValue{
 				Key:   "username",
@@ -36,6 +38,7 @@ var pgValueTests = []struct {
 			0x51, 0x00, 0x00, 0x00, 0x19, 0x53, 0x45, 0x4c, 0x45, 0x43, 0x54, 0x20, 0x2a, 0x20, 0x46, 0x52,
 			0x4f, 0x4d, 0x20, 0x75, 0x73, 0x65, 0x72, 0x73, 0x3b, 0x00,
 		},
+		SrcToDst,
 		[]DumpValue{},
 		[]DumpValue{
 			DumpValue{
@@ -82,8 +85,9 @@ func TestPgRead(t *testing.T) {
 			logger: NewTestLogger(out),
 		}
 		in := tt.in
+		direction := tt.direction
 
-		actual := dumper.Read(in)
+		actual := dumper.Read(in, direction)
 		expected := tt.expectedQuery
 
 		if len(actual) != len(expected) {

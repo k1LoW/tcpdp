@@ -42,7 +42,7 @@ type DumpValues struct {
 type Dumper interface {
 	Name() string
 	Dump(in []byte, direction Direction, persistent *DumpValues, additional []DumpValue) error
-	Read(in []byte) []DumpValue
+	Read(in []byte, direction Direction) []DumpValue
 	ReadPersistentValues(in []byte) []DumpValue
 	Log(values []DumpValue)
 }

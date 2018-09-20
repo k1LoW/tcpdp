@@ -81,7 +81,7 @@ func (m *MysqlDumper) Dump(in []byte, direction Direction, persistent *DumpValue
 		return nil
 	}
 
-	read := m.Read(in)
+	read := m.Read(in, direction)
 	if len(read) == 0 {
 		return nil
 	}
@@ -96,7 +96,7 @@ func (m *MysqlDumper) Dump(in []byte, direction Direction, persistent *DumpValue
 }
 
 // Read return byte to analyzed string
-func (m *MysqlDumper) Read(in []byte) []DumpValue {
+func (m *MysqlDumper) Read(in []byte, direction Direction) []DumpValue {
 	if len(in) < 6 {
 		return []DumpValue{}
 	}

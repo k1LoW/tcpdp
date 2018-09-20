@@ -50,7 +50,7 @@ func (p *PgDumper) Dump(in []byte, direction Direction, persistent *DumpValues, 
 		return nil
 	}
 
-	read := p.Read(in)
+	read := p.Read(in, direction)
 	if len(read) == 0 {
 		return nil
 	}
@@ -65,7 +65,7 @@ func (p *PgDumper) Dump(in []byte, direction Direction, persistent *DumpValues, 
 }
 
 // Read return byte to analyzed string
-func (p *PgDumper) Read(in []byte) []DumpValue {
+func (p *PgDumper) Read(in []byte, direction Direction) []DumpValue {
 	messageType := in[0]
 	if messageType != pgMessageQuery && messageType != pgMessageParse && messageType != pgMessageBind {
 		return []DumpValue{}

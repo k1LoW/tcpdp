@@ -148,7 +148,7 @@ func (r *PacketReader) ReadAndDump(host string, port uint16) error {
 				},
 			}
 
-			read := r.dumper.Read(in)
+			read := r.dumper.Read(in, direction)
 			if len(read) == 0 {
 				continue
 			}
