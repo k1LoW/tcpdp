@@ -11,12 +11,15 @@ import (
 )
 
 var mysqlValueTests = []struct {
+	description   string
 	in            []byte
+	direction     Direction
 	expected      []DumpValue
 	expectedQuery []DumpValue
 	logContain    string
 }{
 	{
+		"Parse username/database from HandshakeResponse41 packet (https://dev.mysql.com/doc/internals/en/connection-phase-packets.html)",
 		// https://dev.mysql.com/doc/internals/en/connection-phase-packets.html
 		[]byte{
 			0x54, 0x00, 0x00, 0x01, 0x8d, 0xa6, 0x0f, 0x00, 0x00, 0x00, 0x00, 0x01, 0x08, 0x00, 0x00, 0x00,
@@ -26,6 +29,7 @@ var mysqlValueTests = []struct {
 			0x74, 0x00, 0x6d, 0x79, 0x73, 0x71, 0x6c, 0x5f, 0x6e, 0x61, 0x74, 0x69, 0x76, 0x65, 0x5f, 0x70,
 			0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x00,
 		},
+		SrcToDst,
 		[]DumpValue{
 			DumpValue{
 				Key:   "username",
@@ -40,6 +44,7 @@ var mysqlValueTests = []struct {
 		"",
 	},
 	{
+		"Parse username/database from HandshakeResponse41 packet",
 		[]byte{
 			0xc1, 0x00, 0x00, 0x01, 0x0d, 0xa6, 0xff, 0x01, 0x00, 0x00, 0x00, 0x01, 0x21, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -55,6 +60,7 @@ var mysqlValueTests = []struct {
 			0x36, 0x34, 0x0c, 0x70, 0x72, 0x6f, 0x67, 0x72, 0x61, 0x6d, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x05,
 			0x6d, 0x79, 0x73, 0x71, 0x6c,
 		},
+		SrcToDst,
 		[]DumpValue{
 			DumpValue{
 				Key:   "username",
@@ -69,10 +75,12 @@ var mysqlValueTests = []struct {
 		"",
 	},
 	{
+		"Parse query from COM_QUERY packet",
 		[]byte{
 			0x14, 0x00, 0x00, 0x00, 0x03, 0x73, 0x65, 0x6c, 0x65, 0x63, 0x74, 0x20, 0x2a, 0x20, 0x66, 0x72,
 			0x6f, 0x6d, 0x20, 0x70, 0x6f, 0x73, 0x74, 0x73,
 		},
+		SrcToDst,
 		[]DumpValue{},
 		[]DumpValue{
 			DumpValue{
@@ -90,6 +98,17 @@ var mysqlValueTests = []struct {
 		},
 		"",
 	},
+	{
+		"When direction = RemoteToClient do not parse query",
+		[]byte{
+			0x14, 0x00, 0x00, 0x00, 0x03, 0x73, 0x65, 0x6c, 0x65, 0x63, 0x74, 0x20, 0x2a, 0x20, 0x66, 0x72,
+			0x6f, 0x6d, 0x20, 0x70, 0x6f, 0x73, 0x74, 0x73,
+		},
+		RemoteToClient,
+		[]DumpValue{},
+		[]DumpValue{},
+		"",
+	},
 }
 
 func TestMysqlReadPersistentValuesHandshakeResponse41(t *testing.T) {
@@ -99,8 +118,9 @@ func TestMysqlReadPersistentValuesHandshakeResponse41(t *testing.T) {
 			logger: NewTestLogger(out),
 		}
 		in := tt.in
+		direction := tt.direction
 
-		actual := dumper.ReadPersistentValues(in)
+		actual := dumper.ReadPersistentValues(in, direction)
 		expected := tt.expected
 
 		if len(actual) != len(expected) {
@@ -124,8 +144,9 @@ func TestMysqlRead(t *testing.T) {
 			logger: NewTestLogger(out),
 		}
 		in := tt.in
+		direction := tt.direction
 
-		actual := dumper.Read(in)
+		actual := dumper.Read(in, direction)
 		expected := tt.expectedQuery
 
 		if len(actual) != len(expected) {
