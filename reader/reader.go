@@ -119,7 +119,10 @@ func (r *PacketReader) ReadAndDump(host string, port uint16) error {
 				continue
 			}
 
-			connMetadata := r.dumper.NewConnMetadata()
+			connMetadata, ok := mMap[key]
+			if !ok {
+				connMetadata = r.dumper.NewConnMetadata()
+			}
 			v := r.dumper.ReadInitialDumpValues(in, direction, connMetadata)
 			if len(v) > 0 {
 				// TCP dumper connection start ( mysql, pg )
@@ -153,6 +156,8 @@ func (r *PacketReader) ReadAndDump(host string, port uint16) error {
 			read := r.dumper.Read(in, direction, connMetadata)
 			if len(read) == 0 {
 				continue
+			} else {
+				mMap[key] = connMetadata
 			}
 
 			values = append(values, read...)
