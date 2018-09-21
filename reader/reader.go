@@ -59,7 +59,7 @@ func NewPacketReader(ctx context.Context, packetSource *gopacket.PacketSource, d
 
 // ReadAndDump from gopacket.PacketSource
 func (r *PacketReader) ReadAndDump(host string, port uint16) error {
-	vMap := map[string][]dumper.DumpValue{}
+	mMap := map[string]*dumper.ConnMetadata{}
 
 	packetChan := r.packetSource.Packets()
 	for {
@@ -96,19 +96,21 @@ func (r *PacketReader) ReadAndDump(host string, port uint16) error {
 
 			if tcp.SYN || tcp.FIN {
 				// TCP connection start or end
-				_, ok := vMap[key]
+				_, ok := mMap[key]
 				if ok {
-					delete(vMap, key)
+					delete(mMap, key)
 				}
 				if tcp.SYN && tcp.ACK {
 					// TCP connection start ( hex )
 					connID := xid.New().String()
-					vMap[key] = []dumper.DumpValue{
+					connMetadata := r.dumper.NewConnMetadata()
+					connMetadata.DumpValues = []dumper.DumpValue{
 						dumper.DumpValue{
 							Key:   "conn_id",
 							Value: connID,
 						},
 					}
+					mMap[key] = connMetadata
 				}
 			}
 
@@ -117,14 +119,22 @@ func (r *PacketReader) ReadAndDump(host string, port uint16) error {
 				continue
 			}
 
-			v := r.dumper.ReadPersistentValues(in, direction)
+			connMetadata, ok := mMap[key]
+			if !ok {
+				connMetadata := r.dumper.NewConnMetadata()
+				mMap[key] = connMetadata
+			}
+
+			v := r.dumper.ReadInitialDumpValues(in, direction, connMetadata)
 			if len(v) > 0 {
 				// TCP dumper connection start ( mysql, pg )
 				connID := xid.New().String()
-				vMap[key] = append(v, dumper.DumpValue{
+				values := append(v, dumper.DumpValue{
 					Key:   "conn_id",
 					Value: connID,
 				})
+				connMetadata = r.dumper.NewConnMetadata()
+				connMetadata.DumpValues = values
 			}
 
 			ts := packet.Metadata().CaptureInfo.Timestamp
@@ -144,17 +154,14 @@ func (r *PacketReader) ReadAndDump(host string, port uint16) error {
 				},
 			}
 
-			read := r.dumper.Read(in, direction)
+			read := r.dumper.Read(in, direction, connMetadata)
 			if len(read) == 0 {
 				continue
 			}
 
 			values = append(values, read...)
 			values = append(values, r.pValues...)
-			v, ok := vMap[key]
-			if ok {
-				values = append(values, v...)
-			}
+			values = append(values, connMetadata.DumpValues...)
 
 			r.dumper.Log(values)
 

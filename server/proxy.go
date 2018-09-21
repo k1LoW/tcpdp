@@ -20,7 +20,7 @@ type Proxy struct {
 	connID     string
 	conn       *net.TCPConn
 	remoteConn *net.TCPConn
-	dumpValues *dumper.DumpValues
+	connMetadata *dumper.ConnMetadata
 	seqNum     uint64
 }
 
@@ -30,8 +30,8 @@ func NewProxy(s *Server, conn, remoteConn *net.TCPConn) *Proxy {
 
 	connID := xid.New().String()
 
-	dumpValues := &dumper.DumpValues{
-		Values: []dumper.DumpValue{
+	connMetadata := &dumper.ConnMetadata{
+		DumpValues: []dumper.DumpValue{
 			dumper.DumpValue{
 				Key:   "conn_id",
 				Value: connID,
@@ -62,7 +62,7 @@ func NewProxy(s *Server, conn, remoteConn *net.TCPConn) *Proxy {
 		connID:     connID,
 		conn:       conn,
 		remoteConn: remoteConn,
-		dumpValues: dumpValues,
+		connMetadata: connMetadata,
 		seqNum:     0,
 	}
 }
@@ -99,7 +99,7 @@ func (p *Proxy) dump(b []byte, direction dumper.Direction) error {
 		},
 	}
 
-	return p.server.dumper.Dump(b, direction, p.dumpValues, kvs)
+	return p.server.dumper.Dump(b, direction, p.connMetadata, kvs)
 }
 
 func (p *Proxy) pipe(srcConn, destConn *net.TCPConn) {
@@ -155,7 +155,7 @@ func (p *Proxy) fieldsWithErrorAndDirection(err error, direction dumper.Directio
 		zap.String("direction", direction.String()),
 	}
 
-	for _, kv := range p.dumpValues.Values {
+	for _, kv := range p.connMetadata.DumpValues {
 		fields = append(fields, zap.Any(kv.Key, kv.Value))
 	}
 

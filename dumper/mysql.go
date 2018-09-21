@@ -81,17 +81,17 @@ const (
 
 // MysqlDumper struct
 type MysqlDumper struct {
-	name          string
-	logger        *zap.Logger
-	stmtNumParams map[int]int // statement_id:num_params
+	name   string
+	logger *zap.Logger
 }
+
+type stmtNumParams map[int]int // statement_id:num_params
 
 // NewMysqlDumper returns a MysqlDumper
 func NewMysqlDumper() *MysqlDumper {
 	dumper := &MysqlDumper{
-		name:          "mysql",
-		logger:        logger.NewQueryLogger(),
-		stmtNumParams: map[int]int{},
+		name:   "mysql",
+		logger: logger.NewQueryLogger(),
 	}
 	return dumper
 }
@@ -102,23 +102,23 @@ func (m *MysqlDumper) Name() string {
 }
 
 // Dump query of MySQL
-func (m *MysqlDumper) Dump(in []byte, direction Direction, persistent *DumpValues, additional []DumpValue) error {
-	pValues := m.ReadPersistentValues(in, direction)
+func (m *MysqlDumper) Dump(in []byte, direction Direction, connMetadata *ConnMetadata, additional []DumpValue) error {
+	pValues := m.ReadInitialDumpValues(in, direction, connMetadata)
 	if len(pValues) > 0 {
 		for _, kv := range pValues {
-			persistent.Values = append(persistent.Values, kv)
+			connMetadata.DumpValues = append(connMetadata.DumpValues, kv)
 		}
 		return nil
 	}
 
-	read := m.Read(in, direction)
+	read := m.Read(in, direction, connMetadata)
 	if len(read) == 0 {
 		return nil
 	}
 
 	values := []DumpValue{}
 	values = append(values, read...)
-	values = append(values, persistent.Values...)
+	values = append(values, connMetadata.DumpValues...)
 	values = append(values, additional...)
 
 	m.Log(values)
@@ -126,7 +126,7 @@ func (m *MysqlDumper) Dump(in []byte, direction Direction, persistent *DumpValue
 }
 
 // Read return byte to analyzed string
-func (m *MysqlDumper) Read(in []byte, direction Direction) []DumpValue {
+func (m *MysqlDumper) Read(in []byte, direction Direction, connMetadata *ConnMetadata) []DumpValue {
 	if direction == RemoteToClient || direction == DstToSrc || direction == Unknown {
 		// COM_STMT_PREPARE Response https://dev.mysql.com/doc/internals/en/com-stmt-prepare-response.html
 		if len(in) >= 16 && in[4] == comStmtPrepareOK && in[13] == 0x00 {
@@ -136,7 +136,7 @@ func (m *MysqlDumper) Read(in []byte, direction Direction) []DumpValue {
 			_ = readBytes(buff, 2)
 			numParams := readBytes(buff, 2)
 			numParamsNum := int(bytesToUint64(numParams))
-			m.stmtNumParams[stmtIDNum] = numParamsNum
+			connMetadata.Internal.(stmtNumParams)[stmtIDNum] = numParamsNum
 		}
 		if direction == RemoteToClient || direction == DstToSrc {
 			return []DumpValue{}
@@ -171,7 +171,7 @@ func (m *MysqlDumper) Read(in []byte, direction Direction) []DumpValue {
 		buff := bytes.NewBuffer(in[5:])
 		stmtID := readBytes(buff, 4) // 4:stmt-id
 		stmtIDNum := int(bytesToUint64(stmtID))
-		numParamsNum, ok := m.stmtNumParams[stmtIDNum]
+		numParamsNum, ok := connMetadata.Internal.(stmtNumParams)[stmtIDNum]
 		if ok && numParamsNum > 0 {
 			_ = readBytes(buff, 5)                  // 1:flags 4:iteration-count
 			_ = readBytes(buff, (numParamsNum+7)/8) // NULL-bitmap, length: (num-params+7)/8
@@ -241,8 +241,8 @@ func (m *MysqlDumper) Read(in []byte, direction Direction) []DumpValue {
 	}...)
 }
 
-// ReadPersistentValues return persistent value each session
-func (m *MysqlDumper) ReadPersistentValues(in []byte, direction Direction) []DumpValue {
+// ReadInitialDumpValues return persistent value each session
+func (m *MysqlDumper) ReadInitialDumpValues(in []byte, direction Direction, connMetadata *ConnMetadata) []DumpValue {
 	values := []DumpValue{}
 	if direction == RemoteToClient || direction == DstToSrc {
 		return values
@@ -250,6 +250,7 @@ func (m *MysqlDumper) ReadPersistentValues(in []byte, direction Direction) []Dum
 	if len(in) < 37 {
 		return values
 	}
+
 	clientCapabilities := binary.LittleEndian.Uint32(in[4:8])
 
 	// parse Protocol::HandshakeResponse41 to get username, database
@@ -290,6 +291,14 @@ func (m *MysqlDumper) Log(values []DumpValue) {
 		fields = append(fields, zap.Any(kv.Key, kv.Value))
 	}
 	m.logger.Info("-", fields...)
+}
+
+// NewConnMetadata ...
+func (m *MysqlDumper) NewConnMetadata() *ConnMetadata {
+	return &ConnMetadata{
+		DumpValues: []DumpValue{},
+		Internal:   stmtNumParams{},
+	}
 }
 
 func readBytes(buff *bytes.Buffer, len int) []byte {

@@ -36,24 +36,24 @@ func (p *PgDumper) Name() string {
 }
 
 // Dump query of PostgreSQL
-func (p *PgDumper) Dump(in []byte, direction Direction, persistent *DumpValues, additional []DumpValue) error {
+func (p *PgDumper) Dump(in []byte, direction Direction, connMetadata *ConnMetadata, additional []DumpValue) error {
 	// parse StartupMessage to get username, database
-	pValues := p.ReadPersistentValues(in, direction)
+	pValues := p.ReadInitialDumpValues(in, direction, connMetadata)
 	if len(pValues) > 0 {
 		for _, kv := range pValues {
-			persistent.Values = append(persistent.Values, kv)
+			connMetadata.DumpValues = append(connMetadata.DumpValues, kv)
 		}
 		return nil
 	}
 
-	read := p.Read(in, direction)
+	read := p.Read(in, direction, connMetadata)
 	if len(read) == 0 {
 		return nil
 	}
 
 	values := []DumpValue{}
 	values = append(values, read...)
-	values = append(values, persistent.Values...)
+	values = append(values, connMetadata.DumpValues...)
 	values = append(values, additional...)
 
 	p.Log(values)
@@ -61,7 +61,7 @@ func (p *PgDumper) Dump(in []byte, direction Direction, persistent *DumpValues, 
 }
 
 // Read return byte to analyzed string
-func (p *PgDumper) Read(in []byte, direction Direction) []DumpValue {
+func (p *PgDumper) Read(in []byte, direction Direction, connMetadata *ConnMetadata) []DumpValue {
 	if direction == RemoteToClient || direction == DstToSrc {
 		return []DumpValue{}
 	}
@@ -83,8 +83,8 @@ func (p *PgDumper) Read(in []byte, direction Direction) []DumpValue {
 	}
 }
 
-// ReadPersistentValues return persistent value each session
-func (p *PgDumper) ReadPersistentValues(in []byte, direction Direction) []DumpValue {
+// ReadInitialDumpValues return persistent value each session
+func (p *PgDumper) ReadInitialDumpValues(in []byte, direction Direction, connMetadata *ConnMetadata) []DumpValue {
 	values := []DumpValue{}
 	if direction == RemoteToClient || direction == DstToSrc {
 		return values
@@ -120,4 +120,11 @@ func (p *PgDumper) Log(values []DumpValue) {
 		fields = append(fields, zap.Any(kv.Key, kv.Value))
 	}
 	p.logger.Info("-", fields...)
+}
+
+// NewConnMetadata ...
+func (p *PgDumper) NewConnMetadata() *ConnMetadata {
+	return &ConnMetadata{
+		DumpValues: []DumpValue{},
+	}
 }

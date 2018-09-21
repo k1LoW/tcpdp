@@ -33,16 +33,18 @@ type DumpValue struct {
 	Value interface{}
 }
 
-// DumpValues ...
-type DumpValues struct {
-	Values []DumpValue
+// ConnMetadata is metadada per TCP connection
+type ConnMetadata struct {
+	DumpValues []DumpValue
+	Internal   interface{} // internal metadata for dumper
 }
 
 // Dumper interface
 type Dumper interface {
 	Name() string
-	Dump(in []byte, direction Direction, persistent *DumpValues, additional []DumpValue) error
-	Read(in []byte, direction Direction) []DumpValue
-	ReadPersistentValues(in []byte, direction Direction) []DumpValue
+	Dump(in []byte, direction Direction, connMetadata *ConnMetadata, additional []DumpValue) error
+	Read(in []byte, direction Direction, connMetadata *ConnMetadata) []DumpValue
+	ReadInitialDumpValues(in []byte, direction Direction, connMetadata *ConnMetadata) []DumpValue
 	Log(values []DumpValue)
+	NewConnMetadata() *ConnMetadata
 }

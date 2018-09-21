@@ -31,11 +31,11 @@ func (h *HexDumper) Name() string {
 }
 
 // Dump TCP
-func (h *HexDumper) Dump(in []byte, direction Direction, persistent *DumpValues, additional []DumpValue) error {
+func (h *HexDumper) Dump(in []byte, direction Direction, connMetadata *ConnMetadata, additional []DumpValue) error {
 	values := []DumpValue{}
-	read := h.Read(in, direction)
+	read := h.Read(in, direction, connMetadata)
 	values = append(values, read...)
-	values = append(values, persistent.Values...)
+	values = append(values, connMetadata.DumpValues...)
 	values = append(values, additional...)
 	values = append(values, DumpValue{
 		Key:   "ts",
@@ -49,7 +49,7 @@ func (h *HexDumper) Dump(in []byte, direction Direction, persistent *DumpValues,
 }
 
 // Read return byte to analyzed string
-func (h *HexDumper) Read(in []byte, direction Direction) []DumpValue {
+func (h *HexDumper) Read(in []byte, direction Direction, connMetadata *ConnMetadata) []DumpValue {
 	return []DumpValue{
 		DumpValue{
 			Key:   "dump",
@@ -58,8 +58,8 @@ func (h *HexDumper) Read(in []byte, direction Direction) []DumpValue {
 	}
 }
 
-// ReadPersistentValues return persistent value each session
-func (h *HexDumper) ReadPersistentValues(in []byte, direction Direction) []DumpValue {
+// ReadInitialDumpValues return persistent value each session
+func (h *HexDumper) ReadInitialDumpValues(in []byte, direction Direction, connMetadata *ConnMetadata) []DumpValue {
 	return []DumpValue{}
 }
 
@@ -70,4 +70,11 @@ func (h *HexDumper) Log(values []DumpValue) {
 		fields = append(fields, zap.Any(kv.Key, kv.Value))
 	}
 	h.logger.Info("-", fields...)
+}
+
+// NewConnMetadata ...
+func (h *HexDumper) NewConnMetadata() *ConnMetadata {
+	return &ConnMetadata{
+		DumpValues: []DumpValue{},
+	}
 }
