@@ -74,7 +74,7 @@ func TestPgReadInitialDumpValuesStartupMessage(t *testing.T) {
 	for _, tt := range pgValueTests {
 		out := new(bytes.Buffer)
 		dumper := &PgDumper{
-			logger: NewTestLogger(out),
+			logger: newTestLogger(out),
 		}
 		in := tt.in
 		direction := tt.direction
@@ -101,7 +101,7 @@ func TestPgRead(t *testing.T) {
 	for _, tt := range pgValueTests {
 		out := new(bytes.Buffer)
 		dumper := &PgDumper{
-			logger: NewTestLogger(out),
+			logger: newTestLogger(out),
 		}
 		in := tt.in
 		direction := tt.direction

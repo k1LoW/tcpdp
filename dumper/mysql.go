@@ -180,10 +180,10 @@ func (m *MysqlDumper) Read(in []byte, direction Direction, connMetadata *ConnMet
 			newParamsBoundFlag, _ := buff.ReadByte()
 			if newParamsBoundFlag == 0x01 {
 				// type of each parameter, length: num-params * 2
-				mysqlTypes := []byte{}
+				mysqlTypes := []mysqlType{}
 				for i := 0; i < numParamsNum; i++ {
-					mysqlType, _ := buff.ReadByte()
-					mysqlTypes = append(mysqlTypes, mysqlType)
+					t := readMysqlType(buff)
+					mysqlTypes = append(mysqlTypes, t)
 					_, _ = buff.ReadByte()
 				}
 				// value of each parameter
@@ -303,6 +303,11 @@ func (m *MysqlDumper) NewConnMetadata() *ConnMetadata {
 	}
 }
 
+func readMysqlType(buff *bytes.Buffer) mysqlType {
+	b, _ := buff.ReadByte()
+	return mysqlType(b)
+}
+
 // https://dev.mysql.com/doc/internals/en/integer.html#length-encoded-integer
 func readLengthEncodedInteger(buff *bytes.Buffer) uint64 {
 	l, _ := buff.ReadByte()
@@ -319,7 +324,41 @@ func readLengthEncodedInteger(buff *bytes.Buffer) uint64 {
 	return n
 }
 
+// https://dev.mysql.com/doc/internals/en/binary-protocol-value.html
+func readBinaryProtocolValue(buff *bytes.Buffer, mysqlType mysqlType) interface{} {
+	switch mysqlType {
+	case mysqlTypeLonglong:
+		v := readBytes(buff, 8)
+		return binary.LittleEndian.Uint64(v)
+	case mysqlTypeLong, mysqlTypeInt24:
+		return bytesToUint64(readBytes(buff, 4))
+	case mysqlTypeShort, mysqlTypeYear:
+		return bytesToUint64(readBytes(buff, 2))
+	case mysqlTypeTiny:
+		return bytesToUint64(readBytes(buff, 1))
+	case mysqlTypeDouble:
+		bits := bytesToUint64(readBytes(buff, 8))
+		float := math.Float64frombits(bits)
+		return float
+	case mysqlTypeFloat:
+		bits := bytesToUint64(readBytes(buff, 4))
+		float := math.Float32frombits(uint32(bits))
+		return float
+	case mysqlTypeDate, mysqlTypeDatetime, mysqlTypeTimestamp:
+		return readDatetime(buff, mysqlType)
+	case mysqlTypeTime:
+		return readTime(buff)
+	case mysqlTypeNull:
+		return nil
+	default:
+		l := readLengthEncodedInteger(buff)
+		v := readBytes(buff, int(l))
+		return string(v)
+	}
+}
+
 // ProtocolBinary::MYSQL_TYPE_DATE, ProtocolBinary::MYSQL_TYPE_DATETIME, ProtocolBinary::MYSQL_TYPE_TIMESTAMP
+// https://dev.mysql.com/doc/internals/en/binary-protocol-value.html
 func readDatetime(buff *bytes.Buffer, mysqlType mysqlType) string {
 	l := bytesToUint64(readBytes(buff, 1))
 	year := 0
@@ -361,6 +400,7 @@ func readDatetime(buff *bytes.Buffer, mysqlType mysqlType) string {
 }
 
 // ProtocolBinary::MYSQL_TYPE_TIME
+// https://dev.mysql.com/doc/internals/en/binary-protocol-value.html
 func readTime(buff *bytes.Buffer) string {
 	l := bytesToUint64(readBytes(buff, 1))
 	days := 0
@@ -391,40 +431,15 @@ func readTime(buff *bytes.Buffer) string {
 	}
 	t := time.Date(0, time.January, 0, hour, min, sec, microSecond*1000, time.UTC)
 	ms := fmt.Sprintf("%06d", microSecond)
-	return fmt.Sprintf("%s%dd%s.%s %s", op, days, t.Format("15:04:05"), ms[0:3], ms[3:6])
-}
-
-// https://dev.mysql.com/doc/internals/en/binary-protocol-value.html
-func readBinaryProtocolValue(buff *bytes.Buffer, mysqlType mysqlType) interface{} {
-	switch mysqlType {
-	case mysqlTypeLonglong:
-		v := readBytes(buff, 8)
-		return binary.LittleEndian.Uint64(v)
-	case mysqlTypeLong, mysqlTypeInt24:
-		return bytesToUint64(readBytes(buff, 4))
-	case mysqlTypeShort, mysqlTypeYear:
-		return bytesToUint64(readBytes(buff, 2))
-	case mysqlTypeTiny:
-		return bytesToUint64(readBytes(buff, 1))
-	case mysqlTypeDouble:
-		bits := bytesToUint64(readBytes(buff, 8))
-		float := math.Float64frombits(bits)
-		return float
-	case mysqlTypeFloat:
-		bits := bytesToUint64(readBytes(buff, 4))
-		float := math.Float64frombits(bits)
-		return float
-	case mysqlTypeDate, mysqlTypeDatetime, mysqlTypeTimestamp:
-		return readDatetime(buff, mysqlType)
-	case mysqlTypeTime:
-		return readTime(buff)
-	case mysqlTypeNull:
-		return nil
+	switch l {
+	case 0:
+		return ""
+	case 12:
+		return fmt.Sprintf("%s%dd %s.%s %s", op, days, t.Format("15:04:05"), ms[0:3], ms[3:6])
 	default:
-		l := readLengthEncodedInteger(buff)
-		v := readBytes(buff, int(l))
-		return string(v)
+		return fmt.Sprintf("%s%dd %s", op, days, t.Format("15:04:05"))
 	}
+
 }
 
 func bytesToUint64(b []byte) uint64 {

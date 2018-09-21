@@ -2,15 +2,11 @@ package dumper
 
 import (
 	"bytes"
-	"io"
 	"strings"
 	"testing"
-
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
-var mysqlValueTests = []struct {
+var mysqlReadTests = []struct {
 	description   string
 	in            []byte
 	direction     Direction
@@ -162,10 +158,10 @@ var mysqlValueTests = []struct {
 }
 
 func TestMysqlReadInitialDumpValuesHandshakeResponse41(t *testing.T) {
-	for _, tt := range mysqlValueTests {
+	for _, tt := range mysqlReadTests {
 		out := new(bytes.Buffer)
 		dumper := &MysqlDumper{
-			logger: NewTestLogger(out),
+			logger: newTestLogger(out),
 		}
 		in := tt.in
 		direction := tt.direction
@@ -197,10 +193,10 @@ func TestMysqlReadInitialDumpValuesHandshakeResponse41(t *testing.T) {
 }
 
 func TestMysqlRead(t *testing.T) {
-	for _, tt := range mysqlValueTests {
+	for _, tt := range mysqlReadTests {
 		out := new(bytes.Buffer)
 		dumper := &MysqlDumper{
-			logger: NewTestLogger(out),
+			logger: newTestLogger(out),
 		}
 		in := tt.in
 		direction := tt.direction
@@ -232,10 +228,10 @@ func TestMysqlRead(t *testing.T) {
 }
 
 func TestMysqlAnalyzeUsernameAndDatabase(t *testing.T) {
-	for _, tt := range mysqlValueTests {
+	for _, tt := range mysqlReadTests {
 		out := new(bytes.Buffer)
 		dumper := &MysqlDumper{
-			logger: NewTestLogger(out),
+			logger: newTestLogger(out),
 		}
 		in := tt.in
 		direction := ClientToRemote
@@ -278,26 +274,123 @@ func TestMysqlAnalyzeUsernameAndDatabase(t *testing.T) {
 	}
 }
 
-// NewTestLogger return zap.Logger for test
-func NewTestLogger(out io.Writer) *zap.Logger {
-	encoderConfig := zapcore.EncoderConfig{
-		TimeKey:        "ts",
-		LevelKey:       "level",
-		NameKey:        "logger",
-		CallerKey:      "caller",
-		MessageKey:     "msg",
-		StacktraceKey:  "stacktrace",
-		EncodeLevel:    zapcore.LowercaseLevelEncoder,
-		EncodeTime:     zapcore.ISO8601TimeEncoder,
-		EncodeDuration: zapcore.StringDurationEncoder,
-		EncodeCaller:   zapcore.ShortCallerEncoder,
+var mysqlLengthEncodedIntegerTests = []struct {
+	in       []byte
+	expected uint64
+}{
+	{
+		[]byte{0xfa},
+		250,
+	},
+	{
+		[]byte{0xfc, 0xfb, 0x00},
+		251,
+	},
+}
+
+func TestMysqlReadLengthEncodeInteger(t *testing.T) {
+	for _, tt := range mysqlLengthEncodedIntegerTests {
+		buff := bytes.NewBuffer(tt.in)
+		actual := readLengthEncodedInteger(buff)
+		if actual != tt.expected {
+			t.Errorf("actual %#v\nwant %#v", actual, tt.expected)
+		}
 	}
+}
 
-	logger := zap.New(zapcore.NewCore(
-		zapcore.NewJSONEncoder(encoderConfig),
-		zapcore.AddSync(out),
-		zapcore.DebugLevel,
-	))
+var mysqlBinaryProtocolValueTests = []struct {
+	in       []byte
+	t        mysqlType
+	expected interface{}
+}{
+	{
+		[]byte{0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+		mysqlTypeLonglong,
+		uint64(1),
+	},
+	{
+		[]byte{0x01, 0x00, 0x00, 0x00},
+		mysqlTypeLong,
+		uint64(1),
+	},
+	{
+		[]byte{0x01, 0x00, 0x00, 0x00},
+		mysqlTypeInt24,
+		uint64(1),
+	},
+	{
+		[]byte{0x01, 0x00},
+		mysqlTypeShort,
+		uint64(1),
+	},
+	{
+		[]byte{0xe2, 0x07},
+		mysqlTypeYear,
+		uint64(2018),
+	},
+	{
+		[]byte{0x01},
+		mysqlTypeTiny,
+		uint64(1),
+	},
+	{
+		[]byte{0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x24, 0x40},
+		mysqlTypeDouble,
+		10.2,
+	},
+	{
+		[]byte{0x33, 0x33, 0x23, 0x41},
+		mysqlTypeFloat,
+		float32(10.2),
+	},
+	{
+		[]byte{0x04, 0xda, 0x07, 0x0a, 0x11},
+		mysqlTypeDate,
+		"2010-10-17",
+	},
+	{
+		[]byte{0x0b, 0xda, 0x07, 0x0a, 0x11, 0x13, 0x1b, 0x1e, 0x01, 0x00, 0x00, 0x00},
+		mysqlTypeDatetime,
+		"2010-10-17 19:27:30.000 001",
+	},
+	{
+		[]byte{0x0b, 0xda, 0x07, 0x0a, 0x11, 0x13, 0x1b, 0x1e, 0x01, 0x00, 0x00, 0x00},
+		mysqlTypeTimestamp,
+		"2010-10-17 19:27:30.000 001",
+	},
+	{
+		[]byte{0x0c, 0x01, 0x78, 0x00, 0x00, 0x00, 0x13, 0x1b, 0x1e, 0x01, 0x00, 0x00, 0x00},
+		mysqlTypeTime,
+		"-120d 19:27:30.000 001",
+	},
+	{
+		[]byte{0x08, 0x01, 0x78, 0x00, 0x00, 0x00, 0x13, 0x1b, 0x1e},
+		mysqlTypeTime,
+		"-120d 19:27:30",
+	},
+	{
+		[]byte{0x01},
+		mysqlTypeTime,
+		"0d 00:00:00",
+	},
+	{
+		[]byte{},
+		mysqlTypeNull,
+		nil,
+	},
+	{
+		[]byte{0x03, 0x66, 0x6f, 0x6f},
+		mysqlTypeString,
+		"foo",
+	},
+}
 
-	return logger
+func TestMysqlReadBinaryProtocolValue(t *testing.T) {
+	for _, tt := range mysqlBinaryProtocolValueTests {
+		buff := bytes.NewBuffer(tt.in)
+		actual := readBinaryProtocolValue(buff, tt.t)
+		if actual != tt.expected {
+			t.Errorf("actual %#v\nwant %#v", actual, tt.expected)
+		}
+	}
 }
