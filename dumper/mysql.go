@@ -21,34 +21,36 @@ const (
 	comStmtPrepareOK = 0x00
 )
 
+type mysqlType byte
+
 const (
-	mysqlTypeDecimal    = 0x00
-	mysqlTypeTiny       = 0x01
-	mysqlTypeShort      = 0x02
-	mysqlTypeLong       = 0x03
-	mysqlTypeFloat      = 0x04
-	mysqlTypeDouble     = 0x05
-	mysqlTypeNull       = 0x06
-	mysqlTypeTimestamp  = 0x07
-	mysqlTypeLonglong   = 0x08
-	mysqlTypeInt24      = 0x09
-	mysqlTypeDate       = 0x0a
-	mysqlTypeTime       = 0x0b
-	mysqlTypeDatetime   = 0x0c
-	mysqlTypeYear       = 0x0d
-	mysqlTypeNewdate    = 0x0e
-	mysqlTypeVarchar    = 0x0f
-	mysqlTypeBit        = 0x10
-	mysqlTypeNewdecimal = 0xf6
-	mysqlTypeEnum       = 0xf7
-	mysqlTypeSet        = 0xf8
-	mysqlTypeTinyBlob   = 0xf9
-	mysqlTypeMediumblob = 0xfa
-	mysqlTypeLongblob   = 0xfb
-	mysqlTypeBlob       = 0xfc
-	mysqlTypeVarString  = 0xfd
-	mysqlTypeString     = 0xfe
-	mysqlTypeGeometry   = 0xff
+	mysqlTypeDecimal    mysqlType = 0x00
+	mysqlTypeTiny                 = 0x01
+	mysqlTypeShort                = 0x02
+	mysqlTypeLong                 = 0x03
+	mysqlTypeFloat                = 0x04
+	mysqlTypeDouble               = 0x05
+	mysqlTypeNull                 = 0x06
+	mysqlTypeTimestamp            = 0x07
+	mysqlTypeLonglong             = 0x08
+	mysqlTypeInt24                = 0x09
+	mysqlTypeDate                 = 0x0a
+	mysqlTypeTime                 = 0x0b
+	mysqlTypeDatetime             = 0x0c
+	mysqlTypeYear                 = 0x0d
+	mysqlTypeNewdate              = 0x0e
+	mysqlTypeVarchar              = 0x0f
+	mysqlTypeBit                  = 0x10
+	mysqlTypeNewdecimal           = 0xf6
+	mysqlTypeEnum                 = 0xf7
+	mysqlTypeSet                  = 0xf8
+	mysqlTypeTinyBlob             = 0xf9
+	mysqlTypeMediumblob           = 0xfa
+	mysqlTypeLongblob             = 0xfb
+	mysqlTypeBlob                 = 0xfc
+	mysqlTypeVarString            = 0xfd
+	mysqlTypeString               = 0xfe
+	mysqlTypeGeometry             = 0xff
 )
 
 const (
@@ -301,12 +303,6 @@ func (m *MysqlDumper) NewConnMetadata() *ConnMetadata {
 	}
 }
 
-func readBytes(buff *bytes.Buffer, len int) []byte {
-	b := make([]byte, len)
-	_, _ = buff.Read(b)
-	return b
-}
-
 // https://dev.mysql.com/doc/internals/en/integer.html#length-encoded-integer
 func readLengthEncodedInteger(buff *bytes.Buffer) uint64 {
 	l, _ := buff.ReadByte()
@@ -324,7 +320,7 @@ func readLengthEncodedInteger(buff *bytes.Buffer) uint64 {
 }
 
 // ProtocolBinary::MYSQL_TYPE_DATE, ProtocolBinary::MYSQL_TYPE_DATETIME, ProtocolBinary::MYSQL_TYPE_TIMESTAMP
-func readDatetime(buff *bytes.Buffer, mysqlType byte) string {
+func readDatetime(buff *bytes.Buffer, mysqlType mysqlType) string {
 	l := bytesToUint64(readBytes(buff, 1))
 	year := 0
 	var month time.Month
@@ -399,7 +395,7 @@ func readTime(buff *bytes.Buffer) string {
 }
 
 // https://dev.mysql.com/doc/internals/en/binary-protocol-value.html
-func readBinaryProtocolValue(buff *bytes.Buffer, mysqlType byte) interface{} {
+func readBinaryProtocolValue(buff *bytes.Buffer, mysqlType mysqlType) interface{} {
 	switch mysqlType {
 	case mysqlTypeLonglong:
 		v := readBytes(buff, 8)

@@ -1,5 +1,7 @@
 package dumper
 
+import "bytes"
+
 // Direction of TCP commnication
 type Direction int
 
@@ -47,4 +49,10 @@ type Dumper interface {
 	ReadInitialDumpValues(in []byte, direction Direction, connMetadata *ConnMetadata) []DumpValue
 	Log(values []DumpValue)
 	NewConnMetadata() *ConnMetadata
+}
+
+func readBytes(buff *bytes.Buffer, len int) []byte {
+	b := make([]byte, len)
+	_, _ = buff.Read(b)
+	return b
 }
