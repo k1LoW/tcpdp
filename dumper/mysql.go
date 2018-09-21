@@ -295,7 +295,7 @@ func (m *MysqlDumper) Log(values []DumpValue) {
 	m.logger.Info("-", fields...)
 }
 
-// NewConnMetadata ...
+// NewConnMetadata return metadata per TCP connection
 func (m *MysqlDumper) NewConnMetadata() *ConnMetadata {
 	return &ConnMetadata{
 		DumpValues: []DumpValue{},
@@ -329,13 +329,16 @@ func readBinaryProtocolValue(buff *bytes.Buffer, mysqlType mysqlType) interface{
 	switch mysqlType {
 	case mysqlTypeLonglong:
 		v := readBytes(buff, 8)
-		return binary.LittleEndian.Uint64(v)
+		return int64(binary.LittleEndian.Uint64(v))
 	case mysqlTypeLong, mysqlTypeInt24:
-		return bytesToUint64(readBytes(buff, 4))
+		v := readBytes(buff, 4)
+		return int32(binary.LittleEndian.Uint32(v))
 	case mysqlTypeShort, mysqlTypeYear:
-		return bytesToUint64(readBytes(buff, 2))
+		v := readBytes(buff, 2)
+		return int16(binary.LittleEndian.Uint16(v))
 	case mysqlTypeTiny:
-		return bytesToUint64(readBytes(buff, 1))
+		v := readBytes(buff, 1)
+		return int8(v[0])
 	case mysqlTypeDouble:
 		bits := bytesToUint64(readBytes(buff, 8))
 		float := math.Float64frombits(bits)

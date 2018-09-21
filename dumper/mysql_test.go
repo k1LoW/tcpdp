@@ -306,32 +306,32 @@ var mysqlBinaryProtocolValueTests = []struct {
 	{
 		[]byte{0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
 		mysqlTypeLonglong,
-		uint64(1),
+		int64(1),
 	},
 	{
 		[]byte{0x01, 0x00, 0x00, 0x00},
 		mysqlTypeLong,
-		uint64(1),
+		int32(1),
 	},
 	{
 		[]byte{0x01, 0x00, 0x00, 0x00},
 		mysqlTypeInt24,
-		uint64(1),
+		int32(1),
 	},
 	{
 		[]byte{0x01, 0x00},
 		mysqlTypeShort,
-		uint64(1),
+		int16(1),
 	},
 	{
 		[]byte{0xe2, 0x07},
 		mysqlTypeYear,
-		uint64(2018),
+		int16(2018),
 	},
 	{
 		[]byte{0x01},
 		mysqlTypeTiny,
-		uint64(1),
+		int8(1),
 	},
 	{
 		[]byte{0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x24, 0x40},
