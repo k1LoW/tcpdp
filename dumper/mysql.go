@@ -164,7 +164,7 @@ func (m *MysqlDumper) Read(in []byte, direction Direction, connMetadata *ConnMet
 		stmtPrepare := strings.Trim(string(in[5:]), "\x00")
 		dumps = []DumpValue{
 			DumpValue{
-				Key:   "stmt_prepare",
+				Key:   "stmt_prepare_query",
 				Value: stmtPrepare,
 			},
 		}

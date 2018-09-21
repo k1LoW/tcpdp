@@ -168,7 +168,7 @@ $ go get github.com/k1LoW/tcpdp
 | dump | dump data by hex.Dump | hex | proxy / probe / read |
 | query | SQL query | mysql, pg | proxy / probe / read |
 | stmt_id | statement id | mysql | proxy / probe / read |
-| stmt_prepare | prepared statement | mysql | proxy / probe / read |
+| stmt_prepare_query | prepared statement | mysql | proxy / probe / read |
 | stmt_execute_values | prepared statement execute values | mysql | proxy / probe / read |
 | username | username | mysql, pg | proxy / probe / read |
 | database | database | mysql, pg | proxy / probe / read |
