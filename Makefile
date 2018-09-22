@@ -3,8 +3,10 @@ COMMIT = $$(git describe --tags --always)
 OSNAME=${shell uname -s}
 ifeq ($(OSNAME),Darwin)
 	DATE = $$(gdate --utc '+%Y-%m-%d_%H:%M:%S')
+	LO = "lo0"
 else
 	DATE = $$(date --utc '+%Y-%m-%d_%H:%M:%S')
+	LO = "lo"
 endif
 
 BUILD_LDFLAGS = -X $(PKG).commit=$(COMMIT) -X $(PKG).date=$(DATE)
@@ -20,12 +22,13 @@ MYSQL_DATABASE=testdb
 MYSQL_ROOT_PASSWORD=mypass
 
 default: test
-ci: depsdev test proxy_integration read_integration
+ci: depsdev test proxy_integration probe_integration read_integration
 
 test:
 	go test -cover -v $(shell go list ./... | grep -v vendor)
 
 proxy_integration: build
+	sudo rm -f ./tcpdp.log*
 	./tcpdp proxy -l localhost:54321 -r localhost:$(POSTGRES_PORT) -d pg &
 	@sleep 1
 	PGPASSWORD=$(POSTGRES_PASSWORD) pgbench -h 127.0.0.1 -p 54321 -U$(POSTGRES_USER) -i $(POSTGRES_DB)
@@ -40,6 +43,27 @@ proxy_integration: build
 	@sleep 1
 	mysqlslap --no-defaults --concurrency=100 --iterations=1 --auto-generate-sql --auto-generate-sql-add-autoincrement --auto-generate-sql-load-type=mixed --auto-generate-sql-write-number=100 --number-of-queries=1000 --host=127.0.0.1 --port=33065 --user=root --password=$(MYSQL_ROOT_PASSWORD) --skip-ssl 2>&1 > ./result
 	kill `cat ./tcpdp.pid`
+	@sleep 1
+	cat ./result
+	@cat ./result | grep "Number of clients running queries: 100" || (echo "mysqlslap faild" && exit 1)
+	test `grep -c '' ./tcpdp.log` -eq 8 || (cat ./tcpdp.log && exit 1)
+
+probe_integration: build
+	sudo rm -f ./tcpdp.log*
+	sudo ./tcpdp probe -i $(LO) -t $(POSTGRES_PORT) -d pg &
+	@sleep 1
+	PGPASSWORD=$(POSTGRES_PASSWORD) pgbench -h 127.0.0.1 -p $(POSTGRES_PORT) -U$(POSTGRES_USER) -i $(POSTGRES_DB)
+	PGPASSWORD=$(POSTGRES_PASSWORD) pgbench -h 127.0.0.1 -p $(POSTGRES_PORT) -U$(POSTGRES_USER) -c 100 -t 10 $(POSTGRES_DB) 2>&1 > ./result
+	sudo kill `cat ./tcpdp.pid`
+	@sleep 1
+	cat ./result
+	@cat ./result | grep "number of transactions actually processed: 1000/1000" || (echo "pgbench faild" && exit 1)
+	test `grep -c '' ./tcpdp.log` -eq 4 || (cat ./tcpdp.log && exit 1)
+	rm ./result
+	sudo ./tcpdp probe -i $(LO) -t $(MYSQL_PORT) -d mysql &
+	@sleep 1
+	mysqlslap --no-defaults --concurrency=100 --iterations=1 --auto-generate-sql --auto-generate-sql-add-autoincrement --auto-generate-sql-load-type=mixed --auto-generate-sql-write-number=100 --number-of-queries=1000 --host=127.0.0.1 --port=$(MYSQL_PORT) --user=root --password=$(MYSQL_ROOT_PASSWORD) --skip-ssl 2>&1 > ./result
+	sudo kill `cat ./tcpdp.pid`
 	@sleep 1
 	cat ./result
 	@cat ./result | grep "Number of clients running queries: 100" || (echo "mysqlslap faild" && exit 1)
