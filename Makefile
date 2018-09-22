@@ -46,6 +46,8 @@ proxy_integration: build
 	test `grep -c '' ./tcpdp.log` -eq 8 || (cat ./tcpdp.log && exit 1)
 
 read_integration: build
+	./tcpdp read -t $(POSTGRES_PORT) -d pg test/pcap/pg_prepare.pcap > ./result
+	test `grep -c '' ./result` -eq 20 || (cat ./result && exit 1)
 	./tcpdp read -t $(MYSQL_PORT) -d mysql test/pcap/mysql8_prepare.pcap > ./result
 	test `grep -c '' ./result` -eq 20 || (cat ./result && exit 1)
 
