@@ -1,5 +1,12 @@
 # Changelog
 
+## [v0.7.0](https://github.com/k1LoW/tcpdp/compare/v0.6.1...v0.7.0) (2018-09-23)
+
+* [BREAKING]Parse PostgreSQL MessageParse / MessageBind / ( MessageExecute )  [#22](https://github.com/k1LoW/tcpdp/pull/22) ([k1LoW](https://github.com/k1LoW))
+* Fix read StartupMessage [#21](https://github.com/k1LoW/tcpdp/pull/21) ([k1LoW](https://github.com/k1LoW))
+* [BREAKING]Parse MySQL COM_STMT_PREPARE / COM_STMT_EXECUTE [#20](https://github.com/k1LoW/tcpdp/pull/20) ([k1LoW](https://github.com/k1LoW))
+* Fix logic that read packet [#19](https://github.com/k1LoW/tcpdp/pull/19) ([k1LoW](https://github.com/k1LoW))
+
 ## [v0.6.1](https://github.com/k1LoW/tcpdp/compare/v0.6.0...v0.6.1) (2018-09-19)
 
 * Remove pprof [#18](https://github.com/k1LoW/tcpdp/pull/18) ([k1LoW](https://github.com/k1LoW))
