@@ -2,6 +2,7 @@ package dumper
 
 import (
 	"bytes"
+	"encoding/binary"
 	"strings"
 
 	"github.com/k1LoW/tcpdp/logger"
@@ -10,9 +11,17 @@ import (
 )
 
 const (
-	pgMessageQuery = 'Q'
-	pgMessageParse = 'P'
-	pgMessageBind  = 'B'
+	pgMessageQuery   = 'Q'
+	pgMessageParse   = 'P'
+	pgMessageBind    = 'B'
+	pgMessageExecute = 'E'
+)
+
+type pgType int16
+
+const (
+	pgTypeString pgType = iota
+	pgTypeBinary
 )
 
 // PgDumper struct
@@ -65,22 +74,113 @@ func (p *PgDumper) Read(in []byte, direction Direction, connMetadata *ConnMetada
 	if direction == RemoteToClient || direction == DstToSrc {
 		return []DumpValue{}
 	}
-
-	messageType := in[0]
-	if messageType != pgMessageQuery && messageType != pgMessageParse && messageType != pgMessageBind {
+	if len(in) == 0 {
 		return []DumpValue{}
 	}
-	query := strings.Trim(string(in[5:]), "\x00")
-	return []DumpValue{
-		DumpValue{
-			Key:   "query",
-			Value: query,
-		},
-		DumpValue{
-			Key:   "message_type",
-			Value: string(messageType),
-		},
+
+	messageType := in[0]
+	var dumps = []DumpValue{}
+	// https://www.postgresql.org/docs/10/static/protocol-message-formats.html
+	switch messageType {
+	case pgMessageQuery:
+		query := strings.Trim(string(in[5:]), "\x00")
+
+		dumps = []DumpValue{
+			DumpValue{
+				Key:   "query",
+				Value: query,
+			},
+		}
+	case pgMessageParse:
+		buff := bytes.NewBuffer(in[5:])
+		b, _ := buff.ReadString(0x00)
+		stmtName := strings.Trim(b, "\x00")
+		b, _ = buff.ReadString(0x00)
+		query := strings.Trim(b, "\x00")
+		numParams := int(binary.BigEndian.Uint16(readBytes(buff, 2)))
+		for i := 0; i < numParams; i++ {
+			// TODO
+			// Int32: Specifies the object ID of the parameter data type. Placing a zero here is equivalent to leaving the type unspecified.
+		}
+
+		dumps = []DumpValue{
+			DumpValue{
+				Key:   "stmt_name",
+				Value: stmtName,
+			},
+			DumpValue{
+				Key:   "parse_query",
+				Value: query,
+			},
+		}
+	case pgMessageBind:
+		buff := bytes.NewBuffer(in[5:])
+		b, _ := buff.ReadString(0x00)
+		portalName := strings.Trim(b, "\x00")
+		b, _ = buff.ReadString(0x00)
+		stmtName := strings.Trim(b, "\x00")
+		c := int(binary.BigEndian.Uint16(readBytes(buff, 2)))
+		pgTypes := []pgType{}
+		for i := 0; i < c; i++ {
+			t := pgType(binary.BigEndian.Uint16(readBytes(buff, 2)))
+			pgTypes = append(pgTypes, t)
+		}
+		numParams := int(binary.BigEndian.Uint16(readBytes(buff, 2)))
+		if c == 0 {
+			for i := 0; i < numParams; i++ {
+				pgTypes = append(pgTypes, pgTypeString)
+			}
+		}
+		values := []interface{}{}
+		for i := 0; i < numParams; i++ {
+			n := int32(binary.BigEndian.Uint32(readBytes(buff, 4)))
+			if n == -1 {
+				continue
+			}
+			v := readBytes(buff, int(n))
+			if pgTypes[i] == pgTypeString {
+				values = append(values, string(v))
+			} else {
+				values = append(values, v)
+			}
+		}
+
+		dumps = []DumpValue{
+			DumpValue{
+				Key:   "portal_name",
+				Value: portalName,
+			},
+			DumpValue{
+				Key:   "stmt_name",
+				Value: stmtName,
+			},
+			DumpValue{
+				Key:   "bind_values",
+				Value: values,
+			},
+		}
+	case pgMessageExecute:
+		buff := bytes.NewBuffer(in[5:])
+		b, _ := buff.ReadString(0x00)
+		portalName := strings.Trim(b, "\x00")
+
+		dumps = []DumpValue{
+			DumpValue{
+				Key:   "portal_name",
+				Value: portalName,
+			},
+			DumpValue{
+				Key:   "execute_query",
+				Value: "",
+			},
+		}
+	default:
+		return []DumpValue{}
 	}
+	return append(dumps, DumpValue{
+		Key:   "message_type",
+		Value: string(messageType),
+	})
 }
 
 // ReadInitialDumpValues return persistent value each session
