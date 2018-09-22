@@ -47,8 +47,7 @@ proxy_integration: build
 
 read_integration: build
 	./tcpdp read -t $(MYSQL_PORT) -d mysql test/pcap/mysql8_prepare.pcap > ./result
-	cat ./result
-	test `grep -c '' ./result` -eq 20 || exit 1
+	test `grep -c '' ./result` -eq 20 || (cat ./result && exit 1)
 
 cover: depsdev
 	goveralls -service=travis-ci
