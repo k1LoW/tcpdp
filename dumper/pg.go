@@ -89,19 +89,22 @@ func (p *PgDumper) ReadInitialDumpValues(in []byte, direction Direction, connMet
 	if direction == RemoteToClient || direction == DstToSrc {
 		return values
 	}
-
 	// parse StartupMessage to get username, database
 	if len(in) < 10 {
 		return values
 	}
 	splited := bytes.Split(in[8:], []byte{0x00})
-	if len(splited) > 0 && string(splited[0]) == "user" {
-		username := string(splited[1])
-		values = append(values, DumpValue{
-			Key:   "username",
-			Value: username,
-		})
+	if len(splited) > 0 {
 		for i, keyOrValue := range splited {
+			if i%2 != 0 {
+				continue
+			}
+			if string(keyOrValue) == "user" {
+				values = append(values, DumpValue{
+					Key:   "username",
+					Value: string(splited[i+1]),
+				})
+			}
 			if string(keyOrValue) == "database" {
 				values = append(values, DumpValue{
 					Key:   "database",
