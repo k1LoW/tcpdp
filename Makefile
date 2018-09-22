@@ -20,12 +20,12 @@ MYSQL_DATABASE=testdb
 MYSQL_ROOT_PASSWORD=mypass
 
 default: test
-ci: depsdev test integration
+ci: depsdev test proxy_integration read_integration
 
 test:
 	go test -cover -v $(shell go list ./... | grep -v vendor)
 
-integration: build
+proxy_integration: build
 	./tcpdp proxy -l localhost:54321 -r localhost:$(POSTGRES_PORT) -d pg &
 	@sleep 1
 	PGPASSWORD=$(POSTGRES_PASSWORD) pgbench -h 127.0.0.1 -p 54321 -U$(POSTGRES_USER) -i $(POSTGRES_DB)
@@ -44,6 +44,11 @@ integration: build
 	cat ./result
 	@cat ./result | grep "Number of clients running queries: 100" || (echo "mysqlslap faild" && exit 1)
 	test `grep -c '' ./tcpdp.log` -eq 8 || (cat ./tcpdp.log && exit 1)
+
+read_integration: build
+	./tcpdp read -t $(MYSQL_PORT) -d mysql test/pcap/mysql8_prepare.pcap > ./result
+	cat ./result
+	test `grep -c '' ./result` -eq 20 || exit 1
 
 cover: depsdev
 	goveralls -service=travis-ci
