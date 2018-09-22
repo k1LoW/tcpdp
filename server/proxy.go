@@ -14,14 +14,14 @@ import (
 
 // Proxy struct
 type Proxy struct {
-	server     *Server
-	ctx        context.Context
-	Close      context.CancelFunc
-	connID     string
-	conn       *net.TCPConn
-	remoteConn *net.TCPConn
-	dumpValues *dumper.DumpValues
-	seqNum     uint64
+	server       *Server
+	ctx          context.Context
+	Close        context.CancelFunc
+	connID       string
+	conn         *net.TCPConn
+	remoteConn   *net.TCPConn
+	connMetadata *dumper.ConnMetadata
+	seqNum       uint64
 }
 
 // NewProxy returns a new Proxy
@@ -30,40 +30,39 @@ func NewProxy(s *Server, conn, remoteConn *net.TCPConn) *Proxy {
 
 	connID := xid.New().String()
 
-	dumpValues := &dumper.DumpValues{
-		Values: []dumper.DumpValue{
-			dumper.DumpValue{
-				Key:   "conn_id",
-				Value: connID,
-			},
-			dumper.DumpValue{
-				Key:   "client_addr",
-				Value: conn.RemoteAddr().String(),
-			},
-			dumper.DumpValue{
-				Key:   "proxy_listen_addr",
-				Value: conn.LocalAddr().String(),
-			},
-			dumper.DumpValue{
-				Key:   "proxy_client_addr",
-				Value: remoteConn.LocalAddr().String(),
-			},
-			dumper.DumpValue{
-				Key:   "remote_addr",
-				Value: remoteConn.RemoteAddr().String(),
-			},
+	connMetadata := s.dumper.NewConnMetadata()
+	connMetadata.DumpValues = []dumper.DumpValue{
+		dumper.DumpValue{
+			Key:   "conn_id",
+			Value: connID,
+		},
+		dumper.DumpValue{
+			Key:   "client_addr",
+			Value: conn.RemoteAddr().String(),
+		},
+		dumper.DumpValue{
+			Key:   "proxy_listen_addr",
+			Value: conn.LocalAddr().String(),
+		},
+		dumper.DumpValue{
+			Key:   "proxy_client_addr",
+			Value: remoteConn.LocalAddr().String(),
+		},
+		dumper.DumpValue{
+			Key:   "remote_addr",
+			Value: remoteConn.RemoteAddr().String(),
 		},
 	}
 
 	return &Proxy{
-		server:     s,
-		ctx:        innerCtx,
-		Close:      close,
-		connID:     connID,
-		conn:       conn,
-		remoteConn: remoteConn,
-		dumpValues: dumpValues,
-		seqNum:     0,
+		server:       s,
+		ctx:          innerCtx,
+		Close:        close,
+		connID:       connID,
+		conn:         conn,
+		remoteConn:   remoteConn,
+		connMetadata: connMetadata,
+		seqNum:       0,
 	}
 }
 
@@ -99,7 +98,7 @@ func (p *Proxy) dump(b []byte, direction dumper.Direction) error {
 		},
 	}
 
-	return p.server.dumper.Dump(b, direction, p.dumpValues, kvs)
+	return p.server.dumper.Dump(b, direction, p.connMetadata, kvs)
 }
 
 func (p *Proxy) pipe(srcConn, destConn *net.TCPConn) {
@@ -155,7 +154,7 @@ func (p *Proxy) fieldsWithErrorAndDirection(err error, direction dumper.Directio
 		zap.String("direction", direction.String()),
 	}
 
-	for _, kv := range p.dumpValues.Values {
+	for _, kv := range p.connMetadata.DumpValues {
 		fields = append(fields, zap.Any(kv.Key, kv.Value))
 	}
 

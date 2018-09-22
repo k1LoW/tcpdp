@@ -9,6 +9,7 @@ var pgValueTests = []struct {
 	description   string
 	in            []byte
 	direction     Direction
+	connMetadata  *ConnMetadata
 	expected      []DumpValue
 	expectedQuery []DumpValue
 }{
@@ -23,6 +24,7 @@ var pgValueTests = []struct {
 			0x00, 0x00,
 		},
 		SrcToDst,
+		&ConnMetadata{},
 		[]DumpValue{
 			DumpValue{
 				Key:   "username",
@@ -42,6 +44,7 @@ var pgValueTests = []struct {
 			0x4f, 0x4d, 0x20, 0x75, 0x73, 0x65, 0x72, 0x73, 0x3b, 0x00,
 		},
 		SrcToDst,
+		&ConnMetadata{},
 		[]DumpValue{},
 		[]DumpValue{
 			DumpValue{
@@ -61,21 +64,23 @@ var pgValueTests = []struct {
 			0x4f, 0x4d, 0x20, 0x75, 0x73, 0x65, 0x72, 0x73, 0x3b, 0x00,
 		},
 		RemoteToClient,
+		&ConnMetadata{},
 		[]DumpValue{},
 		[]DumpValue{},
 	},
 }
 
-func TestPgReadPersistentValuesStartupMessage(t *testing.T) {
+func TestPgReadInitialDumpValuesStartupMessage(t *testing.T) {
 	for _, tt := range pgValueTests {
 		out := new(bytes.Buffer)
 		dumper := &PgDumper{
-			logger: NewTestLogger(out),
+			logger: newTestLogger(out),
 		}
 		in := tt.in
 		direction := tt.direction
+		connMetadata := tt.connMetadata
 
-		actual := dumper.ReadPersistentValues(in, direction)
+		actual := dumper.ReadInitialDumpValues(in, direction, connMetadata)
 		expected := tt.expected
 
 		if len(actual) != len(expected) {
@@ -96,12 +101,13 @@ func TestPgRead(t *testing.T) {
 	for _, tt := range pgValueTests {
 		out := new(bytes.Buffer)
 		dumper := &PgDumper{
-			logger: NewTestLogger(out),
+			logger: newTestLogger(out),
 		}
 		in := tt.in
 		direction := tt.direction
+		connMetadata := tt.connMetadata
 
-		actual := dumper.Read(in, direction)
+		actual := dumper.Read(in, direction, connMetadata)
 		expected := tt.expectedQuery
 
 		if len(actual) != len(expected) {

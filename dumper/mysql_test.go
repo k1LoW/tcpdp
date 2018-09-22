@@ -2,18 +2,15 @@ package dumper
 
 import (
 	"bytes"
-	"io"
 	"strings"
 	"testing"
-
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
-var mysqlValueTests = []struct {
+var mysqlReadTests = []struct {
 	description   string
 	in            []byte
 	direction     Direction
+	connMetadata  *ConnMetadata
 	expected      []DumpValue
 	expectedQuery []DumpValue
 	logContain    string
@@ -30,6 +27,10 @@ var mysqlValueTests = []struct {
 			0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x00,
 		},
 		SrcToDst,
+		&ConnMetadata{
+			DumpValues: []DumpValue{},
+			Internal:   stmtNumParams{5: 2},
+		},
 		[]DumpValue{
 			DumpValue{
 				Key:   "username",
@@ -61,6 +62,10 @@ var mysqlValueTests = []struct {
 			0x6d, 0x79, 0x73, 0x71, 0x6c,
 		},
 		SrcToDst,
+		&ConnMetadata{
+			DumpValues: []DumpValue{},
+			Internal:   stmtNumParams{5: 2},
+		},
 		[]DumpValue{
 			DumpValue{
 				Key:   "username",
@@ -81,6 +86,10 @@ var mysqlValueTests = []struct {
 			0x6f, 0x6d, 0x20, 0x70, 0x6f, 0x73, 0x74, 0x73,
 		},
 		SrcToDst,
+		&ConnMetadata{
+			DumpValues: []DumpValue{},
+			Internal:   stmtNumParams{5: 2},
+		},
 		[]DumpValue{},
 		[]DumpValue{
 			DumpValue{
@@ -105,95 +114,155 @@ var mysqlValueTests = []struct {
 			0x6f, 0x6d, 0x20, 0x70, 0x6f, 0x73, 0x74, 0x73,
 		},
 		RemoteToClient,
+		&ConnMetadata{
+			DumpValues: []DumpValue{},
+			Internal:   stmtNumParams{5: 2},
+		},
 		[]DumpValue{},
 		[]DumpValue{},
 		"",
 	},
+	{
+		"",
+		[]byte{
+			0x25, 0x00, 0x00, 0x00, 0x17, 0x05, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x01,
+			0xfe, 0x00, 0xfe, 0x00, 0x06, 0x74, 0x65, 0x73, 0x74, 0x64, 0x62, 0x0d, 0x63, 0x6f, 0x6d, 0x6d,
+			0x65, 0x6e, 0x74, 0x5f, 0x73, 0x74, 0x61, 0x72, 0x73,
+		},
+		ClientToRemote,
+		&ConnMetadata{
+			DumpValues: []DumpValue{},
+			Internal:   stmtNumParams{5: 2},
+		},
+		[]DumpValue{},
+		[]DumpValue{
+			DumpValue{
+				Key:   "stmt_id",
+				Value: 5,
+			},
+			DumpValue{
+				Key:   "stmt_execute_values",
+				Value: []interface{}{"testdb", "comment_stars"},
+			},
+			DumpValue{
+				Key:   "seq_num",
+				Value: int64(0),
+			},
+			DumpValue{
+				Key:   "command_id",
+				Value: byte(23),
+			},
+		},
+		"",
+	},
 }
 
-func TestMysqlReadPersistentValuesHandshakeResponse41(t *testing.T) {
-	for _, tt := range mysqlValueTests {
+func TestMysqlReadInitialDumpValuesHandshakeResponse41(t *testing.T) {
+	for _, tt := range mysqlReadTests {
 		out := new(bytes.Buffer)
 		dumper := &MysqlDumper{
-			logger: NewTestLogger(out),
+			logger: newTestLogger(out),
 		}
 		in := tt.in
 		direction := tt.direction
+		connMetadata := tt.connMetadata
 
-		actual := dumper.ReadPersistentValues(in, direction)
+		actual := dumper.ReadInitialDumpValues(in, direction, connMetadata)
 		expected := tt.expected
 
 		if len(actual) != len(expected) {
 			t.Errorf("actual %v\nwant %v", actual, expected)
 		}
-		if len(actual) == 2 {
-			if actual[0] != expected[0] {
-				t.Errorf("actual %v\nwant %v", actual, expected)
-			}
-			if actual[1] != expected[1] {
-				t.Errorf("actual %v\nwant %v", actual, expected)
+		for i := 0; i < len(actual); i++ {
+			v := actual[i].Value
+			ev := expected[i].Value
+			switch v.(type) {
+			case []interface{}:
+				for j := 0; j < len(v.([]interface{})); j++ {
+					if v.([]interface{})[j] != ev.([]interface{})[j] {
+						t.Errorf("actual %#v\nwant %#v", v.([]interface{})[j], ev.([]interface{})[j])
+					}
+				}
+			default:
+				if actual[i] != expected[i] {
+					t.Errorf("actual %#v\nwant %#v", actual[i], expected[i])
+				}
 			}
 		}
 	}
 }
 
 func TestMysqlRead(t *testing.T) {
-	for _, tt := range mysqlValueTests {
+	for _, tt := range mysqlReadTests {
 		out := new(bytes.Buffer)
 		dumper := &MysqlDumper{
-			logger: NewTestLogger(out),
+			logger: newTestLogger(out),
 		}
 		in := tt.in
 		direction := tt.direction
+		connMetadata := tt.connMetadata
 
-		actual := dumper.Read(in, direction)
+		actual := dumper.Read(in, direction, connMetadata)
 		expected := tt.expectedQuery
 
 		if len(actual) != len(expected) {
 			t.Errorf("actual %v\nwant %v", actual, expected)
 		}
-		if len(actual) == 3 {
-			if actual[0] != expected[0] {
-				t.Errorf("actual %#v\nwant %#v", actual[0], expected[0])
-			}
-			if actual[1] != expected[1] {
-				t.Errorf("actual %#v\nwant %#v", actual[1], expected[1])
-			}
-			if actual[2] != expected[2] {
-				t.Errorf("actual %#v\nwant %#v", actual[2], expected[2])
+		for i := 0; i < len(actual); i++ {
+			v := actual[i].Value
+			ev := expected[i].Value
+			switch v.(type) {
+			case []interface{}:
+				for j := 0; j < len(v.([]interface{})); j++ {
+					if v.([]interface{})[j] != ev.([]interface{})[j] {
+						t.Errorf("actual %#v\nwant %#v", v.([]interface{})[j], ev.([]interface{})[j])
+					}
+				}
+			default:
+				if actual[i] != expected[i] {
+					t.Errorf("actual %#v\nwant %#v", actual[i], expected[i])
+				}
 			}
 		}
 	}
 }
 
 func TestMysqlAnalyzeUsernameAndDatabase(t *testing.T) {
-	for _, tt := range mysqlValueTests {
+	for _, tt := range mysqlReadTests {
 		out := new(bytes.Buffer)
 		dumper := &MysqlDumper{
-			logger: NewTestLogger(out),
+			logger: newTestLogger(out),
 		}
 		in := tt.in
 		direction := ClientToRemote
-		persistent := &DumpValues{}
+		connMetadata := tt.connMetadata
 		additional := []DumpValue{}
 
-		err := dumper.Dump(in, direction, persistent, additional)
+		err := dumper.Dump(in, direction, connMetadata, additional)
 		if err != nil {
 			t.Errorf("%v", err)
 		}
 
 		expected := tt.expected
 
-		actual := persistent.Values
+		actual := connMetadata.DumpValues
 		if len(actual) != len(expected) {
 			t.Errorf("actual %v\nwant %v", actual, expected)
 		}
-		if len(actual) == 2 {
-			if actual[0] != expected[0] {
-				t.Errorf("actual %v\nwant %v", actual, expected)
-			}
-			if actual[1] != expected[1] {
-				t.Errorf("actual %v\nwant %v", actual, expected)
+		for i := 0; i < len(actual); i++ {
+			v := actual[i].Value
+			ev := expected[i].Value
+			switch v.(type) {
+			case []interface{}:
+				for j := 0; j < len(v.([]interface{})); j++ {
+					if v.([]interface{})[j] != ev.([]interface{})[j] {
+						t.Errorf("actual %#v\nwant %#v", v.([]interface{})[j], ev.([]interface{})[j])
+					}
+				}
+			default:
+				if actual[i] != expected[i] {
+					t.Errorf("actual %#v\nwant %#v", actual[i], expected[i])
+				}
 			}
 		}
 
@@ -205,26 +274,123 @@ func TestMysqlAnalyzeUsernameAndDatabase(t *testing.T) {
 	}
 }
 
-// NewTestLogger return zap.Logger for test
-func NewTestLogger(out io.Writer) *zap.Logger {
-	encoderConfig := zapcore.EncoderConfig{
-		TimeKey:        "ts",
-		LevelKey:       "level",
-		NameKey:        "logger",
-		CallerKey:      "caller",
-		MessageKey:     "msg",
-		StacktraceKey:  "stacktrace",
-		EncodeLevel:    zapcore.LowercaseLevelEncoder,
-		EncodeTime:     zapcore.ISO8601TimeEncoder,
-		EncodeDuration: zapcore.StringDurationEncoder,
-		EncodeCaller:   zapcore.ShortCallerEncoder,
+var mysqlLengthEncodedIntegerTests = []struct {
+	in       []byte
+	expected uint64
+}{
+	{
+		[]byte{0xfa},
+		250,
+	},
+	{
+		[]byte{0xfc, 0xfb, 0x00},
+		251,
+	},
+}
+
+func TestMysqlReadLengthEncodeInteger(t *testing.T) {
+	for _, tt := range mysqlLengthEncodedIntegerTests {
+		buff := bytes.NewBuffer(tt.in)
+		actual := readLengthEncodedInteger(buff)
+		if actual != tt.expected {
+			t.Errorf("actual %#v\nwant %#v", actual, tt.expected)
+		}
 	}
+}
 
-	logger := zap.New(zapcore.NewCore(
-		zapcore.NewJSONEncoder(encoderConfig),
-		zapcore.AddSync(out),
-		zapcore.DebugLevel,
-	))
+var mysqlBinaryProtocolValueTests = []struct {
+	in       []byte
+	t        mysqlType
+	expected interface{}
+}{
+	{
+		[]byte{0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+		mysqlTypeLonglong,
+		int64(1),
+	},
+	{
+		[]byte{0x01, 0x00, 0x00, 0x00},
+		mysqlTypeLong,
+		int32(1),
+	},
+	{
+		[]byte{0x01, 0x00, 0x00, 0x00},
+		mysqlTypeInt24,
+		int32(1),
+	},
+	{
+		[]byte{0x01, 0x00},
+		mysqlTypeShort,
+		int16(1),
+	},
+	{
+		[]byte{0xe2, 0x07},
+		mysqlTypeYear,
+		int16(2018),
+	},
+	{
+		[]byte{0x01},
+		mysqlTypeTiny,
+		int8(1),
+	},
+	{
+		[]byte{0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x24, 0x40},
+		mysqlTypeDouble,
+		10.2,
+	},
+	{
+		[]byte{0x33, 0x33, 0x23, 0x41},
+		mysqlTypeFloat,
+		float32(10.2),
+	},
+	{
+		[]byte{0x04, 0xda, 0x07, 0x0a, 0x11},
+		mysqlTypeDate,
+		"2010-10-17",
+	},
+	{
+		[]byte{0x0b, 0xda, 0x07, 0x0a, 0x11, 0x13, 0x1b, 0x1e, 0x01, 0x00, 0x00, 0x00},
+		mysqlTypeDatetime,
+		"2010-10-17 19:27:30.000 001",
+	},
+	{
+		[]byte{0x0b, 0xda, 0x07, 0x0a, 0x11, 0x13, 0x1b, 0x1e, 0x01, 0x00, 0x00, 0x00},
+		mysqlTypeTimestamp,
+		"2010-10-17 19:27:30.000 001",
+	},
+	{
+		[]byte{0x0c, 0x01, 0x78, 0x00, 0x00, 0x00, 0x13, 0x1b, 0x1e, 0x01, 0x00, 0x00, 0x00},
+		mysqlTypeTime,
+		"-120d 19:27:30.000 001",
+	},
+	{
+		[]byte{0x08, 0x01, 0x78, 0x00, 0x00, 0x00, 0x13, 0x1b, 0x1e},
+		mysqlTypeTime,
+		"-120d 19:27:30",
+	},
+	{
+		[]byte{0x01},
+		mysqlTypeTime,
+		"0d 00:00:00",
+	},
+	{
+		[]byte{},
+		mysqlTypeNull,
+		nil,
+	},
+	{
+		[]byte{0x03, 0x66, 0x6f, 0x6f},
+		mysqlTypeString,
+		"foo",
+	},
+}
 
-	return logger
+func TestMysqlReadBinaryProtocolValue(t *testing.T) {
+	for _, tt := range mysqlBinaryProtocolValueTests {
+		buff := bytes.NewBuffer(tt.in)
+		actual := readBinaryProtocolValue(buff, tt.t)
+		if actual != tt.expected {
+			t.Errorf("actual %#v\nwant %#v", actual, tt.expected)
+		}
+	}
 }
