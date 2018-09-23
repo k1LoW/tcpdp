@@ -212,6 +212,7 @@ func (m *MysqlDumper) Read(in []byte, direction Direction, connMetadata *ConnMet
 				}
 			}
 		} else {
+			values := strings.Trim(string(in[5:]), "\x00")
 			dumps = []DumpValue{
 				DumpValue{
 					Key:   "stmt_id",
@@ -219,7 +220,7 @@ func (m *MysqlDumper) Read(in []byte, direction Direction, connMetadata *ConnMet
 				},
 				DumpValue{
 					Key:   "stmt_execute_values",
-					Value: []interface{}{},
+					Value: []string{values},
 				},
 			}
 		}
