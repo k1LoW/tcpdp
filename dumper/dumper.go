@@ -46,7 +46,6 @@ type Dumper interface {
 	Name() string
 	Dump(in []byte, direction Direction, connMetadata *ConnMetadata, additional []DumpValue) error
 	Read(in []byte, direction Direction, connMetadata *ConnMetadata) []DumpValue
-	ReadInitialDumpValues(in []byte, direction Direction, connMetadata *ConnMetadata) []DumpValue
 	Log(values []DumpValue)
 	NewConnMetadata() *ConnMetadata
 }

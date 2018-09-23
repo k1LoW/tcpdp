@@ -9,7 +9,7 @@ var pgValueTests = []struct {
 	description   string
 	in            []byte
 	direction     Direction
-	connMetadata  *ConnMetadata
+	connMetadata  ConnMetadata
 	expected      []DumpValue
 	expectedQuery []DumpValue
 }{
@@ -25,7 +25,7 @@ var pgValueTests = []struct {
 			0x44, 0x59, 0x00, 0x00,
 		},
 		SrcToDst,
-		&ConnMetadata{},
+		ConnMetadata{},
 		[]DumpValue{
 			DumpValue{
 				Key:   "username",
@@ -45,7 +45,7 @@ var pgValueTests = []struct {
 			0x4f, 0x4d, 0x20, 0x75, 0x73, 0x65, 0x72, 0x73, 0x3b, 0x00,
 		},
 		SrcToDst,
-		&ConnMetadata{},
+		ConnMetadata{},
 		[]DumpValue{},
 		[]DumpValue{
 			DumpValue{
@@ -68,7 +68,7 @@ var pgValueTests = []struct {
 			0x04,
 		},
 		SrcToDst,
-		&ConnMetadata{},
+		ConnMetadata{},
 		[]DumpValue{},
 		[]DumpValue{
 			DumpValue{
@@ -95,7 +95,7 @@ var pgValueTests = []struct {
 			0x45, 0x00, 0x00, 0x00, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x53, 0x00, 0x00, 0x00, 0x04,
 		},
 		SrcToDst,
-		&ConnMetadata{},
+		ConnMetadata{},
 		[]DumpValue{},
 		[]DumpValue{
 			DumpValue{
@@ -123,13 +123,13 @@ var pgValueTests = []struct {
 			0x4f, 0x4d, 0x20, 0x75, 0x73, 0x65, 0x72, 0x73, 0x3b, 0x00,
 		},
 		RemoteToClient,
-		&ConnMetadata{},
+		ConnMetadata{},
 		[]DumpValue{},
 		[]DumpValue{},
 	},
 }
 
-func TestPgReadInitialDumpValuesStartupMessage(t *testing.T) {
+func TestPgReadUsernameAndDatabaseStartupMessage(t *testing.T) {
 	for _, tt := range pgValueTests {
 		out := new(bytes.Buffer)
 		dumper := &PgDumper{
@@ -137,9 +137,8 @@ func TestPgReadInitialDumpValuesStartupMessage(t *testing.T) {
 		}
 		in := tt.in
 		direction := tt.direction
-		connMetadata := tt.connMetadata
 
-		actual := dumper.ReadInitialDumpValues(in, direction, connMetadata)
+		actual := dumper.readUsernameAndDatabase(in, direction)
 		expected := tt.expected
 
 		if len(actual) != len(expected) {
@@ -164,7 +163,7 @@ func TestPgRead(t *testing.T) {
 		}
 		in := tt.in
 		direction := tt.direction
-		connMetadata := tt.connMetadata
+		connMetadata := &tt.connMetadata
 
 		actual := dumper.Read(in, direction, connMetadata)
 		expected := tt.expectedQuery
