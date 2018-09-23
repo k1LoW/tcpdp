@@ -90,7 +90,7 @@ func (r *PacketReader) ReadAndDump(host string, port uint16) error {
 				key = fmt.Sprintf("%s:%d", ip.DstIP.String(), tcp.DstPort)
 				direction = dumper.DstToSrc
 			} else {
-				key = fmt.Sprintf("%s:%d", ip.SrcIP.String(), tcp.SrcPort)
+				key = fmt.Sprintf("%s:%d", ip.DstIP.String(), tcp.DstPort) // because set key when (tcp.SYN && tcp.ACK)
 				direction = dumper.Unknown
 			}
 
@@ -123,18 +123,6 @@ func (r *PacketReader) ReadAndDump(host string, port uint16) error {
 			if !ok {
 				connMetadata = r.dumper.NewConnMetadata()
 			}
-			// v := r.dumper.ReadInitialDumpValues(in, direction, connMetadata)
-			// if len(v) > 0 {
-			// 	// TCP dumper connection start ( mysql, pg )
-			// 	connID := xid.New().String()
-			// 	values := append(v, dumper.DumpValue{
-			// 		Key:   "conn_id",
-			// 		Value: connID,
-			// 	})
-			// 	connMetadata = r.dumper.NewConnMetadata()
-			// 	connMetadata.DumpValues = values
-			// 	mMap[key] = connMetadata
-			// }
 
 			ts := packet.Metadata().CaptureInfo.Timestamp
 
@@ -154,10 +142,9 @@ func (r *PacketReader) ReadAndDump(host string, port uint16) error {
 			}
 
 			read := r.dumper.Read(in, direction, connMetadata)
+			mMap[key] = connMetadata
 			if len(read) == 0 {
 				continue
-			} else {
-				mMap[key] = connMetadata
 			}
 
 			values = append(values, read...)
