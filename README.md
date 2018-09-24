@@ -46,7 +46,7 @@ $ tcpdp probe -i eth0 -t 3306 -d hex # is almost the same setting as 'tcpdump -i
 
 ``` console
 $ tcpdump -i eth0 host 127.0.0.1 and tcp port 3306 -w mysql.pcap
-$ tcpdp read mysql.pcap -d mysql -f ltsv
+$ tcpdp read mysql.pcap -d mysql -t 3306 -f ltsv
 ```
 
 ### `tcpdp config` Create config
