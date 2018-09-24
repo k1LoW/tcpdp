@@ -145,40 +145,105 @@ $ go get github.com/k1LoW/tcpdp
 +--------------------------+
 ```
 
-## Log keys
+### tcpdp read diagram
 
-| key | description | tcpdp.log / dump.log (dumper type) | mode |
-| --- | ----------- | ---------------------------------- | ---- |
-| ts | timestamp | tcpdp.log, hex, mysql, pg | proxy / probe / read |
-| level | log level | tcpdp.log | proxy / probe |
-| msg | log message | tcpdp.log | proxy / probe |
-| error | error info | tcpdp.log | proxy / probe |
-| caller | error caller | tcpdp.log | proxy / probe |
-| conn_id | TCP connection ID by tcpdp | tcpdp.log, hex, mysql, pg | proxy / probe / read |
-| conn_seq_num | TCP comunication sequence number by tcpdp | tcpdp.log, hex, mysql, pg | proxy |
+```
+                  tcpdp
++--------+ STDIN +--------+ STDOUT
+| *.pcap +------>+ dumper +-------->
++--------+       +--------+
+```
+
+## tcpdp.log ( `tcpdp proxy` or `tcpdp probe` )
+
+| key | description | mode |
+| --- | ----------- | ---- |
+| ts | timestamp | proxy / probe / read |
+| level | log level | proxy / probe |
+| msg | log message | proxy / probe |
+| error | error info | proxy / probe |
+| caller | error caller | proxy / probe |
+| conn_id | TCP connection ID by tcpdp | proxy / probe |
+| conn_seq_num | TCP comunication sequence number by tcpdp | proxy |
 | client_addr | client address | tcpdp.log, hex, mysql, pg | proxy |
-| proxy_listen_addr | listen address| tcpdp.log, hex, mysql, pg | proxy |
-| proxy_client_addr | proxy client address | hex, mysql, pg | proxy |
-| remote_addr | remote address | tcpdp.log, hex, mysql, pg | proxy |
-| direction | client to remote: `->` / remote to client: `<-` | tcpdp.log, hex, mysql, pg | proxy |
-| interface | probe target interface | tcpdp.log, hex, mysql, pg | probe |
-| src_addr | src address | tcpdp.log, hex, mysql, pg | probe / read |
-| dst_addr | dst address | tcpdp.log, hex, mysql, pg | probe / read |
-| probe_target_addr | probe target address | tcpdp.log, hex, mysql, pg | probe |
-| dump | dump data by hex.Dump | hex | proxy / probe / read |
-| query | SQL query | mysql, pg | proxy / probe / read |
-| stmt_id | statement id | mysql | proxy / probe / read |
-| stmt_prepare_query | prepared statement query | mysql | proxy / probe / read |
-| stmt_execute_values | prepared statement execute values | mysql | proxy / probe / read |
-| portal_name | portal Name | pg | proxy / probe / read |
-| stmt_name | prepared statement name | pg | proxy / probe / read |
-| parse_query | prepared statement query | pg | proxy / probe / read |
-| bind_values | prepared statement bind(execute) values | pg | proxy / probe / read |
-| username | username | mysql, pg | proxy / probe / read |
-| database | database | mysql, pg | proxy / probe / read |
-| seq_num | sequence number by MySQL | mysql | proxy / probe / read |
-| command_id | [command_id](https://dev.mysql.com/doc/internals/en/com-query.html) for MySQL | mysql | proxy / probe / read |
-| message_type | [message type](https://www.postgresql.org/docs/current/static/protocol-overview.html#PROTOCOL-MESSAGE-CONCEPTS) for PostgreSQL | pg | proxy / probe / read |
+| proxy_listen_addr | listen address| proxy |
+| direction | client to remote: `->` / remote to client: `<-` | proxy |
+| interface | probe target interface | probe |
+| probe_target_addr | probe target address | probe |
+
+## Dumper
+
+### mysql
+
+MySQL query dumper
+
+| key | description | mode |
+| --- | ----------- | ---- |
+| ts | timestamp | proxy / probe / read |
+| conn_id | TCP connection ID by tcpdp | proxy / probe / read |
+| conn_seq_num | TCP comunication sequence number by tcpdp | proxy |
+| client_addr | client address | proxy |
+| proxy_listen_addr | listen address| proxy |
+| proxy_client_addr | proxy client address | proxy |
+| remote_addr | remote address | proxy |
+| direction | client to remote: `->` / remote to client: `<-` | proxy |
+| interface | probe target interface | probe |
+| src_addr | src address | probe / read |
+| dst_addr | dst address | probe / read |
+| probe_target_addr | probe target address | probe |
+| query | SQL query | proxy / probe / read |
+| stmt_id | statement id | proxy / probe / read |
+| stmt_prepare_query | prepared statement query | proxy / probe / read |
+| stmt_execute_values | prepared statement execute values | proxy / probe / read |
+| username | username | proxy / probe / read |
+| database | database | proxy / probe / read |
+| seq_num | sequence number by MySQL | proxy / probe / read |
+| command_id | [command_id](https://dev.mysql.com/doc/internals/en/com-query.html) for MySQL | proxy / probe / read |
+
+### pg
+
+PostgreSQL query dumper
+
+| key | description | mode |
+| --- | ----------- | ---- |
+| ts | timestamp | proxy / probe / read |
+| conn_id | TCP connection ID by tcpdp | proxy / probe / read |
+| conn_seq_num | TCP comunication sequence number by tcpdp | proxy |
+| client_addr | client address | proxy |
+| proxy_listen_addr | listen address| proxy |
+| proxy_client_addr | proxy client address | proxy |
+| remote_addr | remote address | proxy |
+| direction | client to remote: `->` / remote to client: `<-` | proxy |
+| interface | probe target interface | probe |
+| src_addr | src address | probe / read |
+| dst_addr | dst address | probe / read |
+| probe_target_addr | probe target address | probe |
+| query | SQL query | proxy / probe / read |
+| portal_name | portal Name | proxy / probe / read |
+| stmt_name | prepared statement name | proxy / probe / read |
+| parse_query | prepared statement query | proxy / probe / read |
+| bind_values | prepared statement bind(execute) values | proxy / probe / read |
+| username | username | proxy / probe / read |
+| database | database | proxy / probe / read |
+| message_type | [message type](https://www.postgresql.org/docs/current/static/protocol-overview.html#PROTOCOL-MESSAGE-CONCEPTS) for PostgreSQL | proxy / probe / read |
+
+### hex
+
+| key | description | mode |
+| --- | ----------- | ---- |
+| ts | timestamp | proxy / probe / read |
+| conn_id | TCP connection ID by tcpdp | proxy / probe / read |
+| conn_seq_num | TCP comunication sequence number by tcpdp | proxy |
+| client_addr | client address | proxy |
+| proxy_listen_addr | listen address| proxy |
+| proxy_client_addr | proxy client address | proxy |
+| remote_addr | remote address | proxy |
+| direction | client to remote: `->` / remote to client: `<-` | proxy |
+| interface | probe target interface | probe |
+| src_addr | src address | probe / read |
+| dst_addr | dst address | probe / read |
+| probe_target_addr | probe target address | probe |
+| dump | dump data by hex.Dump | proxy / probe / read |
 
 ## References
 
