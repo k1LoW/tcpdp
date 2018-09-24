@@ -119,7 +119,7 @@ var readCmd = &cobra.Command{
 }
 
 func init() {
-	readCmd.Flags().StringVarP(&readTarget, "target", "t", "", "target addr. ex. localhost:80")
+	readCmd.Flags().StringVarP(&readTarget, "target", "t", "", "target addr. (ex. \"localhost:80\", \"3306\")")
 	readCmd.Flags().StringP("format", "f", "json", "STDOUT format. (\"console\", \"json\" , \"ltsv\") ")
 	readCmd.Flags().StringVarP(&readDumper, "dumper", "d", "hex", "dumper")
 
