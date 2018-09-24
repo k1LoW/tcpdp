@@ -105,14 +105,6 @@ func (m *MysqlDumper) Name() string {
 
 // Dump query of MySQL
 func (m *MysqlDumper) Dump(in []byte, direction Direction, connMetadata *ConnMetadata, additional []DumpValue) error {
-	pValues := m.ReadInitialDumpValues(in, direction, connMetadata)
-	if len(pValues) > 0 {
-		for _, kv := range pValues {
-			connMetadata.DumpValues = append(connMetadata.DumpValues, kv)
-		}
-		return nil
-	}
-
 	read := m.Read(in, direction, connMetadata)
 	if len(read) == 0 {
 		return nil
@@ -129,6 +121,9 @@ func (m *MysqlDumper) Dump(in []byte, direction Direction, connMetadata *ConnMet
 
 // Read return byte to analyzed string
 func (m *MysqlDumper) Read(in []byte, direction Direction, connMetadata *ConnMetadata) []DumpValue {
+	values := m.readUsernameAndDatabase(in, direction)
+	connMetadata.DumpValues = append(connMetadata.DumpValues, values...)
+
 	if direction == RemoteToClient || direction == DstToSrc || direction == Unknown {
 		// COM_STMT_PREPARE Response https://dev.mysql.com/doc/internals/en/com-stmt-prepare-response.html
 		if len(in) >= 16 && in[4] == comStmtPrepareOK && in[13] == 0x00 {
@@ -144,6 +139,7 @@ func (m *MysqlDumper) Read(in []byte, direction Direction, connMetadata *ConnMet
 			return []DumpValue{}
 		}
 	}
+
 	if len(in) < 6 {
 		return []DumpValue{}
 	}
@@ -216,6 +212,7 @@ func (m *MysqlDumper) Read(in []byte, direction Direction, connMetadata *ConnMet
 				}
 			}
 		} else {
+			values := strings.Trim(string(in[5:]), "\x00")
 			dumps = []DumpValue{
 				DumpValue{
 					Key:   "stmt_id",
@@ -223,7 +220,7 @@ func (m *MysqlDumper) Read(in []byte, direction Direction, connMetadata *ConnMet
 				},
 				DumpValue{
 					Key:   "stmt_execute_values",
-					Value: []interface{}{},
+					Value: []string{values},
 				},
 			}
 		}
@@ -243,8 +240,24 @@ func (m *MysqlDumper) Read(in []byte, direction Direction, connMetadata *ConnMet
 	}...)
 }
 
-// ReadInitialDumpValues return persistent value each session
-func (m *MysqlDumper) ReadInitialDumpValues(in []byte, direction Direction, connMetadata *ConnMetadata) []DumpValue {
+// Log values
+func (m *MysqlDumper) Log(values []DumpValue) {
+	fields := []zapcore.Field{}
+	for _, kv := range values {
+		fields = append(fields, zap.Any(kv.Key, kv.Value))
+	}
+	m.logger.Info("-", fields...)
+}
+
+// NewConnMetadata return metadata per TCP connection
+func (m *MysqlDumper) NewConnMetadata() *ConnMetadata {
+	return &ConnMetadata{
+		DumpValues: []DumpValue{},
+		Internal:   stmtNumParams{},
+	}
+}
+
+func (m *MysqlDumper) readUsernameAndDatabase(in []byte, direction Direction) []DumpValue {
 	values := []DumpValue{}
 	if direction == RemoteToClient || direction == DstToSrc {
 		return values
@@ -284,23 +297,6 @@ func (m *MysqlDumper) ReadInitialDumpValues(in []byte, direction Direction, conn
 	}
 
 	return values
-}
-
-// Log values
-func (m *MysqlDumper) Log(values []DumpValue) {
-	fields := []zapcore.Field{}
-	for _, kv := range values {
-		fields = append(fields, zap.Any(kv.Key, kv.Value))
-	}
-	m.logger.Info("-", fields...)
-}
-
-// NewConnMetadata return metadata per TCP connection
-func (m *MysqlDumper) NewConnMetadata() *ConnMetadata {
-	return &ConnMetadata{
-		DumpValues: []DumpValue{},
-		Internal:   stmtNumParams{},
-	}
 }
 
 func readMysqlType(buff *bytes.Buffer) mysqlType {

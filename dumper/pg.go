@@ -46,15 +46,6 @@ func (p *PgDumper) Name() string {
 
 // Dump query of PostgreSQL
 func (p *PgDumper) Dump(in []byte, direction Direction, connMetadata *ConnMetadata, additional []DumpValue) error {
-	// parse StartupMessage to get username, database
-	pValues := p.ReadInitialDumpValues(in, direction, connMetadata)
-	if len(pValues) > 0 {
-		for _, kv := range pValues {
-			connMetadata.DumpValues = append(connMetadata.DumpValues, kv)
-		}
-		return nil
-	}
-
 	read := p.Read(in, direction, connMetadata)
 	if len(read) == 0 {
 		return nil
@@ -71,6 +62,9 @@ func (p *PgDumper) Dump(in []byte, direction Direction, connMetadata *ConnMetada
 
 // Read return byte to analyzed string
 func (p *PgDumper) Read(in []byte, direction Direction, connMetadata *ConnMetadata) []DumpValue {
+	values := p.readUsernameAndDatabase(in, direction)
+	connMetadata.DumpValues = append(connMetadata.DumpValues, values...)
+
 	if direction == RemoteToClient || direction == DstToSrc {
 		return []DumpValue{}
 	}
@@ -183,8 +177,23 @@ func (p *PgDumper) Read(in []byte, direction Direction, connMetadata *ConnMetada
 	})
 }
 
-// ReadInitialDumpValues return persistent value each session
-func (p *PgDumper) ReadInitialDumpValues(in []byte, direction Direction, connMetadata *ConnMetadata) []DumpValue {
+// Log values
+func (p *PgDumper) Log(values []DumpValue) {
+	fields := []zapcore.Field{}
+	for _, kv := range values {
+		fields = append(fields, zap.Any(kv.Key, kv.Value))
+	}
+	p.logger.Info("-", fields...)
+}
+
+// NewConnMetadata ...
+func (p *PgDumper) NewConnMetadata() *ConnMetadata {
+	return &ConnMetadata{
+		DumpValues: []DumpValue{},
+	}
+}
+
+func (p *PgDumper) readUsernameAndDatabase(in []byte, direction Direction) []DumpValue {
 	values := []DumpValue{}
 	if direction == RemoteToClient || direction == DstToSrc {
 		return values
@@ -214,20 +223,4 @@ func (p *PgDumper) ReadInitialDumpValues(in []byte, direction Direction, connMet
 		}
 	}
 	return values
-}
-
-// Log values
-func (p *PgDumper) Log(values []DumpValue) {
-	fields := []zapcore.Field{}
-	for _, kv := range values {
-		fields = append(fields, zap.Any(kv.Key, kv.Value))
-	}
-	p.logger.Info("-", fields...)
-}
-
-// NewConnMetadata ...
-func (p *PgDumper) NewConnMetadata() *ConnMetadata {
-	return &ConnMetadata{
-		DumpValues: []DumpValue{},
-	}
 }

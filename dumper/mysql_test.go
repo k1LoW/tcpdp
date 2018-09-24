@@ -10,7 +10,7 @@ var mysqlReadTests = []struct {
 	description   string
 	in            []byte
 	direction     Direction
-	connMetadata  *ConnMetadata
+	connMetadata  ConnMetadata
 	expected      []DumpValue
 	expectedQuery []DumpValue
 	logContain    string
@@ -27,7 +27,7 @@ var mysqlReadTests = []struct {
 			0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x00,
 		},
 		SrcToDst,
-		&ConnMetadata{
+		ConnMetadata{
 			DumpValues: []DumpValue{},
 			Internal:   stmtNumParams{5: 2},
 		},
@@ -62,7 +62,7 @@ var mysqlReadTests = []struct {
 			0x6d, 0x79, 0x73, 0x71, 0x6c,
 		},
 		SrcToDst,
-		&ConnMetadata{
+		ConnMetadata{
 			DumpValues: []DumpValue{},
 			Internal:   stmtNumParams{5: 2},
 		},
@@ -86,7 +86,7 @@ var mysqlReadTests = []struct {
 			0x6f, 0x6d, 0x20, 0x70, 0x6f, 0x73, 0x74, 0x73,
 		},
 		SrcToDst,
-		&ConnMetadata{
+		ConnMetadata{
 			DumpValues: []DumpValue{},
 			Internal:   stmtNumParams{5: 2},
 		},
@@ -114,7 +114,7 @@ var mysqlReadTests = []struct {
 			0x6f, 0x6d, 0x20, 0x70, 0x6f, 0x73, 0x74, 0x73,
 		},
 		RemoteToClient,
-		&ConnMetadata{
+		ConnMetadata{
 			DumpValues: []DumpValue{},
 			Internal:   stmtNumParams{5: 2},
 		},
@@ -130,7 +130,7 @@ var mysqlReadTests = []struct {
 			0x65, 0x6e, 0x74, 0x5f, 0x73, 0x74, 0x61, 0x72, 0x73,
 		},
 		ClientToRemote,
-		&ConnMetadata{
+		ConnMetadata{
 			DumpValues: []DumpValue{},
 			Internal:   stmtNumParams{5: 2},
 		},
@@ -157,7 +157,7 @@ var mysqlReadTests = []struct {
 	},
 }
 
-func TestMysqlReadInitialDumpValuesHandshakeResponse41(t *testing.T) {
+func TestMysqlReadUsernameAndDatabaseHandshakeResponse41(t *testing.T) {
 	for _, tt := range mysqlReadTests {
 		out := new(bytes.Buffer)
 		dumper := &MysqlDumper{
@@ -165,9 +165,8 @@ func TestMysqlReadInitialDumpValuesHandshakeResponse41(t *testing.T) {
 		}
 		in := tt.in
 		direction := tt.direction
-		connMetadata := tt.connMetadata
 
-		actual := dumper.ReadInitialDumpValues(in, direction, connMetadata)
+		actual := dumper.readUsernameAndDatabase(in, direction)
 		expected := tt.expected
 
 		if len(actual) != len(expected) {
@@ -200,7 +199,7 @@ func TestMysqlRead(t *testing.T) {
 		}
 		in := tt.in
 		direction := tt.direction
-		connMetadata := tt.connMetadata
+		connMetadata := &tt.connMetadata
 
 		actual := dumper.Read(in, direction, connMetadata)
 		expected := tt.expectedQuery
@@ -235,7 +234,7 @@ func TestMysqlAnalyzeUsernameAndDatabase(t *testing.T) {
 		}
 		in := tt.in
 		direction := ClientToRemote
-		connMetadata := tt.connMetadata
+		connMetadata := &tt.connMetadata
 		additional := []DumpValue{}
 
 		err := dumper.Dump(in, direction, connMetadata, additional)

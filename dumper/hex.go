@@ -58,11 +58,6 @@ func (h *HexDumper) Read(in []byte, direction Direction, connMetadata *ConnMetad
 	}
 }
 
-// ReadInitialDumpValues return persistent value each session
-func (h *HexDumper) ReadInitialDumpValues(in []byte, direction Direction, connMetadata *ConnMetadata) []DumpValue {
-	return []DumpValue{}
-}
-
 // Log values
 func (h *HexDumper) Log(values []DumpValue) {
 	fields := []zapcore.Field{}
