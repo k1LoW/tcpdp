@@ -243,7 +243,8 @@ PostgreSQL query dumper
 | src_addr | src address | probe / read |
 | dst_addr | dst address | probe / read |
 | probe_target_addr | probe target address | probe |
-| dump | dump data by hex.Dump | proxy / probe / read |
+| bytes | bytes string by hex.Dump | proxy / probe / read |
+| ascii | ascii string by hex.Dump | proxy / probe / read |
 
 ## References
 
