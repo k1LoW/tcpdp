@@ -1,5 +1,12 @@
 # Changelog
 
+## [v0.8.0](https://github.com/k1LoW/tcpdp/compare/v0.7.0...v0.8.0) (2018-09-24)
+
+* [BREAKING]Fix HexDumper output [#26](https://github.com/k1LoW/tcpdp/pull/26) ([k1LoW](https://github.com/k1LoW))
+* Add more values to error log when `probe` [#25](https://github.com/k1LoW/tcpdp/pull/25) ([k1LoW](https://github.com/k1LoW))
+* [BREAKING]Fix *Dumber Read when direction = Unknown [#24](https://github.com/k1LoW/tcpdp/pull/24) ([k1LoW](https://github.com/k1LoW))
+* Remove dumper.ReadInitialDumpValues [#23](https://github.com/k1LoW/tcpdp/pull/23) ([k1LoW](https://github.com/k1LoW))
+
 ## [v0.7.0](https://github.com/k1LoW/tcpdp/compare/v0.6.1...v0.7.0) (2018-09-23)
 
 * [BREAKING]Parse PostgreSQL MessageParse / MessageBind / ( MessageExecute )  [#22](https://github.com/k1LoW/tcpdp/pull/22) ([k1LoW](https://github.com/k1LoW))
