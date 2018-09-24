@@ -127,7 +127,7 @@ func (p *Proxy) pipe(srcConn, destConn *net.TCPConn) {
 		err = p.dump(b, direction)
 		if err != nil {
 			fields := p.fieldsWithErrorAndDirection(err, direction)
-			p.server.logger.WithOptions(zap.AddCaller()).Error("dumber Dump error", fields...)
+			p.server.logger.WithOptions(zap.AddCaller()).Error("dumper Dump error", fields...)
 			break
 		}
 
