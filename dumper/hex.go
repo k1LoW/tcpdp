@@ -2,7 +2,7 @@ package dumper
 
 import (
 	"encoding/hex"
-	"fmt"
+	"strings"
 	"time"
 
 	"github.com/k1LoW/tcpdp/logger"
@@ -42,18 +42,31 @@ func (h *HexDumper) Dump(in []byte, direction Direction, connMetadata *ConnMetad
 		Value: time.Now(),
 	})
 
-	fmt.Printf("%s\n", read[0].Value) // FIXME: Easy to Read
-
 	h.Log(values)
 	return nil
 }
 
 // Read return byte to analyzed string
 func (h *HexDumper) Read(in []byte, direction Direction, connMetadata *ConnMetadata) []DumpValue {
+	hexdump := strings.Split(hex.Dump(in), "\n")
+	byteString := []string{}
+	ascii := []string{}
+	for _, hd := range hexdump {
+		if hd == "" {
+			continue
+		}
+		byteString = append(byteString, strings.TrimRight(strings.Replace(hd[10:58], "  ", " ", 1), " "))
+		ascii = append(ascii, hd[61:len(hd)-1])
+	}
+
 	return []DumpValue{
 		DumpValue{
-			Key:   "dump",
-			Value: hex.Dump(in),
+			Key:   "bytes",
+			Value: strings.Join(byteString, " "),
+		},
+		DumpValue{
+			Key:   "ascii",
+			Value: strings.Join(ascii, ""),
 		},
 	}
 }
