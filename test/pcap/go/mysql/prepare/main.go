@@ -8,7 +8,7 @@ import (
 
 func main() {
 	for i := 0; i < 5; i++ {
-		urlstr := "my://root:mypass@127.0.0.1:33308/testdb"
+		urlstr := "my://root:mypass@127.0.0.1:33066/testdb"
 		db, err := dburl.Open(urlstr)
 		if err != nil {
 			panic(err)
