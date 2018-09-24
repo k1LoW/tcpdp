@@ -2,7 +2,6 @@ package dumper
 
 import (
 	"encoding/hex"
-	"fmt"
 	"time"
 
 	"github.com/k1LoW/tcpdp/logger"
@@ -41,8 +40,6 @@ func (h *HexDumper) Dump(in []byte, direction Direction, connMetadata *ConnMetad
 		Key:   "ts",
 		Value: time.Now(),
 	})
-
-	fmt.Printf("%s\n", read[0].Value) // FIXME: Easy to Read
 
 	h.Log(values)
 	return nil
