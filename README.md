@@ -11,11 +11,11 @@ $ tcpdp proxy -l localhost:12345 -r localhost:1234 -d hex # hex.Dump()
 ```
 
 ``` console
-$ tcpdp proxy -l localhost:55432 -r localhost:5432 -d pg # Dump query of PostgreSQL
+$ tcpdp proxy -l localhost:55432 -r db.internal.example.com:5432 -d pg # Dump query of PostgreSQL
 ```
 
 ``` console
-$ tcpdp proxy -l localhost:33306 -r localhost:3306 -d mysql # Dump query of MySQL
+$ tcpdp proxy -l localhost:33306 -r db.example.com:3306 -d mysql # Dump query of MySQL
 ```
 
 #### With server-starter
@@ -23,7 +23,7 @@ $ tcpdp proxy -l localhost:33306 -r localhost:3306 -d mysql # Dump query of MySQ
 https://github.com/lestrrat-go/server-starter
 
 ``` console
-$ start_server --port 33306 -- tcpdp proxy -s -r localhost:3306 -d mysql
+$ start_server --port 33306 -- tcpdp proxy -s -r db.example.com:3306 -d mysql
 ```
 
 #### With config file
