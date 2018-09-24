@@ -135,9 +135,7 @@ func (m *MysqlDumper) Read(in []byte, direction Direction, connMetadata *ConnMet
 			numParamsNum := int(bytesToUint64(numParams))
 			connMetadata.Internal.(stmtNumParams)[stmtIDNum] = numParamsNum
 		}
-		if direction == RemoteToClient || direction == DstToSrc {
-			return []DumpValue{}
-		}
+		return []DumpValue{}
 	}
 
 	if len(in) < 6 {

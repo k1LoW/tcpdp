@@ -65,7 +65,7 @@ func (p *PgDumper) Read(in []byte, direction Direction, connMetadata *ConnMetada
 	values := p.readUsernameAndDatabase(in, direction)
 	connMetadata.DumpValues = append(connMetadata.DumpValues, values...)
 
-	if direction == RemoteToClient || direction == DstToSrc {
+	if direction == RemoteToClient || direction == DstToSrc || direction == Unknown {
 		return []DumpValue{}
 	}
 	if len(in) == 0 {

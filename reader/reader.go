@@ -83,24 +83,48 @@ func (r *PacketReader) ReadAndDump(host string, port uint16) error {
 
 			var key string
 			var direction dumper.Direction
+			srcToDstKey := fmt.Sprintf("%s:%d->%s:%d", ip.SrcIP.String(), tcp.SrcPort, ip.DstIP.String(), tcp.DstPort)
+			dstToSrcKey := fmt.Sprintf("%s:%d->%s:%d", ip.DstIP.String(), tcp.DstPort, ip.SrcIP.String(), tcp.SrcPort)
 			if (host == "" || ip.DstIP.String() == host) && uint16(tcp.DstPort) == port {
-				key = fmt.Sprintf("%s:%d", ip.SrcIP.String(), tcp.SrcPort)
+				key = srcToDstKey
 				direction = dumper.SrcToDst
 			} else if (host == "" || ip.SrcIP.String() == host) && uint16(tcp.SrcPort) == port {
-				key = fmt.Sprintf("%s:%d", ip.DstIP.String(), tcp.DstPort)
+				key = dstToSrcKey
 				direction = dumper.DstToSrc
 			} else {
-				key = fmt.Sprintf("%s:%d", ip.DstIP.String(), tcp.DstPort) // because set key when (tcp.SYN && tcp.ACK)
+				key = "-"
 				direction = dumper.Unknown
 			}
 
-			if tcp.SYN || tcp.FIN {
-				// TCP connection start or end
+			if tcp.SYN && !tcp.ACK {
+				if direction == dumper.Unknown {
+					key = srcToDstKey
+				}
+
+				// TCP connection start
 				_, ok := mMap[key]
 				if ok {
 					delete(mMap, key)
 				}
-				if tcp.SYN && tcp.ACK {
+
+				// TCP connection start ( hex, mysql, pg )
+				connID := xid.New().String()
+				connMetadata := r.dumper.NewConnMetadata()
+				connMetadata.DumpValues = []dumper.DumpValue{
+					dumper.DumpValue{
+						Key:   "conn_id",
+						Value: connID,
+					},
+				}
+				mMap[key] = connMetadata
+
+			} else if tcp.SYN && tcp.ACK {
+				if direction == dumper.Unknown {
+					key = dstToSrcKey
+				}
+
+				_, ok := mMap[key]
+				if !ok {
 					// TCP connection start ( hex, mysql, pg )
 					connID := xid.New().String()
 					connMetadata := r.dumper.NewConnMetadata()
@@ -112,11 +136,35 @@ func (r *PacketReader) ReadAndDump(host string, port uint16) error {
 					}
 					mMap[key] = connMetadata
 				}
+
+			} else if tcp.FIN {
+				// TCP connection end
+				_, ok := mMap[key]
+				if ok {
+					delete(mMap, key)
+				}
+				if direction == dumper.Unknown {
+					for _, key := range []string{srcToDstKey, dstToSrcKey} {
+						_, ok := mMap[key]
+						if ok {
+							delete(mMap, key)
+						}
+					}
+				}
 			}
 
 			in := tcpLayer.LayerPayload()
 			if len(in) == 0 {
 				continue
+			}
+
+			if direction == dumper.Unknown {
+				for _, k := range []string{srcToDstKey, dstToSrcKey} {
+					_, ok := mMap[k]
+					if ok {
+						key = k
+					}
+				}
 			}
 
 			connMetadata, ok := mMap[key]
