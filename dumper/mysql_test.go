@@ -105,7 +105,7 @@ var mysqlReadTests = []struct {
 				Value: byte(3),
 			},
 		},
-		"",
+		"\"query\":\"select * from posts\"",
 	},
 	{
 		"When direction = RemoteToClient do not parse query",
@@ -153,7 +153,7 @@ var mysqlReadTests = []struct {
 				Value: byte(23),
 			},
 		},
-		"",
+		"\"stmt_execute_values\":[\"testdb\",\"comment_stars\"]",
 	},
 }
 
@@ -226,15 +226,16 @@ func TestMysqlRead(t *testing.T) {
 	}
 }
 
-func TestMysqlAnalyzeUsernameAndDatabase(t *testing.T) {
+func TestMysqlDump(t *testing.T) {
 	for _, tt := range mysqlReadTests {
 		out := new(bytes.Buffer)
 		dumper := &MysqlDumper{
 			logger: newTestLogger(out),
 		}
 		in := tt.in
-		direction := ClientToRemote
+		direction := tt.direction
 		connMetadata := &tt.connMetadata
+
 		additional := []DumpValue{}
 
 		err := dumper.Dump(in, direction, connMetadata, additional)
@@ -267,8 +268,14 @@ func TestMysqlAnalyzeUsernameAndDatabase(t *testing.T) {
 
 		log := out.String()
 
-		if !strings.Contains(log, tt.logContain) {
-			t.Errorf("%v not be %v", log, tt.logContain)
+		if tt.logContain == "" {
+			if log != tt.logContain {
+				t.Errorf("%v not be %v", log, tt.logContain)
+			}
+		} else {
+			if !strings.Contains(log, tt.logContain) {
+				t.Errorf("%v not be %v", log, tt.logContain)
+			}
 		}
 	}
 }
