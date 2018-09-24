@@ -16,6 +16,7 @@ import (
 	"github.com/k1LoW/tcpdp/reader"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 // ProbeServer struct
@@ -81,6 +82,7 @@ func (s *ProbeServer) Start() error {
 
 	host, port, err := reader.ParseTarget(target)
 	if err != nil {
+		s.logger.WithOptions(zap.AddCaller()).Fatal("parse target error", zap.Error(err))
 		return err
 	}
 
@@ -104,7 +106,8 @@ func (s *ProbeServer) Start() error {
 		pcap.BlockForever,
 	)
 	if err != nil {
-		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap OpenLive error", zap.Error(err))
+		fields := s.fieldsWithErrorAndValues(err, pValues)
+		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap OpenLive error", fields...)
 		return err
 	}
 	defer handle.Close()
@@ -119,7 +122,8 @@ func (s *ProbeServer) Start() error {
 	}
 
 	if err := handle.SetBPFFilter(f); err != nil {
-		s.logger.WithOptions(zap.AddCaller()).Fatal("BPF error", zap.Error(err))
+		fields := s.fieldsWithErrorAndValues(err, pValues)
+		s.logger.WithOptions(zap.AddCaller()).Fatal("BPF error", fields...)
 		return err
 	}
 
@@ -132,6 +136,11 @@ func (s *ProbeServer) Start() error {
 	)
 
 	err = r.ReadAndDump(host, port)
+	if err != nil {
+		fields := s.fieldsWithErrorAndValues(err, pValues)
+		s.logger.WithOptions(zap.AddCaller()).Fatal("ReadAndDump error", fields...)
+		return err
+	}
 	return err
 }
 
@@ -158,4 +167,16 @@ func (s *ProbeServer) deletePID() {
 	if err := os.Remove(s.pidfile); err != nil {
 		s.logger.WithOptions(zap.AddCaller()).Fatal(fmt.Sprintf("can not delete %s", s.pidfile), zap.Error(err))
 	}
+}
+
+func (s *ProbeServer) fieldsWithErrorAndValues(err error, pValues []dumper.DumpValue) []zapcore.Field {
+	fields := []zapcore.Field{
+		zap.Error(err),
+	}
+
+	for _, kv := range pValues {
+		fields = append(fields, zap.Any(kv.Key, kv.Value))
+	}
+
+	return fields
 }
