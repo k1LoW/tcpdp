@@ -8,6 +8,8 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"time"
+
 	"github.com/hnakamur/zap-ltsv"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/spf13/viper"
@@ -183,20 +185,21 @@ func newLogWriter(logType string) io.Writer {
 	if rotationHook != "" {
 		options = append(options, rotatelogs.WithHandler(NewRotateHandler(rotationHook)))
 	}
-
 	var w io.Writer
+	var t time.Duration
 	if rotateEnable {
 		switch rotationTime {
 		case "hourly":
 			logSuffix = ".%Y%m%d%H"
+			t = 1 * time.Hour
 		case "daily":
 			logSuffix = ".%Y%m%d"
-		case "monthly":
-			logSuffix = ".%Y%m"
+			t = 24 * time.Hour
 		default:
-			log.Fatal("Log setting error, please specify one of the periods [hourly, daily, monthly]")
+			log.Fatal("Log setting error, please specify one of the periods [hourly, daily]")
 		}
 		options = append(options, rotatelogs.WithLinkName(path))
+		options = append(options, rotatelogs.WithRotationTime(t))
 		w, err = rotatelogs.New(
 			path+logSuffix,
 			options...,
