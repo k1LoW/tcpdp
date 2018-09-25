@@ -85,6 +85,10 @@ format = "ltsv"
 rotateEnable = true
 rotationTime = "daily"
 rotationCount = 7
+# You can execute arbitrary commands after rotate
+# $1 = prev filename
+# $2 = current filename
+rotationHook = "/path/to/after_rotate.sh"
 
 [dumpLog]
 dir = "/var/log/dump"
