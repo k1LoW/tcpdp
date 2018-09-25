@@ -116,7 +116,7 @@ func (s *ProbeServer) Start() error {
 
 	f := fmt.Sprintf("tcp and host %s and port %d", host, port)
 
-	if host == "" && port > 0 || host == AnyIP {
+	if (host == "" && port > 0) || host == AnyIP {
 		f = fmt.Sprintf("tcp port %d", port)
 	} else if host != "" && port == 0 {
 		f = fmt.Sprintf("tcp and host %s", host)
