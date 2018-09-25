@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.9.0](https://github.com/k1LoW/tcpdp/compare/v0.8.0...v0.9.0) (2018-09-25)
+
+* I want to do arbitrary processing after rotate [#28](https://github.com/k1LoW/tcpdp/pull/28) ([pyama86](https://github.com/pyama86))
+* support any ip sniffing [#27](https://github.com/k1LoW/tcpdp/pull/27) ([pyama86](https://github.com/pyama86))
+
 ## [v0.8.0](https://github.com/k1LoW/tcpdp/compare/v0.7.0...v0.8.0) (2018-09-24)
 
 * [BREAKING]Fix HexDumper output [#26](https://github.com/k1LoW/tcpdp/pull/26) ([k1LoW](https://github.com/k1LoW))
