@@ -5,10 +5,11 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/hnakamur/zap-ltsv"
-	"github.com/lestrrat-go/file-rotatelogs"
+	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -155,6 +156,7 @@ func newLogWriter(logType string) io.Writer {
 	rotateEnable := viper.GetBool(fmt.Sprintf("%s.rotateEnable", logType))
 	rotationTime := viper.GetString(fmt.Sprintf("%s.rotationTime", logType))
 	rotationCount := uint(viper.GetInt(fmt.Sprintf("%s.rotationCount", logType)))
+	rotationHook := viper.GetString(fmt.Sprintf("%s.rotationHook", logType))
 
 	var filename string
 	switch logType {
@@ -176,6 +178,10 @@ func newLogWriter(logType string) io.Writer {
 	}
 	if rotationCount > 0 {
 		options = append(options, rotatelogs.WithRotationCount(rotationCount))
+	}
+
+	if rotationHook != "" {
+		options = append(options, rotatelogs.WithHandler(NewRotateHandler(rotationHook)))
 	}
 
 	var w io.Writer
@@ -202,4 +208,26 @@ func newLogWriter(logType string) io.Writer {
 	}
 
 	return w
+}
+
+func NewRotateHandler(c string) *RotateHandler {
+	return &RotateHandler{
+		command: c,
+	}
+}
+
+type RotateHandler struct {
+	command string
+}
+
+func (r *RotateHandler) Handle(e rotatelogs.Event) {
+	if e.Type() == rotatelogs.FileRotatedEventType {
+		fre := e.(*rotatelogs.FileRotatedEvent)
+		out, err := exec.Command(r.command, fre.PreviousFile(), fre.CurrentFile()).CombinedOutput()
+		if err != nil {
+			log.Printf("Log lotate event error %v\n", err)
+		} else {
+			log.Printf("Log lotate event success %v\n", out)
+		}
+	}
 }

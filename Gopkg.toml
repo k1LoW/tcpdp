@@ -27,7 +27,7 @@
 
 [[constraint]]
   name = "github.com/lestrrat-go/file-rotatelogs"
-  version = "2.2.0"
+  revision = "00616292e7713245e4988c7d3a7aae395665e49f"
 
 [[constraint]]
   name = "github.com/lestrrat-go/server-starter"
