@@ -189,14 +189,14 @@ func newLogWriter(logType string) io.Writer {
 		switch rotationTime {
 		case "hourly":
 			logSuffix = ".%Y%m%d%H"
-			options = append(options, rotatelogs.WithLinkName(path))
 		case "daily":
 			logSuffix = ".%Y%m%d"
-			options = append(options, rotatelogs.WithLinkName(path))
 		case "monthly":
 			logSuffix = ".%Y%m"
-			options = append(options, rotatelogs.WithLinkName(path))
+		default:
+			log.Fatal("Log setting error, please specify one of the periods [hourly, daily, monthly]")
 		}
+		options = append(options, rotatelogs.WithLinkName(path))
 		w, err = rotatelogs.New(
 			path+logSuffix,
 			options...,
