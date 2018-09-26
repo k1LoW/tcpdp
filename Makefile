@@ -2,14 +2,12 @@ PKG = github.com/k1LoW/tcpdp
 COMMIT = $$(git describe --tags --always)
 OSNAME=${shell uname -s}
 ifeq ($(OSNAME),Darwin)
-	DATE = $$(gdate --utc '+%Y-%m-%d_%H:%M:%S')
 	LO = "lo0"
 else
-	DATE = $$(date --utc '+%Y-%m-%d_%H:%M:%S')
 	LO = "lo"
 endif
 
-BUILD_LDFLAGS = -X $(PKG).commit=$(COMMIT) -X $(PKG).date=$(DATE)
+BUILD_LDFLAGS = -X $(PKG).commit=$(COMMIT)
 RELEASE_BUILD_LDFLAGS = -s -w $(BUILD_LDFLAGS)
 
 POSTGRES_PORT=54322
@@ -86,7 +84,7 @@ build:
 build_in_docker:
 	$(eval ver = v$(shell gobump show -r version/))
 	$(eval pkg = tcpdp_v$(shell gobump show -r version/)_linux_amd64.$(DIST))
-	go build -ldflags="$(RELEASE_BUILD_LDFLAGS)" -o tcpdp_linux_amd64.$(DIST)
+	go build -ldflags="$(RELEASE_BUILD_LDFLAGS) -X $(PKG).version=$(ver)" -o tcpdp_linux_amd64.$(DIST)
 	mkdir $(pkg)
 	mv tcpdp_linux_amd64.$(DIST) ./$(pkg)/tcpdp
 	cp CHANGELOG.md README.md LICENSE ./$(pkg)
@@ -97,7 +95,7 @@ build_static_in_docker:
 	$(eval ver = v$(shell gobump show -r version/))
 	$(eval pkg = tcpdp_v$(shell gobump show -r version/)_linux_amd64_static.$(DIST))
 	cd /usr/local/src/libpcap-$(LIBPCAP_VERSION) && ./configure && make && make install
-	go build -a -tags netgo -installsuffix netgo -ldflags="$(RELEASE_BUILD_LDFLAGS) -X $(PKG).libpcap=$(LIBPCAP_VERSION) -linkmode external -extldflags -static" -o tcpdp_linux_amd64_static.$(DIST)
+	go build -a -tags netgo -installsuffix netgo -ldflags="$(RELEASE_BUILD_LDFLAGS) -X $(PKG).version=$(ver) -X $(PKG).libpcap=$(LIBPCAP_VERSION) -linkmode external -extldflags -static" -o tcpdp_linux_amd64_static.$(DIST)
 	mkdir $(pkg)
 	mv tcpdp_linux_amd64_static.$(DIST) ./$(pkg)/tcpdp
 	cp CHANGELOG.md README.md LICENSE ./$(pkg)
