@@ -21,6 +21,8 @@ MYSQL_PORT=33066
 MYSQL_DATABASE=testdb
 MYSQL_ROOT_PASSWORD=mypass
 
+DISTS=centos7 centos6 ubuntu16
+
 default: test
 ci: depsdev test proxy_integration probe_integration read_integration
 
@@ -81,6 +83,27 @@ cover: depsdev
 build:
 	go build -ldflags="$(BUILD_LDFLAGS)"
 
+build_in_docker:
+	$(eval ver = v$(shell gobump show -r version/))
+	$(eval pkg = tcpdp_v$(shell gobump show -r version/)_linux_amd64.$(DIST))
+	go build -ldflags="$(RELEASE_BUILD_LDFLAGS)" -o tcpdp_linux_amd64.$(DIST)
+	mkdir $(pkg)
+	mv tcpdp_linux_amd64.$(DIST) ./$(pkg)/tcpdp
+	cp CHANGELOG.md README.md LICENSE ./$(pkg)
+	tar -zcvf ./dist/$(ver)/$(pkg).tar.gz ./$(pkg)
+	rm -rf ./$(pkg)
+
+build_static_in_docker:
+	$(eval ver = v$(shell gobump show -r version/))
+	$(eval pkg = tcpdp_v$(shell gobump show -r version/)_linux_amd64_static.$(DIST))
+	cd /usr/local/src/libpcap-$(LIBPCAP_VERSION) && ./configure && make && make install
+	go build -a -tags netgo -installsuffix netgo -ldflags="$(RELEASE_BUILD_LDFLAGS) -X $(PKG).libpcap=$(LIBPCAP_VERSION) -linkmode external -extldflags -static" -o tcpdp_linux_amd64_static.$(DIST)
+	mkdir $(pkg)
+	mv tcpdp_linux_amd64_static.$(DIST) ./$(pkg)/tcpdp
+	cp CHANGELOG.md README.md LICENSE ./$(pkg)
+	tar -zcvf ./dist/$(ver)/$(pkg).tar.gz ./$(pkg)
+	rm -rf ./$(pkg)
+
 deps:
 	go get -u github.com/golang/dep/cmd/dep
 	dep ensure
@@ -93,19 +116,14 @@ depsdev: deps
 	go get github.com/Songmu/goxz/cmd/goxz
 	go get github.com/tcnksm/ghr
 	go get github.com/Songmu/ghch/cmd/ghch
-	go get github.com/karalabe/xgo
 
 crossbuild: deps depsdev
 	$(eval ver = v$(shell gobump show -r version/))
 	goxz -pv=$(ver) -os=darwin -build-ldflags="$(RELEASE_BUILD_LDFLAGS)" \
 	  -d=./dist/$(ver)
-	docker build -t karalabe/xgo-latest .
-	xgo --targets=linux/amd64 -ldflags="$(RELEASE_BUILD_LDFLAGS)" github.com/k1LoW/tcpdp
-	mkdir tcpdp_$(ver)_linux_amd64
-	mv tcpdp-linux-amd64 ./tcpdp_$(ver)_linux_amd64/tcpdp
-	cp CHANGELOG.md README.md LICENSE ./tcpdp_$(ver)_linux_amd64
-	COPYFILE_DISABLE=1 tar -zcvf ./dist/$(ver)/tcpdp_$(ver)_linux_amd64.tar.gz ./tcpdp_$(ver)_linux_amd64
-	rm -rf ./tcpdp_$(ver)_linux_amd64
+	@for d in $(DISTS); do\
+		docker-compose up $$d;\
+	done
 
 prerelease:
 	$(eval ver = v$(shell gobump show -r version/))

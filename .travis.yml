@@ -10,7 +10,7 @@ addons:
     update: true
 before_install:
   - sudo apt-get install libpcap-dev
-  - docker-compose up -d
+  - docker-compose up -d postgres mysql57
   - sleep 20s
 script:
   - make ci

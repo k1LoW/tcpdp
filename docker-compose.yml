@@ -20,3 +20,39 @@ services:
     environment:
       - MYSQL_DATABASE=testdb
       - MYSQL_ROOT_PASSWORD=mypass
+  centos7:
+    build:
+      context: .
+      dockerfile: dockerfiles/Dockerfile.centos7
+      args:
+        GO_VERSION: 1.11
+        LIBPCAP_VERSION: 1.9.0
+    volumes:
+      - $GOPATH:/go
+    environment:
+      DIST: el7
+    command: make depsdev build_in_docker build_static_in_docker
+  centos6:
+    build:
+      context: .
+      dockerfile: dockerfiles/Dockerfile.centos6
+      args:
+        GO_VERSION: 1.11
+        LIBPCAP_VERSION: 1.9.0
+    volumes:
+      - $GOPATH:/go
+    environment:
+      DIST: el6
+    command: make depsdev build_in_docker build_static_in_docker
+  ubuntu16:
+    build:
+      context: .
+      dockerfile: dockerfiles/Dockerfile.ubuntu16
+      args:
+        GO_VERSION: 1.11
+        LIBPCAP_VERSION: 1.9.0
+    volumes:
+      - $GOPATH:/go
+    environment:
+      DIST: xenial
+    command: make depsdev build_in_docker build_static_in_docker
