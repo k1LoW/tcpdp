@@ -19,8 +19,6 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-const AnyIP = "0.0.0.0"
-
 // ProbeServer struct
 type ProbeServer struct {
 	pidfile    string
@@ -114,15 +112,7 @@ func (s *ProbeServer) Start() error {
 	}
 	defer handle.Close()
 
-	f := fmt.Sprintf("tcp and host %s and port %d", host, port)
-
-	if (host == "" && port > 0) || host == AnyIP {
-		f = fmt.Sprintf("tcp port %d", port)
-	} else if host != "" && port == 0 {
-		f = fmt.Sprintf("tcp and host %s", host)
-	} else {
-		f = "tcp"
-	}
+	f := reader.NewBPFFilterString(host, port)
 
 	if err := handle.SetBPFFilter(f); err != nil {
 		fields := s.fieldsWithErrorAndValues(err, pValues)

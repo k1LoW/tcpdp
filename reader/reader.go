@@ -13,6 +13,8 @@ import (
 	"github.com/rs/xid"
 )
 
+const anyIP = "0.0.0.0"
+
 // ParseTarget parse target to host:port
 func ParseTarget(target string) (string, uint16, error) {
 	var port uint16
@@ -27,6 +29,9 @@ func ParseTarget(target string) (string, uint16, error) {
 		}
 		host = tAddr.IP.String()
 		port = uint16(tAddr.Port)
+	} else if strings.Contains(target, ".") {
+		host = target
+		port = uint16(0)
 	} else {
 		host = ""
 		port64, err := strconv.ParseUint(target, 10, 64)
@@ -36,6 +41,19 @@ func ParseTarget(target string) (string, uint16, error) {
 		port = uint16(port64)
 	}
 	return host, port, nil
+}
+
+// NewBPFFilterString return string for BPF
+func NewBPFFilterString(host string, port uint16) string {
+	f := fmt.Sprintf("tcp and host %s and port %d", host, port)
+	if (host == "" || host == anyIP) && port > 0 {
+		f = fmt.Sprintf("tcp port %d", port)
+	} else if (host != "" && host != anyIP) && port == 0 {
+		f = fmt.Sprintf("tcp and host %s", host)
+	} else if (host == "" || host == anyIP) && port == 0 {
+		f = "tcp"
+	}
+	return f
 }
 
 // PacketReader struct
