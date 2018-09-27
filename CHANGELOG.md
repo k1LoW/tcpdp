@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.9.1](https://github.com/k1LoW/tcpdp/compare/v0.9.0...v0.9.1) (2018-09-27)
+
+* Fix parsing `--target` and generating BPF Filter  [#31](https://github.com/k1LoW/tcpdp/pull/31) ([k1LoW](https://github.com/k1LoW))
+* Remove `-X $(PKG).date=` from -ldflags and add `-X $(PKG).version=` [#30](https://github.com/k1LoW/tcpdp/pull/30) ([k1LoW](https://github.com/k1LoW))
+* Fix `make crossbuild` [#29](https://github.com/k1LoW/tcpdp/pull/29) ([k1LoW](https://github.com/k1LoW))
+
 ## [v0.9.0](https://github.com/k1LoW/tcpdp/compare/v0.8.0...v0.9.0) (2018-09-25)
 
 * I want to do arbitrary processing after rotate [#28](https://github.com/k1LoW/tcpdp/pull/28) ([pyama86](https://github.com/pyama86))
