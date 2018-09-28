@@ -143,14 +143,20 @@ func (m *MysqlDumper) Read(in []byte, direction Direction, connMetadata *ConnMet
 		lenCompressed := int(bytesToUint64(readBytes(buff, 3))) // 3:length of compressed payload
 		_ = readBytes(buff, 1)                                  // 1:compressed sequence id
 		lenUncompressed := bytesToUint64(readBytes(buff, 3))    // 3:length of payload before compression
-		if buff.Len() == lenCompressed && lenUncompressed > 0 {
-			r, err := zlib.NewReader(buff)
-			if err != nil {
-				panic(err)
+		if buff.Len() == lenCompressed {
+			if lenUncompressed > 0 {
+				// https://dev.mysql.com/doc/internals/en/compressed-payload.html
+				r, err := zlib.NewReader(buff)
+				if err != nil {
+					panic(err)
+				}
+				newBuff := new(bytes.Buffer)
+				io.Copy(newBuff, r)
+				in = newBuff.Bytes()
+			} else {
+				// https://dev.mysql.com/doc/internals/en/uncompressed-payload.html
+				in = buff.Bytes()
 			}
-			newBuff := new(bytes.Buffer)
-			io.Copy(newBuff, r)
-			in = newBuff.Bytes()
 		}
 	}
 
