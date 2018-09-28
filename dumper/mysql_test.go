@@ -198,7 +198,7 @@ var mysqlReadTests = []struct {
 			},
 			DumpValue{
 				Key:   "command_id",
-				Value: byte(0),
+				Value: byte(3),
 			},
 		},
 		"\"query\":\"select \\\"012345678901234567890123456789012345\\\"\"",
@@ -213,8 +213,9 @@ func TestMysqlReadUsernameAndDatabaseHandshakeResponse41(t *testing.T) {
 		}
 		in := tt.in
 		direction := tt.direction
+		connMetadata := &tt.connMetadata
 
-		actual := dumper.readClientCapabilities(in, direction)
+		actual := dumper.readClientCapabilities(in, direction, connMetadata)
 		expected := tt.expected
 
 		if len(actual) != len(expected) {

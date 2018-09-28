@@ -2,8 +2,10 @@ package dumper
 
 import (
 	"bytes"
+	"compress/zlib"
 	"encoding/binary"
 	"fmt"
+	"io"
 	"math"
 	"strings"
 	"time"
@@ -130,8 +132,27 @@ func (m *MysqlDumper) Dump(in []byte, direction Direction, connMetadata *ConnMet
 
 // Read return byte to analyzed string
 func (m *MysqlDumper) Read(in []byte, direction Direction, connMetadata *ConnMetadata) []DumpValue {
-	values := m.readClientCapabilities(in, direction)
+	values := m.readClientCapabilities(in, direction, connMetadata)
 	connMetadata.DumpValues = append(connMetadata.DumpValues, values...)
+
+	// Client Compress
+	compressed, ok := connMetadata.Internal.(mysqlConnMetadataInternal).clientCapabilities[clientCompress]
+	if ok && compressed {
+		// https://dev.mysql.com/doc/internals/en/compressed-packet-header.html
+		buff := bytes.NewBuffer(in)
+		lenCompressed := int(bytesToUint64(readBytes(buff, 3))) // 3:length of compressed payload
+		_ = readBytes(buff, 1)                                  // 1:compressed sequence id
+		lenUncompressed := bytesToUint64(readBytes(buff, 3))    // 3:length of payload before compression
+		if buff.Len() == lenCompressed && lenUncompressed > 0 {
+			r, err := zlib.NewReader(buff)
+			if err != nil {
+				panic(err)
+			}
+			newBuff := new(bytes.Buffer)
+			io.Copy(newBuff, r)
+			in = newBuff.Bytes()
+		}
+	}
 
 	if direction == RemoteToClient || direction == DstToSrc || direction == Unknown {
 		// COM_STMT_PREPARE Response https://dev.mysql.com/doc/internals/en/com-stmt-prepare-response.html
@@ -267,7 +288,7 @@ func (m *MysqlDumper) NewConnMetadata() *ConnMetadata {
 	}
 }
 
-func (m *MysqlDumper) readClientCapabilities(in []byte, direction Direction) []DumpValue {
+func (m *MysqlDumper) readClientCapabilities(in []byte, direction Direction, connMetadata *ConnMetadata) []DumpValue {
 	values := []DumpValue{}
 	if direction == RemoteToClient || direction == DstToSrc {
 		return values
@@ -280,6 +301,7 @@ func (m *MysqlDumper) readClientCapabilities(in []byte, direction Direction) []D
 
 	// parse Protocol::HandshakeResponse41 to get username, database
 	if clientCapabilities&uint32(clientProtocol41) > 0 && bytes.Compare(in[13:36], []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}) == 0 {
+		connMetadata.Internal.(mysqlConnMetadataInternal).clientCapabilities[clientProtocol41] = true
 		buff := bytes.NewBuffer(in[36:])
 		readed, _ := buff.ReadString(0x00)
 		username := strings.Trim(readed, "\x00")
@@ -288,15 +310,18 @@ func (m *MysqlDumper) readClientCapabilities(in []byte, direction Direction) []D
 			Value: username,
 		})
 		if clientCapabilities&uint32(clientPluginAuthLenEncClientData) > 0 {
+			connMetadata.Internal.(mysqlConnMetadataInternal).clientCapabilities[clientPluginAuthLenEncClientData] = true
 			n := readLengthEncodedInteger(buff)
 			_, _ = buff.Read(make([]byte, n))
 		} else if clientCapabilities&uint32(clientSecureConnection) > 0 {
+			connMetadata.Internal.(mysqlConnMetadataInternal).clientCapabilities[clientSecureConnection] = true
 			l, _ := buff.ReadByte()
 			_, _ = buff.Read(make([]byte, l))
 		} else {
 			_, _ = buff.ReadString(0x00)
 		}
 		if clientCapabilities&uint32(clientConnectWithDB) > 0 {
+			connMetadata.Internal.(mysqlConnMetadataInternal).clientCapabilities[clientConnectWithDB] = true
 			readed, _ := buff.ReadString(0x00)
 			database := strings.Trim(readed, "\x00")
 			values = append(values, DumpValue{
@@ -304,6 +329,7 @@ func (m *MysqlDumper) readClientCapabilities(in []byte, direction Direction) []D
 				Value: database,
 			})
 		}
+		connMetadata.Internal.(mysqlConnMetadataInternal).clientCapabilities[clientCompress] = (clientCapabilities&uint32(clientCompress) > 0)
 	}
 
 	return values
