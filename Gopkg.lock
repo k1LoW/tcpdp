@@ -2,6 +2,14 @@
 
 
 [[projects]]
+  branch = "master"
+  digest = "1:071997dbe52f559bb7aaa8a2586a035d9447d7db7c926f15980711d0680cbc80"
+  name = "github.com/bLamarche413/mysql"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "f339392246121fdb0c58a0e2ecc595cd4ad68af7"
+
+[[projects]]
   digest = "1:abeb38ade3f32a92943e5be54f55ed6d6e3b6602761d74b4aab4c9dd45c18abd"
   name = "github.com/fsnotify/fsnotify"
   packages = ["."]
@@ -285,6 +293,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/bLamarche413/mysql",
     "github.com/go-sql-driver/mysql",
     "github.com/google/gopacket",
     "github.com/google/gopacket/layers",
