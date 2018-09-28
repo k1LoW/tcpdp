@@ -1,5 +1,5 @@
 FROM ubuntu:xenial
-MAINTAINER k1LoW <k1lowxb@gmail.com>
+LABEL maintainer="k1LoW <k1lowxb@gmail.com>"
 
 ARG GO_VERSION
 ARG LIBPCAP_VERSION
