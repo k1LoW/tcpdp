@@ -234,7 +234,7 @@ var mysqlReadTests = []struct {
 				Value: byte(3),
 			},
 		},
-		"\"query\":\"select \\\"012345678901234567890123456789012345\\\"\"",
+		"\"query\":\"SELECT * FROM information_schema.tables\"",
 	},
 }
 
