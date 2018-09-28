@@ -218,7 +218,6 @@ func (r *PacketReader) ReadAndDump(host string, port uint16) error {
 			values = append(values, connMetadata.DumpValues...)
 
 			r.dumper.Log(values)
-		default:
 		}
 	}
 }
