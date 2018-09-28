@@ -181,6 +181,8 @@ $ go get github.com/k1LoW/tcpdp
 
 MySQL query dumper
 
+**NOTICE: MySQL query dumper require `--target` option when `tcpdp proxy` `tcpdp probe`**
+
 | key | description | mode |
 | --- | ----------- | ---- |
 | ts | timestamp | proxy / probe / read |
@@ -207,6 +209,8 @@ MySQL query dumper
 ### pg
 
 PostgreSQL query dumper
+
+**NOTICE: PostgreSQL query dumper require `--target` option `tcpdp proxy` `tcpdp probe`**
 
 | key | description | mode |
 | --- | ----------- | ---- |
