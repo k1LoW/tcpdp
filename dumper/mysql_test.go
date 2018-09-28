@@ -29,7 +29,10 @@ var mysqlReadTests = []struct {
 		SrcToDst,
 		ConnMetadata{
 			DumpValues: []DumpValue{},
-			Internal:   stmtNumParams{5: 2},
+			Internal: mysqlConnMetadataInternal{
+				stmtNumParams:      stmtNumParams{5: 2},
+				clientCapabilities: clientCapabilities{},
+			},
 		},
 		[]DumpValue{
 			DumpValue{
@@ -64,7 +67,10 @@ var mysqlReadTests = []struct {
 		SrcToDst,
 		ConnMetadata{
 			DumpValues: []DumpValue{},
-			Internal:   stmtNumParams{5: 2},
+			Internal: mysqlConnMetadataInternal{
+				stmtNumParams:      stmtNumParams{5: 2},
+				clientCapabilities: clientCapabilities{},
+			},
 		},
 		[]DumpValue{
 			DumpValue{
@@ -88,7 +94,10 @@ var mysqlReadTests = []struct {
 		SrcToDst,
 		ConnMetadata{
 			DumpValues: []DumpValue{},
-			Internal:   stmtNumParams{5: 2},
+			Internal: mysqlConnMetadataInternal{
+				stmtNumParams:      stmtNumParams{5: 2},
+				clientCapabilities: clientCapabilities{},
+			},
 		},
 		[]DumpValue{},
 		[]DumpValue{
@@ -116,7 +125,10 @@ var mysqlReadTests = []struct {
 		RemoteToClient,
 		ConnMetadata{
 			DumpValues: []DumpValue{},
-			Internal:   stmtNumParams{5: 2},
+			Internal: mysqlConnMetadataInternal{
+				stmtNumParams:      stmtNumParams{5: 2},
+				clientCapabilities: clientCapabilities{},
+			},
 		},
 		[]DumpValue{},
 		[]DumpValue{},
@@ -132,7 +144,10 @@ var mysqlReadTests = []struct {
 		ClientToRemote,
 		ConnMetadata{
 			DumpValues: []DumpValue{},
-			Internal:   stmtNumParams{5: 2},
+			Internal: mysqlConnMetadataInternal{
+				stmtNumParams:      stmtNumParams{5: 2},
+				clientCapabilities: clientCapabilities{},
+			},
 		},
 		[]DumpValue{},
 		[]DumpValue{
@@ -155,6 +170,39 @@ var mysqlReadTests = []struct {
 		},
 		"\"stmt_execute_values\":[\"testdb\",\"comment_stars\"]",
 	},
+	{
+		// https://dev.mysql.com/doc/internals/en/example-one-mysql-packet.html
+		"Parse values from Compressed COM_QUERY",
+		[]byte{
+			0x22, 0x00, 0x00, 0x00, 0x32, 0x00, 0x00, 0x78, 0x9c, 0xd3, 0x63, 0x60, 0x60, 0x60, 0x2e, 0x4e,
+			0xcd, 0x49, 0x4d, 0x2e, 0x51, 0x50, 0x32, 0x30, 0x34, 0x32, 0x36, 0x31, 0x35, 0x33, 0xb7, 0xb0,
+			0xc4, 0xcd, 0x52, 0x02, 0x00, 0x0c, 0xd1, 0x0a, 0x6c,
+		},
+		ClientToRemote,
+		ConnMetadata{
+			DumpValues: []DumpValue{},
+			Internal: mysqlConnMetadataInternal{
+				stmtNumParams:      stmtNumParams{5: 2},
+				clientCapabilities: clientCapabilities{clientCompress: true},
+			},
+		},
+		[]DumpValue{},
+		[]DumpValue{
+			DumpValue{
+				Key:   "query",
+				Value: "select \"012345678901234567890123456789012345\"",
+			},
+			DumpValue{
+				Key:   "seq_num",
+				Value: int64(0),
+			},
+			DumpValue{
+				Key:   "command_id",
+				Value: byte(0),
+			},
+		},
+		"\"query\":\"select \\\"012345678901234567890123456789012345\\\"\"",
+	},
 }
 
 func TestMysqlReadUsernameAndDatabaseHandshakeResponse41(t *testing.T) {
@@ -166,7 +214,7 @@ func TestMysqlReadUsernameAndDatabaseHandshakeResponse41(t *testing.T) {
 		in := tt.in
 		direction := tt.direction
 
-		actual := dumper.readUsernameAndDatabase(in, direction)
+		actual := dumper.readClientCapabilities(in, direction)
 		expected := tt.expected
 
 		if len(actual) != len(expected) {

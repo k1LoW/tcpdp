@@ -53,8 +53,10 @@ const (
 	mysqlTypeGeometry             = 0xff
 )
 
+type mysqlClientCapability uint32
+
 const (
-	clientLongPassword uint32 = 1 << iota
+	clientLongPassword mysqlClientCapability = 1 << iota
 	clientFoundRows
 	clientLongFlag
 	clientConnectWithDB
@@ -87,7 +89,14 @@ type MysqlDumper struct {
 	logger *zap.Logger
 }
 
+type clientCapabilities map[mysqlClientCapability]bool
+
 type stmtNumParams map[int]int // statement_id:num_params
+
+type mysqlConnMetadataInternal struct {
+	clientCapabilities clientCapabilities
+	stmtNumParams      stmtNumParams
+}
 
 // NewMysqlDumper returns a MysqlDumper
 func NewMysqlDumper() *MysqlDumper {
@@ -121,7 +130,7 @@ func (m *MysqlDumper) Dump(in []byte, direction Direction, connMetadata *ConnMet
 
 // Read return byte to analyzed string
 func (m *MysqlDumper) Read(in []byte, direction Direction, connMetadata *ConnMetadata) []DumpValue {
-	values := m.readUsernameAndDatabase(in, direction)
+	values := m.readClientCapabilities(in, direction)
 	connMetadata.DumpValues = append(connMetadata.DumpValues, values...)
 
 	if direction == RemoteToClient || direction == DstToSrc || direction == Unknown {
@@ -133,7 +142,7 @@ func (m *MysqlDumper) Read(in []byte, direction Direction, connMetadata *ConnMet
 			_ = readBytes(buff, 2)
 			numParams := readBytes(buff, 2)
 			numParamsNum := int(bytesToUint64(numParams))
-			connMetadata.Internal.(stmtNumParams)[stmtIDNum] = numParamsNum
+			connMetadata.Internal.(mysqlConnMetadataInternal).stmtNumParams[stmtIDNum] = numParamsNum
 		}
 		return []DumpValue{}
 	}
@@ -167,7 +176,7 @@ func (m *MysqlDumper) Read(in []byte, direction Direction, connMetadata *ConnMet
 		buff := bytes.NewBuffer(in[5:])
 		stmtID := readBytes(buff, 4) // 4:stmt-id
 		stmtIDNum := int(bytesToUint64(stmtID))
-		numParamsNum, ok := connMetadata.Internal.(stmtNumParams)[stmtIDNum]
+		numParamsNum, ok := connMetadata.Internal.(mysqlConnMetadataInternal).stmtNumParams[stmtIDNum]
 		if ok && numParamsNum > 0 {
 			_ = readBytes(buff, 5)                  // 1:flags 4:iteration-count
 			_ = readBytes(buff, (numParamsNum+7)/8) // NULL-bitmap, length: (num-params+7)/8
@@ -251,11 +260,14 @@ func (m *MysqlDumper) Log(values []DumpValue) {
 func (m *MysqlDumper) NewConnMetadata() *ConnMetadata {
 	return &ConnMetadata{
 		DumpValues: []DumpValue{},
-		Internal:   stmtNumParams{},
+		Internal: mysqlConnMetadataInternal{
+			stmtNumParams:      stmtNumParams{},
+			clientCapabilities: clientCapabilities{},
+		},
 	}
 }
 
-func (m *MysqlDumper) readUsernameAndDatabase(in []byte, direction Direction) []DumpValue {
+func (m *MysqlDumper) readClientCapabilities(in []byte, direction Direction) []DumpValue {
 	values := []DumpValue{}
 	if direction == RemoteToClient || direction == DstToSrc {
 		return values
@@ -267,7 +279,7 @@ func (m *MysqlDumper) readUsernameAndDatabase(in []byte, direction Direction) []
 	clientCapabilities := binary.LittleEndian.Uint32(in[4:8])
 
 	// parse Protocol::HandshakeResponse41 to get username, database
-	if clientCapabilities&clientProtocol41 > 0 && bytes.Compare(in[13:36], []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}) == 0 {
+	if clientCapabilities&uint32(clientProtocol41) > 0 && bytes.Compare(in[13:36], []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}) == 0 {
 		buff := bytes.NewBuffer(in[36:])
 		readed, _ := buff.ReadString(0x00)
 		username := strings.Trim(readed, "\x00")
@@ -275,16 +287,16 @@ func (m *MysqlDumper) readUsernameAndDatabase(in []byte, direction Direction) []
 			Key:   "username",
 			Value: username,
 		})
-		if clientCapabilities&clientPluginAuthLenEncClientData > 0 {
+		if clientCapabilities&uint32(clientPluginAuthLenEncClientData) > 0 {
 			n := readLengthEncodedInteger(buff)
 			_, _ = buff.Read(make([]byte, n))
-		} else if clientCapabilities&clientSecureConnection > 0 {
+		} else if clientCapabilities&uint32(clientSecureConnection) > 0 {
 			l, _ := buff.ReadByte()
 			_, _ = buff.Read(make([]byte, l))
 		} else {
 			_, _ = buff.ReadString(0x00)
 		}
-		if clientCapabilities&clientConnectWithDB > 0 {
+		if clientCapabilities&uint32(clientConnectWithDB) > 0 {
 			readed, _ := buff.ReadString(0x00)
 			database := strings.Trim(readed, "\x00")
 			values = append(values, DumpValue{
