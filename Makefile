@@ -81,12 +81,23 @@ cover: depsdev
 build:
 	go build -ldflags="$(BUILD_LDFLAGS)"
 
+build_darwin: depsdev
+	$(eval ver = v$(shell gobump show -r version/))
+	$(eval pkg = tcpdp_v$(shell gobump show -r version/)_darwin_amd64)
+	go build -ldflags="$(RELEASE_BUILD_LDFLAGS) -X $(PKG).version=$(ver)"
+	[ -d ./dist/$(ver) ] || mkdir ./dist/$(ver)
+	mkdir $(pkg)
+	mv tcpdp ./$(pkg)/tcpdp
+	cp CHANGELOG.md README.md LICENSE ./$(pkg)
+	tar -zcvf ./dist/$(ver)/$(pkg).tar.gz --exclude='*/.*' ./$(pkg)
+	rm -rf ./$(pkg)
+
 build_in_docker:
 	$(eval ver = v$(shell gobump show -r version/))
 	$(eval pkg = tcpdp_v$(shell gobump show -r version/)_linux_amd64.$(DIST))
-	go build -ldflags="$(RELEASE_BUILD_LDFLAGS) -X $(PKG).version=$(ver)" -o tcpdp_linux_amd64.$(DIST)
+	go build -ldflags="$(RELEASE_BUILD_LDFLAGS) -X $(PKG).version=$(ver)"
 	mkdir $(pkg)
-	mv tcpdp_linux_amd64.$(DIST) ./$(pkg)/tcpdp
+	mv tcpdp ./$(pkg)/tcpdp
 	cp CHANGELOG.md README.md LICENSE ./$(pkg)
 	tar -zcvf ./dist/$(ver)/$(pkg).tar.gz ./$(pkg)
 	rm -rf ./$(pkg)
@@ -95,9 +106,9 @@ build_static_in_docker:
 	$(eval ver = v$(shell gobump show -r version/))
 	$(eval pkg = tcpdp_v$(shell gobump show -r version/)_linux_amd64_static.$(DIST))
 	cd /usr/local/src/libpcap-$(LIBPCAP_VERSION) && ./configure && make && make install
-	go build -a -tags netgo -installsuffix netgo -ldflags="$(RELEASE_BUILD_LDFLAGS) -X $(PKG).version=$(ver) -X $(PKG).libpcap=$(LIBPCAP_VERSION) -linkmode external -extldflags -static" -o tcpdp_linux_amd64_static.$(DIST)
+	go build -a -tags netgo -installsuffix netgo -ldflags="$(RELEASE_BUILD_LDFLAGS) -X $(PKG).version=$(ver) -X $(PKG).libpcap=$(LIBPCAP_VERSION) -linkmode external -extldflags -static"
 	mkdir $(pkg)
-	mv tcpdp_linux_amd64_static.$(DIST) ./$(pkg)/tcpdp
+	mv tcpdp ./$(pkg)/tcpdp
 	cp CHANGELOG.md README.md LICENSE ./$(pkg)
 	tar -zcvf ./dist/$(ver)/$(pkg).tar.gz ./$(pkg)
 	rm -rf ./$(pkg)
@@ -111,14 +122,10 @@ depsdev: deps
 	go get github.com/mattn/goveralls
 	go get github.com/golang/lint/golint
 	go get github.com/motemen/gobump/cmd/gobump
-	go get github.com/Songmu/goxz/cmd/goxz
 	go get github.com/tcnksm/ghr
 	go get github.com/Songmu/ghch/cmd/ghch
 
-crossbuild: deps depsdev
-	$(eval ver = v$(shell gobump show -r version/))
-	goxz -pv=$(ver) -os=darwin -build-ldflags="$(RELEASE_BUILD_LDFLAGS)" \
-	  -d=./dist/$(ver)
+crossbuild: build_darwin
 	@for d in $(DISTS); do\
 		docker-compose up $$d;\
 	done
@@ -127,7 +134,7 @@ prerelease:
 	$(eval ver = v$(shell gobump show -r version/))
 	ghch -w -N ${ver}
 
-release: crossbuild
+release:
 	$(eval ver = v$(shell gobump show -r version/))
 	ghr -username k1LoW -replace ${ver} dist/${ver}
 
