@@ -96,6 +96,7 @@ build_in_docker:
 	$(eval ver = v$(shell gobump show -r version/))
 	$(eval pkg = tcpdp_v$(shell gobump show -r version/)_linux_amd64.$(DIST))
 	go build -ldflags="$(RELEASE_BUILD_LDFLAGS) -X $(PKG).version=$(ver)"
+	[ -d ./dist/$(ver) ] || mkdir ./dist/$(ver)
 	mkdir $(pkg)
 	mv tcpdp ./$(pkg)/tcpdp
 	cp CHANGELOG.md README.md LICENSE ./$(pkg)
@@ -107,6 +108,7 @@ build_static_in_docker:
 	$(eval pkg = tcpdp_v$(shell gobump show -r version/)_linux_amd64_static.$(DIST))
 	cd /usr/local/src/libpcap-$(LIBPCAP_VERSION) && ./configure && make && make install
 	go build -a -tags netgo -installsuffix netgo -ldflags="$(RELEASE_BUILD_LDFLAGS) -X $(PKG).version=$(ver) -X $(PKG).libpcap=$(LIBPCAP_VERSION) -linkmode external -extldflags -static"
+	[ -d ./dist/$(ver) ] || mkdir ./dist/$(ver)
 	mkdir $(pkg)
 	mv tcpdp ./$(pkg)/tcpdp
 	cp CHANGELOG.md README.md LICENSE ./$(pkg)
