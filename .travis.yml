@@ -1,7 +1,7 @@
 language: go
 sudo: required
 go:
-  - 1.10.x
+  - 1.11
   - master
 services:
   - docker
@@ -9,10 +9,15 @@ addons:
   apt:
     update: true
 before_install:
-  - sudo apt-get install libpcap-dev
+  - sudo apt-get install libpcap-dev netcat
   - docker-compose up -d postgres mysql57
-  - sleep 20s
+  - while ! nc -w 1 127.0.0.1 33066 > /dev/null 2>&1; do sleep 1; echo 'sleeping'; done;
+  - while ! nc -w 1 127.0.0.1 54322 > /dev/null 2>&1; do sleep 1; echo 'sleeping'; done;
 script:
   - make ci
 after_script:
   - make cover
+cache:
+  directories:
+    - /go/pkg/mod/cache/download
+    - /go/src/github.com

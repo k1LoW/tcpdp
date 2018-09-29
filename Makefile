@@ -7,6 +7,8 @@ else
 	LO = "lo"
 endif
 
+GO ?= GO111MODULE=on go
+
 BUILD_LDFLAGS = -X $(PKG).commit=$(COMMIT)
 RELEASE_BUILD_LDFLAGS = -s -w $(BUILD_LDFLAGS)
 
@@ -25,7 +27,7 @@ default: test
 ci: depsdev test proxy_integration probe_integration read_integration
 
 test:
-	go test -cover -v $(shell go list ./... | grep -v vendor)
+	$(GO) test -cover -v $(shell go list ./... | grep -v vendor)
 
 proxy_integration: build
 	sudo rm -f ./tcpdp.log*
@@ -79,12 +81,12 @@ cover: depsdev
 	goveralls -service=travis-ci
 
 build:
-	go build -ldflags="$(BUILD_LDFLAGS)"
+	$(GO) build -ldflags="$(BUILD_LDFLAGS)"
 
 build_darwin: depsdev
 	$(eval ver = v$(shell gobump show -r version/))
 	$(eval pkg = tcpdp_v$(shell gobump show -r version/)_darwin_amd64)
-	go build -ldflags="$(RELEASE_BUILD_LDFLAGS) -X $(PKG).version=$(ver)"
+	$(GO) build -ldflags="$(RELEASE_BUILD_LDFLAGS) -X $(PKG).version=$(ver)"
 	[ -d ./dist/$(ver) ] || mkdir ./dist/$(ver)
 	mkdir $(pkg)
 	mv tcpdp ./$(pkg)/tcpdp
@@ -95,7 +97,7 @@ build_darwin: depsdev
 build_in_docker:
 	$(eval ver = v$(shell gobump show -r version/))
 	$(eval pkg = tcpdp_v$(shell gobump show -r version/)_linux_amd64.$(DIST))
-	go build -ldflags="$(RELEASE_BUILD_LDFLAGS) -X $(PKG).version=$(ver)"
+	$(GO) build -ldflags="$(RELEASE_BUILD_LDFLAGS) -X $(PKG).version=$(ver)"
 	[ -d ./dist/$(ver) ] || mkdir ./dist/$(ver)
 	mkdir $(pkg)
 	mv tcpdp ./$(pkg)/tcpdp
@@ -107,7 +109,7 @@ build_static_in_docker:
 	$(eval ver = v$(shell gobump show -r version/))
 	$(eval pkg = tcpdp_v$(shell gobump show -r version/)_linux_amd64_static.$(DIST))
 	cd /usr/local/src/libpcap-$(LIBPCAP_VERSION) && ./configure && make && make install
-	go build -a -tags netgo -installsuffix netgo -ldflags="$(RELEASE_BUILD_LDFLAGS) -X $(PKG).version=$(ver) -X $(PKG).libpcap=$(LIBPCAP_VERSION) -linkmode external -extldflags -static"
+	$(GO) build -a -tags netgo -installsuffix netgo -ldflags="$(RELEASE_BUILD_LDFLAGS) -X $(PKG).version=$(ver) -X $(PKG).libpcap=$(LIBPCAP_VERSION) -linkmode external -extldflags -static"
 	[ -d ./dist/$(ver) ] || mkdir ./dist/$(ver)
 	mkdir $(pkg)
 	mv tcpdp ./$(pkg)/tcpdp
@@ -115,17 +117,17 @@ build_static_in_docker:
 	tar -zcvf ./dist/$(ver)/$(pkg).tar.gz ./$(pkg)
 	rm -rf ./$(pkg)
 
-deps:
-	go get -u github.com/golang/dep/cmd/dep
-	dep ensure
+depsdev: ghch
+	$(GO) get golang.org/x/tools/cmd/cover
+	$(GO) get github.com/mattn/goveralls
+	$(GO) get github.com/golang/lint/golint
+	$(GO) get github.com/motemen/gobump/cmd/gobump
+	$(GO) get github.com/tcnksm/ghr
 
-depsdev: deps
-	go get golang.org/x/tools/cmd/cover
-	go get github.com/mattn/goveralls
-	go get github.com/golang/lint/golint
-	go get github.com/motemen/gobump/cmd/gobump
-	go get github.com/tcnksm/ghr
-	go get github.com/Songmu/ghch/cmd/ghch
+ghch:
+	mkdir -p $(GOPATH)/src/github.com/Songmu
+	test -d $(GOPATH)/src/github.com/Songmu/ghch || git clone https://github.com/Songmu/ghch $(GOPATH)/src/github.com/Songmu/ghch
+	test -e $(GOPATH)/bin/grch || (cd $(GOPATH)/src/github.com/Songmu/ghch && $(GO) build -o $(GOPATH)/bin/grch && cd -)
 
 crossbuild: build_darwin
 	@for d in $(DISTS); do\
@@ -140,4 +142,9 @@ release:
 	$(eval ver = v$(shell gobump show -r version/))
 	ghr -username k1LoW -replace ${ver} dist/${ver}
 
-.PHONY: default test deps cover
+docker:
+	docker build -t tcpdp_develop -f dockerfiles/Dockerfile.golang .
+	docker run --cap-add=SYS_PTRACE --security-opt="seccomp=unconfined" -v $(GOPATH):/go/ -v $(GOPATH)/pkg/mod/cache:/go/pkg/mod/cache -w /go/src/github.com/k1LoW/tcpdp -it tcpdp_develop /bin/bash
+
+
+.PHONY: default test cover
