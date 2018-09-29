@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-var decodeStringTests = []struct {
+var readStringTests = []struct {
 	in       []byte
 	charSet  charSet
 	expected string
@@ -27,9 +27,9 @@ var decodeStringTests = []struct {
 	},
 }
 
-func TestDecodeString(t *testing.T) {
-	for _, tt := range decodeStringTests {
-		actual := decodeString(tt.in[5:], tt.charSet)
+func TestReadString(t *testing.T) {
+	for _, tt := range readStringTests {
+		actual := readString(tt.in[5:], tt.charSet)
 		if actual != tt.expected {
 			t.Errorf("actual %#v\nwant %#v", actual, tt.expected)
 		}

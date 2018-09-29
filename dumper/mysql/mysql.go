@@ -15,123 +15,6 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-const (
-	comQuery       = 0x03
-	comStmtPrepare = 0x16
-	comStmtExecute = 0x17
-
-	comStmtPrepareOK = 0x00
-)
-
-type dataType byte
-
-const (
-	typeDecimal    dataType = 0x00
-	typeTiny                = 0x01
-	typeShort               = 0x02
-	typeLong                = 0x03
-	typeFloat               = 0x04
-	typeDouble              = 0x05
-	typeNull                = 0x06
-	typeTimestamp           = 0x07
-	typeLonglong            = 0x08
-	typeInt24               = 0x09
-	typeDate                = 0x0a
-	typeTime                = 0x0b
-	typeDatetime            = 0x0c
-	typeYear                = 0x0d
-	typeNewdate             = 0x0e
-	typeVarchar             = 0x0f
-	typeBit                 = 0x10
-	typeNewdecimal          = 0xf6
-	typeEnum                = 0xf7
-	typeSet                 = 0xf8
-	typeTinyBlob            = 0xf9
-	typeMediumblob          = 0xfa
-	typeLongblob            = 0xfb
-	typeBlob                = 0xfc
-	typeVarString           = 0xfd
-	typeString              = 0xfe
-	typeGeometry            = 0xff
-)
-
-type clientCapability uint32
-
-const (
-	clientLongPassword clientCapability = 1 << iota
-	clientFoundRows
-	clientLongFlag
-	clientConnectWithDB
-	clientNoSchema
-	clientCompress
-	clientODBC
-	clientLocalFiles
-	clientIgnoreSpace
-	clientProtocol41
-	clientInteractive
-	clientSSL
-	clientIgnoreSIGPIPE
-	clientTransactions
-	clientReserved
-	clientSecureConnection
-	clientMultiStatements
-	clientMultiResults
-	clientPSMultiResults
-	clientPluginAuth
-	clientConnectAttrs
-	clientPluginAuthLenEncClientData
-	clientCanHandleExpiredPasswords
-	clientSessionTrack
-	clientDeprecateEOF
-)
-
-type charSet uint32
-
-const (
-	charSetUnknown  charSet = 0
-	charSetBig5             = 1
-	charSetDec8             = 3
-	charSetCp850            = 4
-	charSetHp8              = 6
-	charSetKoi8r            = 7
-	charSetLatin1           = 8
-	charSetLatin2           = 9
-	charSetSwe7             = 10
-	charSetASCII            = 11
-	charSetUjis             = 12
-	charSetSjis             = 13
-	charSetHebrew           = 16
-	charSetTis620           = 18
-	charSetEuckr            = 19
-	charSetKoi8u            = 22
-	charSetGb2312           = 24
-	charSetGreek            = 25
-	charSetCp1250           = 26
-	charSetGbk              = 28
-	charSetLatin5           = 30
-	charSetArmscii8         = 32
-	charSetUtf8             = 33
-	charSetUcs2             = 35
-	charSetCp866            = 36
-	charSetKeybcs2          = 37
-	charSetMacce            = 38
-	charSetMacroman         = 39
-	charSetCp852            = 40
-	charSetLatin7           = 41
-	charSetCp1251           = 51
-	charSetUtf16            = 54
-	charSetUtf16le          = 56
-	charSetCp1256           = 57
-	charSetCp1257           = 59
-	charSetUtf32            = 60
-	charSetBinary           = 63
-	charSetGeostd8          = 92
-	charSetCp932            = 95
-	charSetEucjpms          = 97
-	charSetGb18030          = 248
-	charSetUtf8mb4          = 255
-)
-
 // Dumper struct
 type Dumper struct {
 	name   string
@@ -359,6 +242,10 @@ func (m *Dumper) readClientCapabilities(in []byte, direction dumper.Direction, c
 	if clientCapabilities&uint32(clientProtocol41) > 0 && bytes.Compare(in[13:36], []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}) == 0 {
 		internal := connMetadata.Internal.(connMetadataInternal)
 		cSet := charSet(uint32(in[12]))
+		values = append(values, dumper.DumpValue{
+			Key:   "character_set",
+			Value: cSet.String(),
+		})
 		internal.charSet = cSet
 		connMetadata.Internal = internal
 

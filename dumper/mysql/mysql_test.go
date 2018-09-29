@@ -41,6 +41,10 @@ var mysqlReadTests = []struct {
 		},
 		[]dumper.DumpValue{
 			dumper.DumpValue{
+				Key:   "character_set",
+				Value: "latin1",
+			},
+			dumper.DumpValue{
 				Key:   "username",
 				Value: "pam",
 			},
@@ -78,6 +82,10 @@ var mysqlReadTests = []struct {
 			},
 		},
 		[]dumper.DumpValue{
+			dumper.DumpValue{
+				Key:   "character_set",
+				Value: "utf8",
+			},
 			dumper.DumpValue{
 				Key:   "username",
 				Value: "root",

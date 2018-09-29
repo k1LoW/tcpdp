@@ -201,6 +201,7 @@ MySQL query dumper
 | stmt_id | statement id | proxy / probe / read |
 | stmt_prepare_query | prepared statement query | proxy / probe / read |
 | stmt_execute_values | prepared statement execute values | proxy / probe / read |
+| character_set | [character set](https://dev.mysql.com/doc/internals/en/character-set.html) | proxy / probe / read |
 | username | username | proxy / probe / read |
 | database | database | proxy / probe / read |
 | seq_num | sequence number by MySQL | proxy / probe / read |
