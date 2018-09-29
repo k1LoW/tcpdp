@@ -623,7 +623,7 @@ var mysqlBinaryProtocolValueTests = []struct {
 func TestMysqlReadBinaryProtocolValue(t *testing.T) {
 	for _, tt := range mysqlBinaryProtocolValueTests {
 		buff := bytes.NewBuffer(tt.in)
-		actual := readBinaryProtocolValue(buff, tt.t)
+		actual := readBinaryProtocolValue(buff, tt.t, charSetUnknown)
 		if actual != tt.expected {
 			t.Errorf("actual %#v\nwant %#v", actual, tt.expected)
 		}

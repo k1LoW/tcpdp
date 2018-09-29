@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"strings"
 	"time"
 
 	"github.com/k1LoW/tcpdp/dumper"
@@ -86,6 +85,53 @@ const (
 	clientDeprecateEOF
 )
 
+type charSet uint32
+
+const (
+	charSetUnknown  charSet = 0
+	charSetBig5             = 1
+	charSetDec8             = 3
+	charSetCp850            = 4
+	charSetHp8              = 6
+	charSetKoi8r            = 7
+	charSetLatin1           = 8
+	charSetLatin2           = 9
+	charSetSwe7             = 10
+	charSetASCII            = 11
+	charSetUjis             = 12
+	charSetSjis             = 13
+	charSetHebrew           = 16
+	charSetTis620           = 18
+	charSetEuckr            = 19
+	charSetKoi8u            = 22
+	charSetGb2312           = 24
+	charSetGreek            = 25
+	charSetCp1250           = 26
+	charSetGbk              = 28
+	charSetLatin5           = 30
+	charSetArmscii8         = 32
+	charSetUtf8             = 33
+	charSetUcs2             = 35
+	charSetCp866            = 36
+	charSetKeybcs2          = 37
+	charSetMacce            = 38
+	charSetMacroman         = 39
+	charSetCp852            = 40
+	charSetLatin7           = 41
+	charSetCp1251           = 51
+	charSetUtf16            = 54
+	charSetUtf16le          = 56
+	charSetCp1256           = 57
+	charSetCp1257           = 59
+	charSetUtf32            = 60
+	charSetBinary           = 63
+	charSetGeostd8          = 92
+	charSetCp932            = 95
+	charSetEucjpms          = 97
+	charSetGb18030          = 248
+	charSetUtf8mb4          = 255
+)
+
 // Dumper struct
 type Dumper struct {
 	name   string
@@ -99,6 +145,7 @@ type stmtNumParams map[int]int // statement_id:num_params
 type connMetadataInternal struct {
 	clientCapabilities clientCapabilities
 	stmtNumParams      stmtNumParams
+	charSet            charSet
 }
 
 // NewDumper returns a Dumper
@@ -135,6 +182,7 @@ func (m *Dumper) Dump(in []byte, direction dumper.Direction, connMetadata *dumpe
 func (m *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumper.ConnMetadata) []dumper.DumpValue {
 	values := m.readClientCapabilities(in, direction, connMetadata)
 	connMetadata.DumpValues = append(connMetadata.DumpValues, values...)
+	cSet := connMetadata.Internal.(connMetadataInternal).charSet
 
 	// Client Compress
 	compressed, ok := connMetadata.Internal.(connMetadataInternal).clientCapabilities[clientCompress]
@@ -184,7 +232,7 @@ func (m *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 	var dumps = []dumper.DumpValue{}
 	switch commandID {
 	case comQuery:
-		query := strings.Trim(string(in[5:]), "\x00")
+		query := decodeString(in[5:], cSet)
 		dumps = []dumper.DumpValue{
 			dumper.DumpValue{
 				Key:   "query",
@@ -192,7 +240,7 @@ func (m *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 			},
 		}
 	case comStmtPrepare:
-		stmtPrepare := strings.Trim(string(in[5:]), "\x00")
+		stmtPrepare := decodeString(in[5:], cSet)
 		dumps = []dumper.DumpValue{
 			dumper.DumpValue{
 				Key:   "stmt_prepare_query",
@@ -221,7 +269,7 @@ func (m *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 				values := []interface{}{}
 				for i := 0; i < numParamsNum; i++ {
 					// https://dev.mysql.com/doc/internals/en/binary-protocol-value.html
-					v := readBinaryProtocolValue(buff, dataTypes[i])
+					v := readBinaryProtocolValue(buff, dataTypes[i], cSet)
 					values = append(values, v)
 				}
 				dumps = []dumper.DumpValue{
@@ -247,7 +295,7 @@ func (m *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 				}
 			}
 		} else {
-			values := strings.Trim(string(in[5:]), "\x00")
+			values := decodeString(in[5:], cSet)
 			dumps = []dumper.DumpValue{
 				dumper.DumpValue{
 					Key:   "stmt_id",
@@ -291,6 +339,7 @@ func (m *Dumper) NewConnMetadata() *dumper.ConnMetadata {
 		Internal: connMetadataInternal{
 			stmtNumParams:      stmtNumParams{},
 			clientCapabilities: clientCapabilities{},
+			charSet:            charSetUnknown,
 		},
 	}
 }
@@ -308,10 +357,15 @@ func (m *Dumper) readClientCapabilities(in []byte, direction dumper.Direction, c
 
 	// parse Protocol::HandshakeResponse41 to get username, database
 	if clientCapabilities&uint32(clientProtocol41) > 0 && bytes.Compare(in[13:36], []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}) == 0 {
+		internal := connMetadata.Internal.(connMetadataInternal)
+		cSet := charSet(uint32(in[12]))
+		internal.charSet = cSet
+		connMetadata.Internal = internal
+
 		connMetadata.Internal.(connMetadataInternal).clientCapabilities[clientProtocol41] = true
 		buff := bytes.NewBuffer(in[36:])
-		readed, _ := buff.ReadString(0x00)
-		username := strings.Trim(readed, "\x00")
+		readed, _ := buff.ReadBytes(0x00)
+		username := decodeString(readed, cSet)
 		values = append(values, dumper.DumpValue{
 			Key:   "username",
 			Value: username,
@@ -329,8 +383,8 @@ func (m *Dumper) readClientCapabilities(in []byte, direction dumper.Direction, c
 		}
 		if clientCapabilities&uint32(clientConnectWithDB) > 0 {
 			connMetadata.Internal.(connMetadataInternal).clientCapabilities[clientConnectWithDB] = true
-			readed, _ := buff.ReadString(0x00)
-			database := strings.Trim(readed, "\x00")
+			readed, _ := buff.ReadBytes(0x00)
+			database := decodeString(readed, cSet)
 			values = append(values, dumper.DumpValue{
 				Key:   "database",
 				Value: database,
@@ -364,7 +418,7 @@ func readLengthEncodedInteger(buff *bytes.Buffer) uint64 {
 }
 
 // https://dev.mysql.com/doc/internals/en/binary-protocol-value.html
-func readBinaryProtocolValue(buff *bytes.Buffer, dataType dataType) interface{} {
+func readBinaryProtocolValue(buff *bytes.Buffer, dataType dataType, cSet charSet) interface{} {
 	switch dataType {
 	case typeLonglong:
 		v := readBytes(buff, 8)
@@ -395,7 +449,7 @@ func readBinaryProtocolValue(buff *bytes.Buffer, dataType dataType) interface{} 
 	default:
 		l := readLengthEncodedInteger(buff)
 		v := readBytes(buff, int(l))
-		return string(v)
+		return decodeString(v, cSet)
 	}
 }
 
