@@ -126,8 +126,8 @@ depsdev: ghch
 
 ghch:
 	mkdir -p $(GOPATH)/src/github.com/Songmu
-	test -d $(GOPATH)/src/github.com/Songmu/ghch || git clone github.com/Songmu/ghch $(GOPATH)/src/github.com/Songmu/ghch
-	test -e $(GOPATH)/bin/grch || (cd $(GOPATH)/src/github.com/Songmu/ghch && go build -o $(GOPATH)/bin/grch && cd -)
+	test -d $(GOPATH)/src/github.com/Songmu/ghch || git clone https://github.com/Songmu/ghch $(GOPATH)/src/github.com/Songmu/ghch
+	test -e $(GOPATH)/bin/grch || (cd $(GOPATH)/src/github.com/Songmu/ghch && $(GO) build -o $(GOPATH)/bin/grch && cd -)
 
 crossbuild: build_darwin
 	@for d in $(DISTS); do\
