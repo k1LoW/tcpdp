@@ -16,3 +16,7 @@ script:
   - make ci
 after_script:
   - make cover
+cache:
+  directories:
+    - /go/pkg/mod/cache/download
+    - /go/src/github.com
