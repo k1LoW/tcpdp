@@ -29,6 +29,9 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/pcap"
 	"github.com/k1LoW/tcpdp/dumper"
+	"github.com/k1LoW/tcpdp/dumper/hex"
+	"github.com/k1LoW/tcpdp/dumper/mysql"
+	"github.com/k1LoW/tcpdp/dumper/pg"
 	"github.com/k1LoW/tcpdp/reader"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -87,13 +90,13 @@ var readCmd = &cobra.Command{
 		var d dumper.Dumper
 		switch readDumper {
 		case "hex":
-			d = dumper.NewHexDumper()
+			d = hex.NewDumper()
 		case "pg":
-			d = dumper.NewPgDumper()
+			d = pg.NewDumper()
 		case "mysql":
-			d = dumper.NewMysqlDumper()
+			d = mysql.NewDumper()
 		default:
-			d = dumper.NewHexDumper()
+			d = hex.NewDumper()
 		}
 
 		packetSource := gopacket.NewPacketSource(handle, handle.LinkType())

@@ -1,15 +1,20 @@
-package dumper
+package hex
 
 import (
 	"bytes"
+	"io"
 	"testing"
+
+	"github.com/k1LoW/tcpdp/dumper"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 var hexReadTests = []struct {
 	description string
 	in          []byte
-	direction   Direction
-	expected    []DumpValue
+	direction   dumper.Direction
+	expected    []dumper.DumpValue
 }{
 	{
 		"MySQL HandshakeResponse41 packet (https://dev.mysql.com/doc/internals/en/connection-phase-packets.html)",
@@ -22,13 +27,13 @@ var hexReadTests = []struct {
 			0x74, 0x00, 0x6d, 0x79, 0x73, 0x71, 0x6c, 0x5f, 0x6e, 0x61, 0x74, 0x69, 0x76, 0x65, 0x5f, 0x70,
 			0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x00,
 		},
-		SrcToDst,
-		[]DumpValue{
-			DumpValue{
+		dumper.SrcToDst,
+		[]dumper.DumpValue{
+			dumper.DumpValue{
 				Key:   "bytes",
 				Value: "54 00 00 01 8d a6 0f 00 00 00 00 01 08 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 70 61 6d 00 14 ab 09 ee f6 bc b1 32 3e 61 14 38 65 c0 99 1d 95 7d 75 d4 47 74 65 73 74 00 6d 79 73 71 6c 5f 6e 61 74 69 76 65 5f 70 61 73 73 77 6f 72 64 00",
 			},
-			DumpValue{
+			dumper.DumpValue{
 				Key:   "ascii",
 				Value: "T...................................pam........2>a.8e....}u.Gtest.mysql_native_password.",
 			},
@@ -40,13 +45,13 @@ var hexReadTests = []struct {
 			0x14, 0x00, 0x00, 0x00, 0x03, 0x73, 0x65, 0x6c, 0x65, 0x63, 0x74, 0x20, 0x2a, 0x20, 0x66, 0x72,
 			0x6f, 0x6d, 0x20, 0x70, 0x6f, 0x73, 0x74, 0x73,
 		},
-		SrcToDst,
-		[]DumpValue{
-			DumpValue{
+		dumper.SrcToDst,
+		[]dumper.DumpValue{
+			dumper.DumpValue{
 				Key:   "bytes",
 				Value: "14 00 00 00 03 73 65 6c 65 63 74 20 2a 20 66 72 6f 6d 20 70 6f 73 74 73",
 			},
-			DumpValue{
+			dumper.DumpValue{
 				Key:   "ascii",
 				Value: ".....select * from posts",
 			},
@@ -57,7 +62,7 @@ var hexReadTests = []struct {
 func TestHexRead(t *testing.T) {
 	for _, tt := range hexReadTests {
 		out := new(bytes.Buffer)
-		dumper := &HexDumper{
+		dumper := &Dumper{
 			logger: newTestLogger(out),
 		}
 		in := tt.in
@@ -87,4 +92,28 @@ func TestHexRead(t *testing.T) {
 			}
 		}
 	}
+}
+
+// newTestLogger return zap.Logger for test
+func newTestLogger(out io.Writer) *zap.Logger {
+	encoderConfig := zapcore.EncoderConfig{
+		TimeKey:        "ts",
+		LevelKey:       "level",
+		NameKey:        "logger",
+		CallerKey:      "caller",
+		MessageKey:     "msg",
+		StacktraceKey:  "stacktrace",
+		EncodeLevel:    zapcore.LowercaseLevelEncoder,
+		EncodeTime:     zapcore.ISO8601TimeEncoder,
+		EncodeDuration: zapcore.StringDurationEncoder,
+		EncodeCaller:   zapcore.ShortCallerEncoder,
+	}
+
+	logger := zap.New(zapcore.NewCore(
+		zapcore.NewJSONEncoder(encoderConfig),
+		zapcore.AddSync(out),
+		zapcore.DebugLevel,
+	))
+
+	return logger
 }

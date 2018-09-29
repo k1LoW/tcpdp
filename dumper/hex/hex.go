@@ -1,24 +1,25 @@
-package dumper
+package hex
 
 import (
 	"encoding/hex"
 	"strings"
 	"time"
 
+	"github.com/k1LoW/tcpdp/dumper"
 	"github.com/k1LoW/tcpdp/logger"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
-// HexDumper ...
-type HexDumper struct {
+// Dumper ...
+type Dumper struct {
 	name   string
 	logger *zap.Logger
 }
 
-// NewHexDumper returns a HexDumper
-func NewHexDumper() *HexDumper {
-	dumper := &HexDumper{
+// NewDumper returns a Dumper
+func NewDumper() *Dumper {
+	dumper := &Dumper{
 		name:   "hex",
 		logger: logger.NewHexLogger(),
 	}
@@ -26,18 +27,18 @@ func NewHexDumper() *HexDumper {
 }
 
 // Name return dumper name
-func (h *HexDumper) Name() string {
+func (h *Dumper) Name() string {
 	return h.name
 }
 
 // Dump TCP
-func (h *HexDumper) Dump(in []byte, direction Direction, connMetadata *ConnMetadata, additional []DumpValue) error {
-	values := []DumpValue{}
+func (h *Dumper) Dump(in []byte, direction dumper.Direction, connMetadata *dumper.ConnMetadata, additional []dumper.DumpValue) error {
+	values := []dumper.DumpValue{}
 	read := h.Read(in, direction, connMetadata)
 	values = append(values, read...)
 	values = append(values, connMetadata.DumpValues...)
 	values = append(values, additional...)
-	values = append(values, DumpValue{
+	values = append(values, dumper.DumpValue{
 		Key:   "ts",
 		Value: time.Now(),
 	})
@@ -47,7 +48,7 @@ func (h *HexDumper) Dump(in []byte, direction Direction, connMetadata *ConnMetad
 }
 
 // Read return byte to analyzed string
-func (h *HexDumper) Read(in []byte, direction Direction, connMetadata *ConnMetadata) []DumpValue {
+func (h *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumper.ConnMetadata) []dumper.DumpValue {
 	hexdump := strings.Split(hex.Dump(in), "\n")
 	byteString := []string{}
 	ascii := []string{}
@@ -59,12 +60,12 @@ func (h *HexDumper) Read(in []byte, direction Direction, connMetadata *ConnMetad
 		ascii = append(ascii, hd[61:len(hd)-1])
 	}
 
-	return []DumpValue{
-		DumpValue{
+	return []dumper.DumpValue{
+		dumper.DumpValue{
 			Key:   "bytes",
 			Value: strings.Join(byteString, " "),
 		},
-		DumpValue{
+		dumper.DumpValue{
 			Key:   "ascii",
 			Value: strings.Join(ascii, ""),
 		},
@@ -72,7 +73,7 @@ func (h *HexDumper) Read(in []byte, direction Direction, connMetadata *ConnMetad
 }
 
 // Log values
-func (h *HexDumper) Log(values []DumpValue) {
+func (h *Dumper) Log(values []dumper.DumpValue) {
 	fields := []zapcore.Field{}
 	for _, kv := range values {
 		fields = append(fields, zap.Any(kv.Key, kv.Value))
@@ -81,8 +82,8 @@ func (h *HexDumper) Log(values []DumpValue) {
 }
 
 // NewConnMetadata ...
-func (h *HexDumper) NewConnMetadata() *ConnMetadata {
-	return &ConnMetadata{
-		DumpValues: []DumpValue{},
+func (h *Dumper) NewConnMetadata() *dumper.ConnMetadata {
+	return &dumper.ConnMetadata{
+		DumpValues: []dumper.DumpValue{},
 	}
 }

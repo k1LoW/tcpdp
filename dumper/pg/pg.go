@@ -1,10 +1,11 @@
-package dumper
+package pg
 
 import (
 	"bytes"
 	"encoding/binary"
 	"strings"
 
+	"github.com/k1LoW/tcpdp/dumper"
 	"github.com/k1LoW/tcpdp/logger"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -24,15 +25,15 @@ const (
 	pgTypeBinary
 )
 
-// PgDumper struct
-type PgDumper struct {
+// Dumper struct
+type Dumper struct {
 	name   string
 	logger *zap.Logger
 }
 
-// NewPgDumper returns a PgDumper
-func NewPgDumper() *PgDumper {
-	dumper := &PgDumper{
+// NewDumper returns a Dumper
+func NewDumper() *Dumper {
+	dumper := &Dumper{
 		name:   "pg",
 		logger: logger.NewQueryLogger(),
 	}
@@ -40,18 +41,18 @@ func NewPgDumper() *PgDumper {
 }
 
 // Name return dumper name
-func (p *PgDumper) Name() string {
+func (p *Dumper) Name() string {
 	return p.name
 }
 
 // Dump query of PostgreSQL
-func (p *PgDumper) Dump(in []byte, direction Direction, connMetadata *ConnMetadata, additional []DumpValue) error {
+func (p *Dumper) Dump(in []byte, direction dumper.Direction, connMetadata *dumper.ConnMetadata, additional []dumper.DumpValue) error {
 	read := p.Read(in, direction, connMetadata)
 	if len(read) == 0 {
 		return nil
 	}
 
-	values := []DumpValue{}
+	values := []dumper.DumpValue{}
 	values = append(values, read...)
 	values = append(values, connMetadata.DumpValues...)
 	values = append(values, additional...)
@@ -61,26 +62,26 @@ func (p *PgDumper) Dump(in []byte, direction Direction, connMetadata *ConnMetada
 }
 
 // Read return byte to analyzed string
-func (p *PgDumper) Read(in []byte, direction Direction, connMetadata *ConnMetadata) []DumpValue {
+func (p *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumper.ConnMetadata) []dumper.DumpValue {
 	values := p.readUsernameAndDatabase(in, direction)
 	connMetadata.DumpValues = append(connMetadata.DumpValues, values...)
 
-	if direction == RemoteToClient || direction == DstToSrc || direction == Unknown {
-		return []DumpValue{}
+	if direction == dumper.RemoteToClient || direction == dumper.DstToSrc || direction == dumper.Unknown {
+		return []dumper.DumpValue{}
 	}
 	if len(in) == 0 {
-		return []DumpValue{}
+		return []dumper.DumpValue{}
 	}
 
 	messageType := in[0]
-	var dumps = []DumpValue{}
+	var dumps = []dumper.DumpValue{}
 	// https://www.postgresql.org/docs/10/static/protocol-message-formats.html
 	switch messageType {
 	case pgMessageQuery:
 		query := strings.Trim(string(in[5:]), "\x00")
 
-		dumps = []DumpValue{
-			DumpValue{
+		dumps = []dumper.DumpValue{
+			dumper.DumpValue{
 				Key:   "query",
 				Value: query,
 			},
@@ -97,12 +98,12 @@ func (p *PgDumper) Read(in []byte, direction Direction, connMetadata *ConnMetada
 			// Int32: Specifies the object ID of the parameter data type. Placing a zero here is equivalent to leaving the type unspecified.
 		}
 
-		dumps = []DumpValue{
-			DumpValue{
+		dumps = []dumper.DumpValue{
+			dumper.DumpValue{
 				Key:   "stmt_name",
 				Value: stmtName,
 			},
-			DumpValue{
+			dumper.DumpValue{
 				Key:   "parse_query",
 				Value: query,
 			},
@@ -139,16 +140,16 @@ func (p *PgDumper) Read(in []byte, direction Direction, connMetadata *ConnMetada
 			}
 		}
 
-		dumps = []DumpValue{
-			DumpValue{
+		dumps = []dumper.DumpValue{
+			dumper.DumpValue{
 				Key:   "portal_name",
 				Value: portalName,
 			},
-			DumpValue{
+			dumper.DumpValue{
 				Key:   "stmt_name",
 				Value: stmtName,
 			},
-			DumpValue{
+			dumper.DumpValue{
 				Key:   "bind_values",
 				Value: values,
 			},
@@ -158,27 +159,27 @@ func (p *PgDumper) Read(in []byte, direction Direction, connMetadata *ConnMetada
 		b, _ := buff.ReadString(0x00)
 		portalName := strings.Trim(b, "\x00")
 
-		dumps = []DumpValue{
-			DumpValue{
+		dumps = []dumper.DumpValue{
+			dumper.DumpValue{
 				Key:   "portal_name",
 				Value: portalName,
 			},
-			DumpValue{
+			dumper.DumpValue{
 				Key:   "execute_query",
 				Value: "",
 			},
 		}
 	default:
-		return []DumpValue{}
+		return []dumper.DumpValue{}
 	}
-	return append(dumps, DumpValue{
+	return append(dumps, dumper.DumpValue{
 		Key:   "message_type",
 		Value: string(messageType),
 	})
 }
 
 // Log values
-func (p *PgDumper) Log(values []DumpValue) {
+func (p *Dumper) Log(values []dumper.DumpValue) {
 	fields := []zapcore.Field{}
 	for _, kv := range values {
 		fields = append(fields, zap.Any(kv.Key, kv.Value))
@@ -187,15 +188,15 @@ func (p *PgDumper) Log(values []DumpValue) {
 }
 
 // NewConnMetadata ...
-func (p *PgDumper) NewConnMetadata() *ConnMetadata {
-	return &ConnMetadata{
-		DumpValues: []DumpValue{},
+func (p *Dumper) NewConnMetadata() *dumper.ConnMetadata {
+	return &dumper.ConnMetadata{
+		DumpValues: []dumper.DumpValue{},
 	}
 }
 
-func (p *PgDumper) readUsernameAndDatabase(in []byte, direction Direction) []DumpValue {
-	values := []DumpValue{}
-	if direction == RemoteToClient || direction == DstToSrc {
+func (p *Dumper) readUsernameAndDatabase(in []byte, direction dumper.Direction) []dumper.DumpValue {
+	values := []dumper.DumpValue{}
+	if direction == dumper.RemoteToClient || direction == dumper.DstToSrc {
 		return values
 	}
 	// parse StartupMessage to get username, database
@@ -209,13 +210,13 @@ func (p *PgDumper) readUsernameAndDatabase(in []byte, direction Direction) []Dum
 				continue
 			}
 			if string(keyOrValue) == "user" {
-				values = append(values, DumpValue{
+				values = append(values, dumper.DumpValue{
 					Key:   "username",
 					Value: string(splited[i+1]),
 				})
 			}
 			if string(keyOrValue) == "database" {
-				values = append(values, DumpValue{
+				values = append(values, dumper.DumpValue{
 					Key:   "database",
 					Value: string(splited[i+1]),
 				})
@@ -223,4 +224,10 @@ func (p *PgDumper) readUsernameAndDatabase(in []byte, direction Direction) []Dum
 		}
 	}
 	return values
+}
+
+func readBytes(buff *bytes.Buffer, len int) []byte {
+	b := make([]byte, len)
+	_, _ = buff.Read(b)
+	return b
 }

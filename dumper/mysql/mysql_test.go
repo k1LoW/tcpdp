@@ -1,18 +1,23 @@
-package dumper
+package mysql
 
 import (
 	"bytes"
+	"io"
 	"strings"
 	"testing"
+
+	"github.com/k1LoW/tcpdp/dumper"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 var mysqlReadTests = []struct {
 	description   string
 	in            []byte
-	direction     Direction
-	connMetadata  ConnMetadata
-	expected      []DumpValue
-	expectedQuery []DumpValue
+	direction     dumper.Direction
+	connMetadata  dumper.ConnMetadata
+	expected      []dumper.DumpValue
+	expectedQuery []dumper.DumpValue
 	logContain    string
 }{
 	{
@@ -26,25 +31,25 @@ var mysqlReadTests = []struct {
 			0x74, 0x00, 0x6d, 0x79, 0x73, 0x71, 0x6c, 0x5f, 0x6e, 0x61, 0x74, 0x69, 0x76, 0x65, 0x5f, 0x70,
 			0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x00,
 		},
-		SrcToDst,
-		ConnMetadata{
-			DumpValues: []DumpValue{},
-			Internal: mysqlConnMetadataInternal{
+		dumper.SrcToDst,
+		dumper.ConnMetadata{
+			DumpValues: []dumper.DumpValue{},
+			Internal: connMetadataInternal{
 				stmtNumParams:      stmtNumParams{5: 2},
 				clientCapabilities: clientCapabilities{},
 			},
 		},
-		[]DumpValue{
-			DumpValue{
+		[]dumper.DumpValue{
+			dumper.DumpValue{
 				Key:   "username",
 				Value: "pam",
 			},
-			DumpValue{
+			dumper.DumpValue{
 				Key:   "database",
 				Value: "test",
 			},
 		},
-		[]DumpValue{},
+		[]dumper.DumpValue{},
 		"",
 	},
 	{
@@ -64,25 +69,25 @@ var mysqlReadTests = []struct {
 			0x36, 0x34, 0x0c, 0x70, 0x72, 0x6f, 0x67, 0x72, 0x61, 0x6d, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x05,
 			0x6d, 0x79, 0x73, 0x71, 0x6c,
 		},
-		SrcToDst,
-		ConnMetadata{
-			DumpValues: []DumpValue{},
-			Internal: mysqlConnMetadataInternal{
+		dumper.SrcToDst,
+		dumper.ConnMetadata{
+			DumpValues: []dumper.DumpValue{},
+			Internal: connMetadataInternal{
 				stmtNumParams:      stmtNumParams{5: 2},
 				clientCapabilities: clientCapabilities{},
 			},
 		},
-		[]DumpValue{
-			DumpValue{
+		[]dumper.DumpValue{
+			dumper.DumpValue{
 				Key:   "username",
 				Value: "root",
 			},
-			DumpValue{
+			dumper.DumpValue{
 				Key:   "database",
 				Value: "testdb",
 			},
 		},
-		[]DumpValue{},
+		[]dumper.DumpValue{},
 		"",
 	},
 	{
@@ -91,25 +96,25 @@ var mysqlReadTests = []struct {
 			0x14, 0x00, 0x00, 0x00, 0x03, 0x73, 0x65, 0x6c, 0x65, 0x63, 0x74, 0x20, 0x2a, 0x20, 0x66, 0x72,
 			0x6f, 0x6d, 0x20, 0x70, 0x6f, 0x73, 0x74, 0x73,
 		},
-		SrcToDst,
-		ConnMetadata{
-			DumpValues: []DumpValue{},
-			Internal: mysqlConnMetadataInternal{
+		dumper.SrcToDst,
+		dumper.ConnMetadata{
+			DumpValues: []dumper.DumpValue{},
+			Internal: connMetadataInternal{
 				stmtNumParams:      stmtNumParams{5: 2},
 				clientCapabilities: clientCapabilities{},
 			},
 		},
-		[]DumpValue{},
-		[]DumpValue{
-			DumpValue{
+		[]dumper.DumpValue{},
+		[]dumper.DumpValue{
+			dumper.DumpValue{
 				Key:   "query",
 				Value: "select * from posts",
 			},
-			DumpValue{
+			dumper.DumpValue{
 				Key:   "seq_num",
 				Value: int64(0),
 			},
-			DumpValue{
+			dumper.DumpValue{
 				Key:   "command_id",
 				Value: byte(3),
 			},
@@ -117,21 +122,21 @@ var mysqlReadTests = []struct {
 		"\"query\":\"select * from posts\"",
 	},
 	{
-		"When direction = RemoteToClient do not parse query",
+		"When direction = dumper.RemoteToClient do not parse query",
 		[]byte{
 			0x14, 0x00, 0x00, 0x00, 0x03, 0x73, 0x65, 0x6c, 0x65, 0x63, 0x74, 0x20, 0x2a, 0x20, 0x66, 0x72,
 			0x6f, 0x6d, 0x20, 0x70, 0x6f, 0x73, 0x74, 0x73,
 		},
-		RemoteToClient,
-		ConnMetadata{
-			DumpValues: []DumpValue{},
-			Internal: mysqlConnMetadataInternal{
+		dumper.RemoteToClient,
+		dumper.ConnMetadata{
+			DumpValues: []dumper.DumpValue{},
+			Internal: connMetadataInternal{
 				stmtNumParams:      stmtNumParams{5: 2},
 				clientCapabilities: clientCapabilities{},
 			},
 		},
-		[]DumpValue{},
-		[]DumpValue{},
+		[]dumper.DumpValue{},
+		[]dumper.DumpValue{},
 		"",
 	},
 	{
@@ -141,29 +146,29 @@ var mysqlReadTests = []struct {
 			0xfe, 0x00, 0xfe, 0x00, 0x06, 0x74, 0x65, 0x73, 0x74, 0x64, 0x62, 0x0d, 0x63, 0x6f, 0x6d, 0x6d,
 			0x65, 0x6e, 0x74, 0x5f, 0x73, 0x74, 0x61, 0x72, 0x73,
 		},
-		ClientToRemote,
-		ConnMetadata{
-			DumpValues: []DumpValue{},
-			Internal: mysqlConnMetadataInternal{
+		dumper.ClientToRemote,
+		dumper.ConnMetadata{
+			DumpValues: []dumper.DumpValue{},
+			Internal: connMetadataInternal{
 				stmtNumParams:      stmtNumParams{5: 2},
 				clientCapabilities: clientCapabilities{},
 			},
 		},
-		[]DumpValue{},
-		[]DumpValue{
-			DumpValue{
+		[]dumper.DumpValue{},
+		[]dumper.DumpValue{
+			dumper.DumpValue{
 				Key:   "stmt_id",
 				Value: 5,
 			},
-			DumpValue{
+			dumper.DumpValue{
 				Key:   "stmt_execute_values",
 				Value: []interface{}{"testdb", "comment_stars"},
 			},
-			DumpValue{
+			dumper.DumpValue{
 				Key:   "seq_num",
 				Value: int64(0),
 			},
-			DumpValue{
+			dumper.DumpValue{
 				Key:   "command_id",
 				Value: byte(23),
 			},
@@ -178,25 +183,25 @@ var mysqlReadTests = []struct {
 			0xcd, 0x49, 0x4d, 0x2e, 0x51, 0x50, 0x32, 0x30, 0x34, 0x32, 0x36, 0x31, 0x35, 0x33, 0xb7, 0xb0,
 			0xc4, 0xcd, 0x52, 0x02, 0x00, 0x0c, 0xd1, 0x0a, 0x6c,
 		},
-		ClientToRemote,
-		ConnMetadata{
-			DumpValues: []DumpValue{},
-			Internal: mysqlConnMetadataInternal{
+		dumper.ClientToRemote,
+		dumper.ConnMetadata{
+			DumpValues: []dumper.DumpValue{},
+			Internal: connMetadataInternal{
 				stmtNumParams:      stmtNumParams{5: 2},
 				clientCapabilities: clientCapabilities{clientCompress: true},
 			},
 		},
-		[]DumpValue{},
-		[]DumpValue{
-			DumpValue{
+		[]dumper.DumpValue{},
+		[]dumper.DumpValue{
+			dumper.DumpValue{
 				Key:   "query",
 				Value: "select \"012345678901234567890123456789012345\"",
 			},
-			DumpValue{
+			dumper.DumpValue{
 				Key:   "seq_num",
 				Value: int64(0),
 			},
-			DumpValue{
+			dumper.DumpValue{
 				Key:   "command_id",
 				Value: byte(3),
 			},
@@ -211,25 +216,25 @@ var mysqlReadTests = []struct {
 			0x61, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x74, 0x61, 0x62,
 			0x6c, 0x65, 0x73,
 		},
-		ClientToRemote,
-		ConnMetadata{
-			DumpValues: []DumpValue{},
-			Internal: mysqlConnMetadataInternal{
+		dumper.ClientToRemote,
+		dumper.ConnMetadata{
+			DumpValues: []dumper.DumpValue{},
+			Internal: connMetadataInternal{
 				stmtNumParams:      stmtNumParams{5: 2},
 				clientCapabilities: clientCapabilities{clientCompress: true},
 			},
 		},
-		[]DumpValue{},
-		[]DumpValue{
-			DumpValue{
+		[]dumper.DumpValue{},
+		[]dumper.DumpValue{
+			dumper.DumpValue{
 				Key:   "query",
 				Value: "SELECT * FROM information_schema.tables",
 			},
-			DumpValue{
+			dumper.DumpValue{
 				Key:   "seq_num",
 				Value: int64(0),
 			},
-			DumpValue{
+			dumper.DumpValue{
 				Key:   "command_id",
 				Value: byte(3),
 			},
@@ -247,25 +252,25 @@ var mysqlReadTests = []struct {
 			0x9e, 0x42, 0x66, 0x9e, 0x82, 0x7b, 0xbe, 0x9e, 0xd2, 0x10, 0xd5, 0xac, 0x69, 0x0d, 0x08, 0x00,
 			0x00, 0xff, 0xff, 0xb6, 0xf5, 0x59, 0x55,
 		},
-		ClientToRemote,
-		ConnMetadata{
-			DumpValues: []DumpValue{},
-			Internal: mysqlConnMetadataInternal{
+		dumper.ClientToRemote,
+		dumper.ConnMetadata{
+			DumpValues: []dumper.DumpValue{},
+			Internal: connMetadataInternal{
 				stmtNumParams:      stmtNumParams{},
 				clientCapabilities: clientCapabilities{clientCompress: true},
 			},
 		},
-		[]DumpValue{},
-		[]DumpValue{
-			DumpValue{
+		[]dumper.DumpValue{},
+		[]dumper.DumpValue{
+			dumper.DumpValue{
 				Key:   "stmt_prepare_query",
 				Value: "SELECT CONCAT(?, ?, ?, \" tcpdp is TCP dump tool with custom dumper written in Go.\", \" tcpdp is TCP dump tool with custom dumper written in Go.\", \" tcpdp is TCP dump tool with custom dumper written in Go.\", \" tcpdp is TCP dump tool with custom dumper written in Go.\");",
 			},
-			DumpValue{
+			dumper.DumpValue{
 				Key:   "seq_num",
 				Value: int64(0),
 			},
-			DumpValue{
+			dumper.DumpValue{
 				Key:   "command_id",
 				Value: byte(22),
 			},
@@ -281,29 +286,29 @@ var mysqlReadTests = []struct {
 			0x88, 0x6c, 0x9e, 0x02, 0x26, 0xdb, 0xa1, 0x82, 0x50, 0xee, 0xf0, 0x54, 0xc3, 0x00, 0x08, 0x00,
 			0x00, 0xff, 0xff, 0x63, 0x8d, 0xb3, 0xbd,
 		},
-		ClientToRemote,
-		ConnMetadata{
-			DumpValues: []DumpValue{},
-			Internal: mysqlConnMetadataInternal{
+		dumper.ClientToRemote,
+		dumper.ConnMetadata{
+			DumpValues: []dumper.DumpValue{},
+			Internal: connMetadataInternal{
 				stmtNumParams:      stmtNumParams{3: 3},
 				clientCapabilities: clientCapabilities{clientCompress: true},
 			},
 		},
-		[]DumpValue{},
-		[]DumpValue{
-			DumpValue{
+		[]dumper.DumpValue{},
+		[]dumper.DumpValue{
+			dumper.DumpValue{
 				Key:   "stmt_id",
 				Value: 3,
 			},
-			DumpValue{
+			dumper.DumpValue{
 				Key:   "stmt_execute_values",
 				Value: []interface{}{"tcpdp", "ティーシーピーディーピーティーシーピーディーピーティーシーピーディーピーティーシーピーディーピーティーシーピーディーピーティーシーピーディーピーティーシーピーディーピー", ""},
 			},
-			DumpValue{
+			dumper.DumpValue{
 				Key:   "seq_num",
 				Value: int64(0),
 			},
-			DumpValue{
+			dumper.DumpValue{
 				Key:   "command_id",
 				Value: byte(23),
 			},
@@ -316,25 +321,25 @@ var mysqlReadTests = []struct {
 			0x15, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11, 0x00, 0x00, 0x00, 0x16, 0x53, 0x45, 0x4c, 0x45,
 			0x43, 0x54, 0x20, 0x3f, 0x20, 0x2b, 0x20, 0x3f, 0x20, 0x2b, 0x20, 0x3f,
 		},
-		ClientToRemote,
-		ConnMetadata{
-			DumpValues: []DumpValue{},
-			Internal: mysqlConnMetadataInternal{
+		dumper.ClientToRemote,
+		dumper.ConnMetadata{
+			DumpValues: []dumper.DumpValue{},
+			Internal: connMetadataInternal{
 				stmtNumParams:      stmtNumParams{},
 				clientCapabilities: clientCapabilities{clientCompress: true},
 			},
 		},
-		[]DumpValue{},
-		[]DumpValue{
-			DumpValue{
+		[]dumper.DumpValue{},
+		[]dumper.DumpValue{
+			dumper.DumpValue{
 				Key:   "stmt_prepare_query",
 				Value: "SELECT ? + ? + ?",
 			},
-			DumpValue{
+			dumper.DumpValue{
 				Key:   "seq_num",
 				Value: int64(0),
 			},
-			DumpValue{
+			dumper.DumpValue{
 				Key:   "command_id",
 				Value: byte(22),
 			},
@@ -349,29 +354,29 @@ var mysqlReadTests = []struct {
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x37, 0x40, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00, 0x00,
 		},
-		ClientToRemote,
-		ConnMetadata{
-			DumpValues: []DumpValue{},
-			Internal: mysqlConnMetadataInternal{
+		dumper.ClientToRemote,
+		dumper.ConnMetadata{
+			DumpValues: []dumper.DumpValue{},
+			Internal: connMetadataInternal{
 				stmtNumParams:      stmtNumParams{2: 3},
 				clientCapabilities: clientCapabilities{clientCompress: true},
 			},
 		},
-		[]DumpValue{},
-		[]DumpValue{
-			DumpValue{
+		[]dumper.DumpValue{},
+		[]dumper.DumpValue{
+			dumper.DumpValue{
 				Key:   "stmt_id",
 				Value: 2,
 			},
-			DumpValue{
+			dumper.DumpValue{
 				Key:   "stmt_execute_values",
 				Value: []interface{}{int64(1), 23.4, int64(0)},
 			},
-			DumpValue{
+			dumper.DumpValue{
 				Key:   "seq_num",
 				Value: int64(0),
 			},
-			DumpValue{
+			dumper.DumpValue{
 				Key:   "command_id",
 				Value: byte(23),
 			},
@@ -383,14 +388,14 @@ var mysqlReadTests = []struct {
 func TestMysqlReadUsernameAndDatabaseHandshakeResponse41(t *testing.T) {
 	for _, tt := range mysqlReadTests {
 		out := new(bytes.Buffer)
-		dumper := &MysqlDumper{
+		d := &Dumper{
 			logger: newTestLogger(out),
 		}
 		in := tt.in
 		direction := tt.direction
 		connMetadata := &tt.connMetadata
 
-		actual := dumper.readClientCapabilities(in, direction, connMetadata)
+		actual := d.readClientCapabilities(in, direction, connMetadata)
 		expected := tt.expected
 
 		if len(actual) != len(expected) {
@@ -418,14 +423,14 @@ func TestMysqlReadUsernameAndDatabaseHandshakeResponse41(t *testing.T) {
 func TestMysqlRead(t *testing.T) {
 	for _, tt := range mysqlReadTests {
 		out := new(bytes.Buffer)
-		dumper := &MysqlDumper{
+		d := &Dumper{
 			logger: newTestLogger(out),
 		}
 		in := tt.in
 		direction := tt.direction
 		connMetadata := &tt.connMetadata
 
-		actual := dumper.Read(in, direction, connMetadata)
+		actual := d.Read(in, direction, connMetadata)
 		expected := tt.expectedQuery
 
 		if len(actual) != len(expected) {
@@ -453,16 +458,16 @@ func TestMysqlRead(t *testing.T) {
 func TestMysqlDump(t *testing.T) {
 	for _, tt := range mysqlReadTests {
 		out := new(bytes.Buffer)
-		dumper := &MysqlDumper{
+		d := &Dumper{
 			logger: newTestLogger(out),
 		}
 		in := tt.in
 		direction := tt.direction
 		connMetadata := &tt.connMetadata
 
-		additional := []DumpValue{}
+		additional := []dumper.DumpValue{}
 
-		err := dumper.Dump(in, direction, connMetadata, additional)
+		err := d.Dump(in, direction, connMetadata, additional)
 		if err != nil {
 			t.Errorf("%v", err)
 		}
@@ -530,87 +535,87 @@ func TestMysqlReadLengthEncodeInteger(t *testing.T) {
 
 var mysqlBinaryProtocolValueTests = []struct {
 	in       []byte
-	t        mysqlType
+	t        dataType
 	expected interface{}
 }{
 	{
 		[]byte{0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-		mysqlTypeLonglong,
+		typeLonglong,
 		int64(1),
 	},
 	{
 		[]byte{0x01, 0x00, 0x00, 0x00},
-		mysqlTypeLong,
+		typeLong,
 		int32(1),
 	},
 	{
 		[]byte{0x01, 0x00, 0x00, 0x00},
-		mysqlTypeInt24,
+		typeInt24,
 		int32(1),
 	},
 	{
 		[]byte{0x01, 0x00},
-		mysqlTypeShort,
+		typeShort,
 		int16(1),
 	},
 	{
 		[]byte{0xe2, 0x07},
-		mysqlTypeYear,
+		typeYear,
 		int16(2018),
 	},
 	{
 		[]byte{0x01},
-		mysqlTypeTiny,
+		typeTiny,
 		int8(1),
 	},
 	{
 		[]byte{0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x24, 0x40},
-		mysqlTypeDouble,
+		typeDouble,
 		10.2,
 	},
 	{
 		[]byte{0x33, 0x33, 0x23, 0x41},
-		mysqlTypeFloat,
+		typeFloat,
 		float32(10.2),
 	},
 	{
 		[]byte{0x04, 0xda, 0x07, 0x0a, 0x11},
-		mysqlTypeDate,
+		typeDate,
 		"2010-10-17",
 	},
 	{
 		[]byte{0x0b, 0xda, 0x07, 0x0a, 0x11, 0x13, 0x1b, 0x1e, 0x01, 0x00, 0x00, 0x00},
-		mysqlTypeDatetime,
+		typeDatetime,
 		"2010-10-17 19:27:30.000 001",
 	},
 	{
 		[]byte{0x0b, 0xda, 0x07, 0x0a, 0x11, 0x13, 0x1b, 0x1e, 0x01, 0x00, 0x00, 0x00},
-		mysqlTypeTimestamp,
+		typeTimestamp,
 		"2010-10-17 19:27:30.000 001",
 	},
 	{
 		[]byte{0x0c, 0x01, 0x78, 0x00, 0x00, 0x00, 0x13, 0x1b, 0x1e, 0x01, 0x00, 0x00, 0x00},
-		mysqlTypeTime,
+		typeTime,
 		"-120d 19:27:30.000 001",
 	},
 	{
 		[]byte{0x08, 0x01, 0x78, 0x00, 0x00, 0x00, 0x13, 0x1b, 0x1e},
-		mysqlTypeTime,
+		typeTime,
 		"-120d 19:27:30",
 	},
 	{
 		[]byte{0x01},
-		mysqlTypeTime,
+		typeTime,
 		"0d 00:00:00",
 	},
 	{
 		[]byte{},
-		mysqlTypeNull,
+		typeNull,
 		nil,
 	},
 	{
 		[]byte{0x03, 0x66, 0x6f, 0x6f},
-		mysqlTypeString,
+		typeString,
 		"foo",
 	},
 }
@@ -623,4 +628,55 @@ func TestMysqlReadBinaryProtocolValue(t *testing.T) {
 			t.Errorf("actual %#v\nwant %#v", actual, tt.expected)
 		}
 	}
+}
+
+var readBytesTests = []struct {
+	in       []byte
+	len      int
+	expected []byte
+}{
+	{
+		[]byte{0x12, 0x34, 0x56, 0x78},
+		2,
+		[]byte{0x12, 0x34},
+	},
+	{
+		[]byte{0x12, 0x34, 0x56, 0x78},
+		0,
+		[]byte{},
+	},
+}
+
+func TestReadBytes(t *testing.T) {
+	for _, tt := range readBytesTests {
+		buff := bytes.NewBuffer(tt.in)
+		actual := readBytes(buff, tt.len)
+		if !bytes.Equal(actual, tt.expected) {
+			t.Errorf("actual %#v\nwant %#v", actual, tt.expected)
+		}
+	}
+}
+
+// newTestLogger return zap.Logger for test
+func newTestLogger(out io.Writer) *zap.Logger {
+	encoderConfig := zapcore.EncoderConfig{
+		TimeKey:        "ts",
+		LevelKey:       "level",
+		NameKey:        "logger",
+		CallerKey:      "caller",
+		MessageKey:     "msg",
+		StacktraceKey:  "stacktrace",
+		EncodeLevel:    zapcore.LowercaseLevelEncoder,
+		EncodeTime:     zapcore.ISO8601TimeEncoder,
+		EncodeDuration: zapcore.StringDurationEncoder,
+		EncodeCaller:   zapcore.ShortCallerEncoder,
+	}
+
+	logger := zap.New(zapcore.NewCore(
+		zapcore.NewJSONEncoder(encoderConfig),
+		zapcore.AddSync(out),
+		zapcore.DebugLevel,
+	))
+
+	return logger
 }
