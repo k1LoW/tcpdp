@@ -1,17 +1,22 @@
-package dumper
+package pg
 
 import (
 	"bytes"
+	"io"
 	"testing"
+
+	"github.com/k1LoW/tcpdp/dumper"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 var pgValueTests = []struct {
 	description   string
 	in            []byte
-	direction     Direction
-	connMetadata  ConnMetadata
-	expected      []DumpValue
-	expectedQuery []DumpValue
+	direction     dumper.Direction
+	connMetadata  dumper.ConnMetadata
+	expected      []dumper.DumpValue
+	expectedQuery []dumper.DumpValue
 }{
 	{
 		"Parse username/database from StartupMessage packet",
@@ -24,19 +29,19 @@ var pgValueTests = []struct {
 			0x64, 0x61, 0x74, 0x65, 0x73, 0x74, 0x79, 0x6c, 0x65, 0x00, 0x49, 0x53, 0x4f, 0x2c, 0x20, 0x4d,
 			0x44, 0x59, 0x00, 0x00,
 		},
-		SrcToDst,
-		ConnMetadata{},
-		[]DumpValue{
-			DumpValue{
+		dumper.SrcToDst,
+		dumper.ConnMetadata{},
+		[]dumper.DumpValue{
+			dumper.DumpValue{
 				Key:   "username",
 				Value: "postgres",
 			},
-			DumpValue{
+			dumper.DumpValue{
 				Key:   "database",
 				Value: "testdb",
 			},
 		},
-		[]DumpValue{},
+		[]dumper.DumpValue{},
 	},
 	{
 		"Parse query from MessageQuery packet",
@@ -44,15 +49,15 @@ var pgValueTests = []struct {
 			0x51, 0x00, 0x00, 0x00, 0x19, 0x53, 0x45, 0x4c, 0x45, 0x43, 0x54, 0x20, 0x2a, 0x20, 0x46, 0x52,
 			0x4f, 0x4d, 0x20, 0x75, 0x73, 0x65, 0x72, 0x73, 0x3b, 0x00,
 		},
-		SrcToDst,
-		ConnMetadata{},
-		[]DumpValue{},
-		[]DumpValue{
-			DumpValue{
+		dumper.SrcToDst,
+		dumper.ConnMetadata{},
+		[]dumper.DumpValue{},
+		[]dumper.DumpValue{
+			dumper.DumpValue{
 				Key:   "query",
 				Value: "SELECT * FROM users;",
 			},
-			DumpValue{
+			dumper.DumpValue{
 				Key:   "message_type",
 				Value: "Q",
 			},
@@ -67,19 +72,19 @@ var pgValueTests = []struct {
 			0x29, 0x3b, 0x00, 0x00, 0x00, 0x44, 0x00, 0x00, 0x00, 0x06, 0x53, 0x00, 0x53, 0x00, 0x00, 0x00,
 			0x04,
 		},
-		SrcToDst,
-		ConnMetadata{},
-		[]DumpValue{},
-		[]DumpValue{
-			DumpValue{
+		dumper.SrcToDst,
+		dumper.ConnMetadata{},
+		[]dumper.DumpValue{},
+		[]dumper.DumpValue{
+			dumper.DumpValue{
 				Key:   "stmt_name",
 				Value: "",
 			},
-			DumpValue{
+			dumper.DumpValue{
 				Key:   "parse",
 				Value: "SELECT CONCAT($1::text, $2::text, $3::text);",
 			},
-			DumpValue{
+			dumper.DumpValue{
 				Key:   "message_type",
 				Value: "P",
 			},
@@ -94,45 +99,45 @@ var pgValueTests = []struct {
 			0x8d, 0xe3, 0x81, 0x8f, 0xe3, 0x81, 0x91, 0xe3, 0x81, 0x93, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 			0x45, 0x00, 0x00, 0x00, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x53, 0x00, 0x00, 0x00, 0x04,
 		},
-		SrcToDst,
-		ConnMetadata{},
-		[]DumpValue{},
-		[]DumpValue{
-			DumpValue{
+		dumper.SrcToDst,
+		dumper.ConnMetadata{},
+		[]dumper.DumpValue{},
+		[]dumper.DumpValue{
+			dumper.DumpValue{
 				Key:   "portal_name",
 				Value: "",
 			},
-			DumpValue{
+			dumper.DumpValue{
 				Key:   "stmt_name",
 				Value: "",
 			},
-			DumpValue{
+			dumper.DumpValue{
 				Key:   "bind_values",
 				Value: []string{"012345679", "あいうえおかきくけこ", ""},
 			},
-			DumpValue{
+			dumper.DumpValue{
 				Key:   "message_type",
 				Value: "B",
 			},
 		},
 	},
 	{
-		"When direction = RemoteToClient do not parse query",
+		"When direction = dumper.RemoteToClient do not parse query",
 		[]byte{
 			0x51, 0x00, 0x00, 0x00, 0x19, 0x53, 0x45, 0x4c, 0x45, 0x43, 0x54, 0x20, 0x2a, 0x20, 0x46, 0x52,
 			0x4f, 0x4d, 0x20, 0x75, 0x73, 0x65, 0x72, 0x73, 0x3b, 0x00,
 		},
-		RemoteToClient,
-		ConnMetadata{},
-		[]DumpValue{},
-		[]DumpValue{},
+		dumper.RemoteToClient,
+		dumper.ConnMetadata{},
+		[]dumper.DumpValue{},
+		[]dumper.DumpValue{},
 	},
 }
 
 func TestPgReadUsernameAndDatabaseStartupMessage(t *testing.T) {
 	for _, tt := range pgValueTests {
 		out := new(bytes.Buffer)
-		dumper := &PgDumper{
+		dumper := &Dumper{
 			logger: newTestLogger(out),
 		}
 		in := tt.in
@@ -158,7 +163,7 @@ func TestPgReadUsernameAndDatabaseStartupMessage(t *testing.T) {
 func TestPgRead(t *testing.T) {
 	for _, tt := range pgValueTests {
 		out := new(bytes.Buffer)
-		dumper := &PgDumper{
+		dumper := &Dumper{
 			logger: newTestLogger(out),
 		}
 		in := tt.in
@@ -180,4 +185,55 @@ func TestPgRead(t *testing.T) {
 			}
 		}
 	}
+}
+
+var readBytesTests = []struct {
+	in       []byte
+	len      int
+	expected []byte
+}{
+	{
+		[]byte{0x12, 0x34, 0x56, 0x78},
+		2,
+		[]byte{0x12, 0x34},
+	},
+	{
+		[]byte{0x12, 0x34, 0x56, 0x78},
+		0,
+		[]byte{},
+	},
+}
+
+func TestReadBytes(t *testing.T) {
+	for _, tt := range readBytesTests {
+		buff := bytes.NewBuffer(tt.in)
+		actual := readBytes(buff, tt.len)
+		if !bytes.Equal(actual, tt.expected) {
+			t.Errorf("actual %#v\nwant %#v", actual, tt.expected)
+		}
+	}
+}
+
+// newTestLogger return zap.Logger for test
+func newTestLogger(out io.Writer) *zap.Logger {
+	encoderConfig := zapcore.EncoderConfig{
+		TimeKey:        "ts",
+		LevelKey:       "level",
+		NameKey:        "logger",
+		CallerKey:      "caller",
+		MessageKey:     "msg",
+		StacktraceKey:  "stacktrace",
+		EncodeLevel:    zapcore.LowercaseLevelEncoder,
+		EncodeTime:     zapcore.ISO8601TimeEncoder,
+		EncodeDuration: zapcore.StringDurationEncoder,
+		EncodeCaller:   zapcore.ShortCallerEncoder,
+	}
+
+	logger := zap.New(zapcore.NewCore(
+		zapcore.NewJSONEncoder(encoderConfig),
+		zapcore.AddSync(out),
+		zapcore.DebugLevel,
+	))
+
+	return logger
 }

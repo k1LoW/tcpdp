@@ -13,6 +13,9 @@ import (
 	"syscall"
 
 	"github.com/k1LoW/tcpdp/dumper"
+	"github.com/k1LoW/tcpdp/dumper/hex"
+	"github.com/k1LoW/tcpdp/dumper/mysql"
+	"github.com/k1LoW/tcpdp/dumper/pg"
 	"github.com/lestrrat-go/server-starter/listener"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -44,13 +47,13 @@ func NewServer(ctx context.Context, lAddr, rAddr *net.TCPAddr, logger *zap.Logge
 
 	switch dumpType {
 	case "hex":
-		d = dumper.NewHexDumper()
+		d = hex.NewDumper()
 	case "pg":
-		d = dumper.NewPgDumper()
+		d = pg.NewDumper()
 	case "mysql":
-		d = dumper.NewMysqlDumper()
+		d = mysql.NewDumper()
 	default:
-		d = dumper.NewHexDumper()
+		d = hex.NewDumper()
 	}
 
 	pidfile, err := filepath.Abs(viper.GetString("tcpdp.pidfile"))
