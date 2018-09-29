@@ -125,7 +125,8 @@ depsdev: ghch
 	$(GO) get github.com/tcnksm/ghr
 
 ghch:
-	test -d $(GOPATH)/src/github.com/Songmu/ghch || git clone $(GOPATH)/src/github.com/Songmu/ghch $(GOPATH)/src/github.com/Songmu/ghch
+	mkdir -p $(GOPATH)/src/github.com/Songmu
+	test -d $(GOPATH)/src/github.com/Songmu/ghch || git clone github.com/Songmu/ghch $(GOPATH)/src/github.com/Songmu/ghch
 	test -e $(GOPATH)/bin/grch || (cd $(GOPATH)/src/github.com/Songmu/ghch && go build -o $(GOPATH)/bin/grch && cd -)
 
 crossbuild: build_darwin
