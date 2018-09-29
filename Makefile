@@ -7,11 +7,7 @@ else
 	LO = "lo"
 endif
 
-ifeq ("$(shell uname)","Darwin")
 GO ?= GO111MODULE=on go
-else
-GO ?= GO111MODULE=on /usr/local/go/bin/go
-endif
 
 BUILD_LDFLAGS = -X $(PKG).commit=$(COMMIT)
 RELEASE_BUILD_LDFLAGS = -s -w $(BUILD_LDFLAGS)
