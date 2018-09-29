@@ -12,17 +12,17 @@ import (
 )
 
 const (
-	pgMessageQuery   = 'Q'
-	pgMessageParse   = 'P'
-	pgMessageBind    = 'B'
-	pgMessageExecute = 'E'
+	messageQuery   = 'Q'
+	messageParse   = 'P'
+	messageBind    = 'B'
+	messageExecute = 'E'
 )
 
-type pgType int16
+type dataType int16
 
 const (
-	pgTypeString pgType = iota
-	pgTypeBinary
+	typeString dataType = iota
+	typeBinary
 )
 
 // Dumper struct
@@ -77,7 +77,7 @@ func (p *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 	var dumps = []dumper.DumpValue{}
 	// https://www.postgresql.org/docs/10/static/protocol-message-formats.html
 	switch messageType {
-	case pgMessageQuery:
+	case messageQuery:
 		query := strings.Trim(string(in[5:]), "\x00")
 
 		dumps = []dumper.DumpValue{
@@ -86,7 +86,7 @@ func (p *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 				Value: query,
 			},
 		}
-	case pgMessageParse:
+	case messageParse:
 		buff := bytes.NewBuffer(in[5:])
 		b, _ := buff.ReadString(0x00)
 		stmtName := strings.Trim(b, "\x00")
@@ -108,22 +108,22 @@ func (p *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 				Value: query,
 			},
 		}
-	case pgMessageBind:
+	case messageBind:
 		buff := bytes.NewBuffer(in[5:])
 		b, _ := buff.ReadString(0x00)
 		portalName := strings.Trim(b, "\x00")
 		b, _ = buff.ReadString(0x00)
 		stmtName := strings.Trim(b, "\x00")
 		c := int(binary.BigEndian.Uint16(readBytes(buff, 2)))
-		pgTypes := []pgType{}
+		dataTypes := []dataType{}
 		for i := 0; i < c; i++ {
-			t := pgType(binary.BigEndian.Uint16(readBytes(buff, 2)))
-			pgTypes = append(pgTypes, t)
+			t := dataType(binary.BigEndian.Uint16(readBytes(buff, 2)))
+			dataTypes = append(dataTypes, t)
 		}
 		numParams := int(binary.BigEndian.Uint16(readBytes(buff, 2)))
 		if c == 0 {
 			for i := 0; i < numParams; i++ {
-				pgTypes = append(pgTypes, pgTypeString)
+				dataTypes = append(dataTypes, typeString)
 			}
 		}
 		values := []interface{}{}
@@ -133,7 +133,7 @@ func (p *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 				continue
 			}
 			v := readBytes(buff, int(n))
-			if pgTypes[i] == pgTypeString {
+			if dataTypes[i] == typeString {
 				values = append(values, string(v))
 			} else {
 				values = append(values, v)
@@ -154,7 +154,7 @@ func (p *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 				Value: values,
 			},
 		}
-	case pgMessageExecute:
+	case messageExecute:
 		buff := bytes.NewBuffer(in[5:])
 		b, _ := buff.ReadString(0x00)
 		portalName := strings.Trim(b, "\x00")
