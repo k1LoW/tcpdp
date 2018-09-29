@@ -232,7 +232,7 @@ func (m *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 	var dumps = []dumper.DumpValue{}
 	switch commandID {
 	case comQuery:
-		query := decodeString(in[5:], cSet)
+		query := readString(in[5:], cSet)
 		dumps = []dumper.DumpValue{
 			dumper.DumpValue{
 				Key:   "query",
@@ -240,7 +240,7 @@ func (m *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 			},
 		}
 	case comStmtPrepare:
-		stmtPrepare := decodeString(in[5:], cSet)
+		stmtPrepare := readString(in[5:], cSet)
 		dumps = []dumper.DumpValue{
 			dumper.DumpValue{
 				Key:   "stmt_prepare_query",
@@ -295,7 +295,7 @@ func (m *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 				}
 			}
 		} else {
-			values := decodeString(in[5:], cSet)
+			values := readString(in[5:], cSet)
 			dumps = []dumper.DumpValue{
 				dumper.DumpValue{
 					Key:   "stmt_id",
@@ -365,7 +365,7 @@ func (m *Dumper) readClientCapabilities(in []byte, direction dumper.Direction, c
 		connMetadata.Internal.(connMetadataInternal).clientCapabilities[clientProtocol41] = true
 		buff := bytes.NewBuffer(in[36:])
 		readed, _ := buff.ReadBytes(0x00)
-		username := decodeString(readed, cSet)
+		username := readString(readed, cSet)
 		values = append(values, dumper.DumpValue{
 			Key:   "username",
 			Value: username,
@@ -384,7 +384,7 @@ func (m *Dumper) readClientCapabilities(in []byte, direction dumper.Direction, c
 		if clientCapabilities&uint32(clientConnectWithDB) > 0 {
 			connMetadata.Internal.(connMetadataInternal).clientCapabilities[clientConnectWithDB] = true
 			readed, _ := buff.ReadBytes(0x00)
-			database := decodeString(readed, cSet)
+			database := readString(readed, cSet)
 			values = append(values, dumper.DumpValue{
 				Key:   "database",
 				Value: database,
@@ -449,7 +449,7 @@ func readBinaryProtocolValue(buff *bytes.Buffer, dataType dataType, cSet charSet
 	default:
 		l := readLengthEncodedInteger(buff)
 		v := readBytes(buff, int(l))
-		return decodeString(v, cSet)
+		return readString(v, cSet)
 	}
 }
 
