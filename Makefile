@@ -117,13 +117,16 @@ build_static_in_docker:
 	tar -zcvf ./dist/$(ver)/$(pkg).tar.gz ./$(pkg)
 	rm -rf ./$(pkg)
 
-depsdev:
+depsdev: ghch
 	$(GO) get golang.org/x/tools/cmd/cover
 	$(GO) get github.com/mattn/goveralls
 	$(GO) get github.com/golang/lint/golint
 	$(GO) get github.com/motemen/gobump/cmd/gobump
 	$(GO) get github.com/tcnksm/ghr
-	$(GO) get github.com/Songmu/ghch/cmd/ghch
+
+ghch:
+	test -d $(GOPATH)/src/github.com/Songmu/ghch || git clone $(GOPATH)/src/github.com/Songmu/ghch $(GOPATH)/src/github.com/Songmu/ghch
+	test -e $(GOPATH)/bin/grch || (cd $(GOPATH)/src/github.com/Songmu/ghch && go build -o $(GOPATH)/bin/grch && cd -)
 
 crossbuild: build_darwin
 	@for d in $(DISTS); do\
