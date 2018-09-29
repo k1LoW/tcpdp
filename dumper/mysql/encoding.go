@@ -15,16 +15,16 @@ func readString(src []byte, srcCharSet charSet) string {
 		buff := bytes.NewBuffer(src)
 		dst, err := ioutil.ReadAll(transform.NewReader(buff, japanese.EUCJP.NewDecoder()))
 		if err != nil {
-			return string(src)
+			return strings.TrimRight(string(src), "\x00")
 		}
-		return string(dst)
+		return strings.TrimRight(string(dst), "\x00")
 	case charSetSjis, charSetCp932:
 		buff := bytes.NewBuffer(src)
 		dst, err := ioutil.ReadAll(transform.NewReader(buff, japanese.ShiftJIS.NewDecoder()))
 		if err != nil {
-			return string(src)
+			return strings.TrimRight(string(src), "\x00")
 		}
-		return string(dst)
+		return strings.TrimRight(string(dst), "\x00")
 	default:
 		return strings.TrimRight(string(src), "\x00")
 	}
