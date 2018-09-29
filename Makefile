@@ -142,4 +142,9 @@ release:
 	$(eval ver = v$(shell gobump show -r version/))
 	ghr -username k1LoW -replace ${ver} dist/${ver}
 
+docker:
+	docker build -t tcpdp_develop -f dockerfiles/Dockerfile.golang .
+	docker run --cap-add=SYS_PTRACE --security-opt="seccomp=unconfined" -v $(GOPATH):/go/ -v $(GOPATH)/pkg/mod/cache:/go/pkg/mod/cache -w /go/src/github.com/k1LoW/tcpdp -it tcpdp_develop /bin/bash
+
+
 .PHONY: default test cover
