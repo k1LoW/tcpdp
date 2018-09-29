@@ -41,6 +41,10 @@ var mysqlReadTests = []struct {
 		},
 		[]dumper.DumpValue{
 			dumper.DumpValue{
+				Key:   "character_set",
+				Value: "latin1",
+			},
+			dumper.DumpValue{
 				Key:   "username",
 				Value: "pam",
 			},
@@ -78,6 +82,10 @@ var mysqlReadTests = []struct {
 			},
 		},
 		[]dumper.DumpValue{
+			dumper.DumpValue{
+				Key:   "character_set",
+				Value: "utf8",
+			},
 			dumper.DumpValue{
 				Key:   "username",
 				Value: "root",
@@ -623,7 +631,7 @@ var mysqlBinaryProtocolValueTests = []struct {
 func TestMysqlReadBinaryProtocolValue(t *testing.T) {
 	for _, tt := range mysqlBinaryProtocolValueTests {
 		buff := bytes.NewBuffer(tt.in)
-		actual := readBinaryProtocolValue(buff, tt.t)
+		actual := readBinaryProtocolValue(buff, tt.t, charSetUnknown)
 		if actual != tt.expected {
 			t.Errorf("actual %#v\nwant %#v", actual, tt.expected)
 		}
