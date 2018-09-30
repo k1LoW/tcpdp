@@ -2,11 +2,12 @@
 %define release 1.{{ .Env.DIST }}
 %define version {{ .Env.VERSION }}
 %define buildroot %{_tmppath}/%{name}-%{version}-buildroot
+%define debug_package %{nil}
 
 BuildRoot: %{buildroot}
 Summary: tcpdp is TCP dump tool with custom dumper written in Go.
 License: MIT
-Packager: "Ken'ichiro OYAMA" <k1lowxb@gmail.com>
+Packager: Ken'ichiro OYAMA <k1lowxb@gmail.com>
 Source: %{name}-%{version}.tar.gz
 Name: %{name}
 Version: %{version}

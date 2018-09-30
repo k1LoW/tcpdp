@@ -4,7 +4,7 @@ LABEL maintainer="k1LoW <k1lowxb@gmail.com>"
 ARG GO_VERSION
 ARG LIBPCAP_VERSION
 
-RUN yum install -y epel-release rpmdevtools make glibc glibc-static gcc byacc flex bison libpcap-devel
+RUN yum install -y epel-release rpmdevtools yum-utils make glibc glibc-static gcc byacc flex bison libpcap-devel
 RUN curl -s https://setup.ius.io/ | bash
 RUN yum -y remove git && yum -y install git2u
 
