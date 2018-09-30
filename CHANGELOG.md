@@ -1,5 +1,16 @@
 # Changelog
 
+## [v0.10.0](https://github.com/k1LoW/tcpdp/compare/v0.9.1...v0.10.0) (2018-09-30)
+
+* Build deb package [#39](https://github.com/k1LoW/tcpdp/pull/39) ([k1LoW](https://github.com/k1LoW))
+* Build RPM package [#38](https://github.com/k1LoW/tcpdp/pull/38) ([k1LoW](https://github.com/k1LoW))
+* Support MySQL client default-character-set [#37](https://github.com/k1LoW/tcpdp/pull/37) ([k1LoW](https://github.com/k1LoW))
+* Separate tcpdp/dumper to tcpdp/dumper and tcpdp/dumper/* [#36](https://github.com/k1LoW/tcpdp/pull/36) ([k1LoW](https://github.com/k1LoW))
+* Let's stop vendor [#35](https://github.com/k1LoW/tcpdp/pull/35) ([pyama86](https://github.com/pyama86))
+* Fix busy loop [#34](https://github.com/k1LoW/tcpdp/pull/34) ([k1LoW](https://github.com/k1LoW))
+* Support parse MySQL compressed packet [#33](https://github.com/k1LoW/tcpdp/pull/33) ([k1LoW](https://github.com/k1LoW))
+* Use LABEL instead of MAINTAINER (for deprecation) [#32](https://github.com/k1LoW/tcpdp/pull/32) ([hfm](https://github.com/hfm))
+
 ## [v0.9.1](https://github.com/k1LoW/tcpdp/compare/v0.9.0...v0.9.1) (2018-09-27)
 
 * Fix parsing `--target` and generating BPF Filter  [#31](https://github.com/k1LoW/tcpdp/pull/31) ([k1LoW](https://github.com/k1LoW))
