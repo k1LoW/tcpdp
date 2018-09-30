@@ -5,7 +5,7 @@ ARG GO_VERSION
 ARG LIBPCAP_VERSION
 
 RUN apt-get -qq update && \
-    apt-get install -qq gcc make debhelper dh-make clang git curl devscripts byacc bison flex libpcap-dev
+    apt-get install -qq gcc make debhelper dh-make clang git curl devscripts fakeroot byacc bison flex libpcap-dev
 ENV LIBPCAP_VERSION $LIBPCAP_VERSION
 ENV LIBPCAP_FILE libpcap-$LIBPCAP_VERSION.tar.gz
 ENV LIBPCAP_URL https://www.tcpdump.org/release/$LIBPCAP_FILE

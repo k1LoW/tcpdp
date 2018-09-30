@@ -55,4 +55,4 @@ services:
       - $GOPATH:/go
     environment:
       DIST: xenial
-    command: make depsdev build_in_docker build_static_in_docker
+    command: make depsdev build_in_docker build_static_in_docker build_deb
