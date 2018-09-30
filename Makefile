@@ -147,9 +147,9 @@ build_deb:
 	$(eval no_v_ver = $(shell gobump show -r version/))
 	$(eval workdir = deb)
 	$(GO) build -ldflags="$(RELEASE_BUILD_LDFLAGS) -X $(PKG).version=$(ver)"
-	mkdir -p $(workdir)/DEBIAN $(workdir)/DEBIAN/usr/bin
+	mkdir -p $(workdir)/DEBIAN $(workdir)/usr/bin
 	cat ./template/control.template | VERSION=$(no_v_ver) gomplate > $(workdir)/DEBIAN/control
-	mv tcpdp $(workdir)/DEBIAN/usr/bin/tcpdp
+	mv tcpdp $(workdir)/usr/bin
 	fakeroot dpkg-deb --build $(workdir) $(workdir)
 	cp $(workdir)/*.deb /go/src/github.com/k1LoW/tcpdp/dist/$(ver)
 	rm -rf $(workdir)
