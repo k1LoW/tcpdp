@@ -139,7 +139,6 @@ build_rpm:
 	spectool -g -R tcpdp.spec
 	rpmbuild -ba tcpdp.spec
 	cp /root/rpmbuild/RPMS/*/*.rpm /go/src/github.com/k1LoW/tcpdp/dist/$(ver)
-	cp /root/rpmbuild/SRPMS/*.rpm /go/src/github.com/k1LoW/tcpdp/dist/$(ver)
 	rm tcpdp tcpdp.spec
 
 build_deb:
@@ -183,6 +182,5 @@ release:
 docker:
 	docker build -t tcpdp_develop -f dockerfiles/Dockerfile.golang .
 	docker run --cap-add=SYS_PTRACE --security-opt="seccomp=unconfined" -v $(GOPATH):/go/ -v $(GOPATH)/pkg/mod/cache:/go/pkg/mod/cache -w /go/src/github.com/k1LoW/tcpdp -it tcpdp_develop /bin/bash
-
 
 .PHONY: default test cover
