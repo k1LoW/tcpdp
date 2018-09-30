@@ -1,0 +1,37 @@
+%define name tcpdp
+%define release 1.{{ .Env.DIST }}
+%define version {{ .Env.VERSION }}
+%define buildroot %{_tmppath}/%{name}-%{version}-buildroot
+
+BuildRoot: %{buildroot}
+Summary: tcpdp is TCP dump tool with custom dumper written in Go.
+License: MIT
+Packager: "Ken'ichiro OYAMA" <k1lowxb@gmail.com>
+Source: %{name}-%{version}.tar.gz
+Name: %{name}
+Version: %{version}
+Release: %{release}
+Prefix: %{_prefix}
+Group: Applications/Internet
+Requires: libpcap
+BuildRequires: make libpcap-devel
+
+%description
+tcpdp is TCP dump tool with custom dumper written in Go.
+
+%prep
+%setup -q -n %{name}-%{version}
+
+%build
+make
+
+%install
+%{__rm} -rf %{buildroot}
+mkdir -p %{buildroot}%{_bindir}
+make BINDIR=%{buildroot}%{_bindir} install
+
+%clean
+[ "%{buildroot}" != "/" ] && rm -rf %{buildroot}
+
+%files
+%{_bindir}/tcpdp
