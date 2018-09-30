@@ -31,7 +31,7 @@ services:
       - $GOPATH:/go
     environment:
       DIST: el7
-    command: make depsdev build_in_docker build_static_in_docker
+    command: make depsdev build_in_docker build_static_in_docker build_rpm
   centos6:
     build:
       context: .

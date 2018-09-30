@@ -12,6 +12,9 @@ GO ?= GO111MODULE=on go
 BUILD_LDFLAGS = -X $(PKG).commit=$(COMMIT)
 RELEASE_BUILD_LDFLAGS = -s -w $(BUILD_LDFLAGS)
 
+BINDIR=/usr/local/bin
+SOURCES=Makefile CHANGELOG.md README.md LICENSE go.mod go.sum dumper logger reader server cmd version main.go
+
 POSTGRES_PORT=54322
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=pgpass
@@ -23,7 +26,7 @@ MYSQL_ROOT_PASSWORD=mypass
 
 DISTS=centos7 centos6 ubuntu16
 
-default: test
+default: build
 ci: depsdev test proxy_integration probe_integration read_integration
 
 test:
@@ -83,6 +86,9 @@ cover: depsdev
 build:
 	$(GO) build -ldflags="$(BUILD_LDFLAGS)"
 
+install:
+	cp tcpdp $(BINDIR)/tcpdp
+
 build_darwin: depsdev
 	$(eval ver = v$(shell gobump show -r version/))
 	$(eval pkg = tcpdp_v$(shell gobump show -r version/)_darwin_amd64)
@@ -117,12 +123,32 @@ build_static_in_docker:
 	tar -zcvf ./dist/$(ver)/$(pkg).tar.gz ./$(pkg)
 	rm -rf ./$(pkg)
 
+build_rpm:
+	$(eval ver = v$(shell gobump show -r version/))
+	$(eval no_v_ver = $(shell gobump show -r version/))
+	$(eval pkg = tcpdp-$(shell gobump show -r version/))
+	$(GO) build -ldflags="$(RELEASE_BUILD_LDFLAGS) -X $(PKG).version=$(ver)"
+	cat ./template/tcpdp.spec.template | VERSION=$(no_v_ver) gomplate > tcpdp.spec
+	rpmdev-setuptree
+	yum-builddep tcpdp.spec
+	mkdir $(pkg)
+	cp -r $(SOURCES) $(pkg)
+	tar -zcvf $(pkg).tar.gz ./$(pkg)
+	rm -rf $(pkg)
+	mv $(pkg).tar.gz /root/rpmbuild/SOURCES
+	spectool -g -R tcpdp.spec
+	rpmbuild -ba tcpdp.spec
+	cp /root/rpmbuild/RPMS/*/*.rpm /go/src/github.com/k1LoW/tcpdp/dist/$(ver)
+	cp /root/rpmbuild/SRPMS/*.rpm /go/src/github.com/k1LoW/tcpdp/dist/$(ver)
+	rm tcpdp.spec
+
 depsdev: ghch
 	$(GO) get golang.org/x/tools/cmd/cover
 	$(GO) get github.com/mattn/goveralls
 	$(GO) get github.com/golang/lint/golint
 	$(GO) get github.com/motemen/gobump/cmd/gobump
 	$(GO) get github.com/tcnksm/ghr
+	$(GO) get github.com/hairyhenderson/gomplate/cmd/gomplate
 
 ghch:
 	mkdir -p $(GOPATH)/src/github.com/Songmu
