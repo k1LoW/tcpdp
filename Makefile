@@ -140,7 +140,19 @@ build_rpm:
 	rpmbuild -ba tcpdp.spec
 	cp /root/rpmbuild/RPMS/*/*.rpm /go/src/github.com/k1LoW/tcpdp/dist/$(ver)
 	cp /root/rpmbuild/SRPMS/*.rpm /go/src/github.com/k1LoW/tcpdp/dist/$(ver)
-	rm tcpdp.spec
+	rm tcpdp tcpdp.spec
+
+build_deb:
+	$(eval ver = v$(shell gobump show -r version/))
+	$(eval no_v_ver = $(shell gobump show -r version/))
+	$(eval workdir = deb)
+	$(GO) build -ldflags="$(RELEASE_BUILD_LDFLAGS) -X $(PKG).version=$(ver)"
+	mkdir -p $(workdir)/DEBIAN $(workdir)/usr/bin
+	cat ./template/control.template | VERSION=$(no_v_ver) gomplate > $(workdir)/DEBIAN/control
+	mv tcpdp $(workdir)/usr/bin
+	fakeroot dpkg-deb --build $(workdir) $(workdir)
+	cp $(workdir)/*.deb /go/src/github.com/k1LoW/tcpdp/dist/$(ver)
+	rm -rf $(workdir)
 
 depsdev: ghch
 	$(GO) get golang.org/x/tools/cmd/cover

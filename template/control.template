@@ -1,0 +1,10 @@
+Package: tcpdp
+Maintainer: Ken'ichiro OYAMA <k1lowxb@gmail.com>
+Architecture: amd64
+Priority: optional
+Section: net
+Version: {{ .Env.VERSION }}-1
+Build-Depends: libpcap-dev
+Depends: libpcap0.8
+Description: tcpdp is TCP dump tool with custom dumper written in Go.
+Homepage: https://github.com/k1LoW/tcpdp
