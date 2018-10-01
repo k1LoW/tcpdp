@@ -149,8 +149,7 @@ build_deb:
 	mkdir -p $(workdir)/DEBIAN $(workdir)/usr/bin
 	cat ./template/control.template | VERSION=$(no_v_ver) gomplate > $(workdir)/DEBIAN/control
 	mv tcpdp $(workdir)/usr/bin
-	fakeroot dpkg-deb --build $(workdir) $(workdir)
-	cp $(workdir)/*.deb /go/src/github.com/k1LoW/tcpdp/dist/$(ver)
+	fakeroot dpkg-deb --build $(workdir) /go/src/github.com/k1LoW/tcpdp/dist/$(ver)
 	rm -rf $(workdir)
 
 depsdev: ghch
