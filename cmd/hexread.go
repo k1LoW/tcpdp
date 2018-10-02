@@ -169,6 +169,7 @@ to quickly create a Cobra application.`,
 
 			if len(values) > 0 {
 				delete(log.(map[string]interface{}), "bytes")
+				delete(log.(map[string]interface{}), "ascii")
 			}
 
 			values = append(values, connMetadata.DumpValues...)
