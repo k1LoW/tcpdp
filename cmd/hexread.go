@@ -34,6 +34,7 @@ import (
 	"github.com/k1LoW/tcpdp/dumper/mysql"
 	"github.com/k1LoW/tcpdp/reader"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -61,6 +62,11 @@ to quickly create a Cobra application.`,
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
+		viper.Set("log.enable", false)
+		viper.Set("log.stdout", true)
+		viper.Set("dumpLog.enable", false)
+		viper.Set("dumpLog.stdout", true)
+
 		host, port, err := reader.ParseTarget(hexreadTarget)
 		if err != nil {
 			panic(err)
@@ -91,6 +97,8 @@ to quickly create a Cobra application.`,
 		d = mysql.NewDumper()
 
 		r := bufio.NewReader(fp)
+		mMap := map[string]*dumper.ConnMetadata{}
+
 		for {
 			line, err := r.ReadBytes('\n')
 			if err != nil && err != io.EOF {
@@ -107,20 +115,48 @@ to quickly create a Cobra application.`,
 			if err != nil {
 				panic(err)
 			}
-			srcAddr := log.(map[string]interface{})["src_addr"].(string)
-			srcHost, srcPort, err := reader.ParseTarget(srcAddr)
-			dstAddr := log.(map[string]interface{})["dst_addr"].(string)
-			dstHost, dstPort, err := reader.ParseTarget(dstAddr)
-			if err != nil {
-				panic(err)
+
+			var directionStr string
+			var connID string
+			if log.(map[string]interface{})["direction"] != nil {
+				directionStr = log.(map[string]interface{})["direction"].(string)
 			}
+
+			if log.(map[string]interface{})["conn_id"] != nil {
+				connID = log.(map[string]interface{})["conn_id"].(string)
+			}
+
+			connMetadata, ok := mMap[connID]
+			if !ok {
+				connMetadata = d.NewConnMetadata()
+				mMap[connID] = connMetadata // TODO: memory leak point
+			}
+
 			var direction dumper.Direction
-			if (host == "" || dstHost == host) && dstPort == port {
-				direction = dumper.SrcToDst
-			} else if (host == "" || srcHost == host) && srcPort == port {
-				direction = dumper.DstToSrc
+			if directionStr == "" {
+				srcAddr := log.(map[string]interface{})["src_addr"].(string)
+				srcHost, srcPort, err := reader.ParseTarget(srcAddr)
+				dstAddr := log.(map[string]interface{})["dst_addr"].(string)
+				dstHost, dstPort, err := reader.ParseTarget(dstAddr)
+				if err != nil {
+					panic(err)
+				}
+				if (host == "" || dstHost == host) && dstPort == port {
+					direction = dumper.SrcToDst
+				} else if (host == "" || srcHost == host) && srcPort == port {
+					direction = dumper.DstToSrc
+				} else {
+					direction = dumper.Unknown
+				}
 			} else {
-				direction = dumper.Unknown
+				switch directionStr {
+				case dumper.SrcToDst.String():
+					direction = dumper.SrcToDst
+				case dumper.DstToSrc.String():
+					direction = dumper.DstToSrc
+				default:
+					direction = dumper.Unknown
+				}
 			}
 
 			str := strings.Replace(log.(map[string]interface{})["bytes"].(string), " ", "", -1)
@@ -129,23 +165,21 @@ to quickly create a Cobra application.`,
 				logger.Warn("DecodeString error", zap.String("str", str), zap.Error(err))
 				continue
 			}
+			values := d.Read(in, direction, connMetadata)
 
-			kvs := []dumper.DumpValue{
-				dumper.DumpValue{
-					Key:   "src_addr",
-					Value: srcAddr,
-				},
-				dumper.DumpValue{
-					Key:   "dst_addr",
-					Value: dstAddr,
-				},
-				dumper.DumpValue{
-					Key:   "direction",
-					Value: direction.String(),
-				},
+			if len(values) > 0 {
+				delete(log.(map[string]interface{}), "bytes")
 			}
 
-			d.Dump(in, direction, d.NewConnMetadata(), kvs)
+			values = append(values, connMetadata.DumpValues...)
+			for k, v := range log.(map[string]interface{}) {
+				values = append(values, dumper.DumpValue{
+					Key:   k,
+					Value: v,
+				})
+			}
+
+			d.Log(values)
 		}
 	},
 }
