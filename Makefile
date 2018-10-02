@@ -152,18 +152,15 @@ build_deb:
 	fakeroot dpkg-deb --build $(workdir) /go/src/github.com/k1LoW/tcpdp/dist/$(ver)
 	rm -rf $(workdir)
 
-depsdev: ghch
+depsdev:
 	$(GO) get golang.org/x/tools/cmd/cover
 	$(GO) get github.com/mattn/goveralls
 	$(GO) get github.com/golang/lint/golint
 	$(GO) get github.com/motemen/gobump/cmd/gobump
 	$(GO) get github.com/tcnksm/ghr
 	$(GO) get github.com/hairyhenderson/gomplate/cmd/gomplate
+	$(GO) get github.com/Songmu/ghch
 
-ghch:
-	mkdir -p $(GOPATH)/src/github.com/Songmu
-	test -d $(GOPATH)/src/github.com/Songmu/ghch || git clone https://github.com/Songmu/ghch $(GOPATH)/src/github.com/Songmu/ghch
-	test -e $(GOPATH)/bin/grch || (cd $(GOPATH)/src/github.com/Songmu/ghch && $(GO) build -o $(GOPATH)/bin/grch && cd -)
 
 crossbuild: build_darwin
 	@for d in $(DISTS); do\
