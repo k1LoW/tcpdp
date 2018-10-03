@@ -12,7 +12,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-var maxPacketLen = 0xFFFF
+const maxPacketLen = 0xFFFF
 
 // Proxy struct
 type Proxy struct {
