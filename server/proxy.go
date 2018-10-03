@@ -12,6 +12,8 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+var maxPacketLen = 0xFFFF
+
 // Proxy struct
 type Proxy struct {
 	server       *Server
@@ -111,7 +113,8 @@ func (p *Proxy) pipe(srcConn, destConn *net.TCPConn) {
 		direction = dumper.RemoteToClient
 	}
 
-	buff := make([]byte, 0xFFFF)
+	buff := make([]byte, maxPacketLen)
+	longB := []byte{}
 	for {
 		n, err := srcConn.Read(buff)
 		if err != nil {
@@ -121,14 +124,23 @@ func (p *Proxy) pipe(srcConn, destConn *net.TCPConn) {
 			}
 			break
 		}
-		b := buff[:n]
 
-		// TODO: block invalid query/data
-		err = p.dump(b, direction)
-		if err != nil {
-			fields := p.fieldsWithErrorAndDirection(err, direction)
-			p.server.logger.WithOptions(zap.AddCaller()).Error("dumper Dump error", fields...)
-			break
+		b := buff[:n]
+		if n == maxPacketLen && buff[n-1] != 0x00 {
+			longB = append(longB, b...)
+		} else {
+			if len(longB) > 0 {
+				longB = append(longB, b...)
+				err = p.dump(longB, direction)
+				longB = nil
+			} else {
+				err = p.dump(b, direction)
+			}
+			if err != nil {
+				fields := p.fieldsWithErrorAndDirection(err, direction)
+				p.server.logger.WithOptions(zap.AddCaller()).Error("dumper Dump error", fields...)
+				break
+			}
 		}
 
 		n, err = destConn.Write(b)
