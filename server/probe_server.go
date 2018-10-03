@@ -89,7 +89,7 @@ func (s *ProbeServer) Start() error {
 		return err
 	}
 
-	snapshot := 0xFFFF
+	snaplen := int32(0xFFFF)
 	promiscuous := true
 	pValues := []dumper.DumpValue{
 		dumper.DumpValue{
@@ -104,7 +104,7 @@ func (s *ProbeServer) Start() error {
 
 	handle, err := pcap.OpenLive(
 		device,
-		int32(snapshot),
+		snaplen,
 		promiscuous,
 		pcap.BlockForever,
 	)
