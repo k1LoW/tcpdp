@@ -224,6 +224,7 @@ func (m *Dumper) NewConnMetadata() *dumper.ConnMetadata {
 			stmtNumParams:      stmtNumParams{},
 			clientCapabilities: clientCapabilities{},
 			charSet:            charSetUnknown,
+			maxPacketSize:      uint32(16 * 1024 * 1024),
 		},
 	}
 }
