@@ -56,7 +56,7 @@ proxy_integration: build
 	@rm -f ./tcpdp.log* ./dump.log*
 	./tcpdp proxy -l localhost:33065 -r localhost:$(MYSQL_PORT) -d mysql &
 	@sleep 1
-	mysql --host=127.0.0.1 --port=33065 --user=root --password=$(MYSQL_ROOT_PASSWORD) --skip-ssl -e `cat ./test/query/long.sql` 2>&1 > ./result
+	mysql --host=127.0.0.1 --port=33065 --user=root --password=$(MYSQL_ROOT_PASSWORD) testdb --skip-ssl -e `cat ./test/query/long.sql` 2>&1 > /dev/null
 	@kill `cat ./tcpdp.pid`
 	@sleep 1
 	test `grep -c 'query_start' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
@@ -85,6 +85,14 @@ probe_integration: build
 	@cat ./result | grep "Number of clients running queries: 100" || (echo "mysqlslap faild" && exit 1)
 	test `grep -c '' ./tcpdp.log` -eq 4 || (cat ./tcpdp.log && exit 1)
 	@sudo rm -f ./tcpdp.log* ./dump.log*
+	sudo ./tcpdp probe -i $(LO) -t $(MYSQL_PORT) -d mysql &
+	@sleep 1
+	mysql --host=127.0.0.1 --port=$(MYSQL_PORT) --user=root --password=$(MYSQL_ROOT_PASSWORD) testdb --skip-ssl -e `cat ./test/query/long.sql` 2>&1 > /dev/null
+	@sudo kill `cat ./tcpdp.pid`
+	@sleep 1
+	test `grep -c 'query_start' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
+	test `grep -c 'query_last' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
+	@rm -f ./tcpdp.log* ./dump.log*
 
 read_integration: build
 	./tcpdp read -t $(POSTGRES_PORT) -d pg test/pcap/pg_prepare.pcap > ./result
