@@ -30,6 +30,7 @@ type connMetadataInternal struct {
 	stmtNumParams      stmtNumParams
 	charSet            charSet
 	maxPacketSize      uint32
+	longPacketCache    []byte
 }
 
 // NewDumper returns a Dumper
@@ -67,6 +68,19 @@ func (m *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 	values := m.readClientCapabilities(in, direction, connMetadata)
 	connMetadata.DumpValues = append(connMetadata.DumpValues, values...)
 	cSet := connMetadata.Internal.(connMetadataInternal).charSet
+	maxPacketSize := connMetadata.Internal.(connMetadataInternal).maxPacketSize
+
+	if uint32(len(in)*1024) >= maxPacketSize {
+		internal := connMetadata.Internal.(connMetadataInternal)
+		internal.longPacketCache = in
+		connMetadata.Internal = internal
+		return []dumper.DumpValue{}
+	} else if len(connMetadata.Internal.(connMetadataInternal).longPacketCache) > 0 {
+		internal := connMetadata.Internal.(connMetadataInternal)
+		in = append(internal.longPacketCache, in...)
+		internal.longPacketCache = nil
+		connMetadata.Internal = internal
+	}
 
 	// Client Compress
 	compressed, ok := connMetadata.Internal.(connMetadataInternal).clientCapabilities[clientCompress]
@@ -239,7 +253,7 @@ func (m *Dumper) readClientCapabilities(in []byte, direction dumper.Direction, c
 	}
 
 	clientCapabilities := binary.LittleEndian.Uint32(in[4:8])
-	maxPacketSize := binary.LittleEndian.Uint32(in[8:12])
+	maxPacketSize := binary.LittleEndian.Uint32(in[8:12]) // 4:max_packet_size
 
 	// parse Protocol::HandshakeResponse41 to get username, database
 	if clientCapabilities&uint32(clientProtocol41) > 0 && bytes.Compare(in[13:36], []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}) == 0 {
