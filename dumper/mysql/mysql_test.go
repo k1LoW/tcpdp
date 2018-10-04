@@ -37,6 +37,8 @@ var mysqlReadTests = []struct {
 			Internal: connMetadataInternal{
 				stmtNumParams:      stmtNumParams{5: 2},
 				clientCapabilities: clientCapabilities{},
+				charSet:            charSetUnknown,
+				maxPacketSize:      uint32(16 * 1024 * 1024),
 			},
 		},
 		[]dumper.DumpValue{
@@ -79,6 +81,8 @@ var mysqlReadTests = []struct {
 			Internal: connMetadataInternal{
 				stmtNumParams:      stmtNumParams{5: 2},
 				clientCapabilities: clientCapabilities{},
+				charSet:            charSetUnknown,
+				maxPacketSize:      uint32(16 * 1024 * 1024),
 			},
 		},
 		[]dumper.DumpValue{
@@ -110,6 +114,8 @@ var mysqlReadTests = []struct {
 			Internal: connMetadataInternal{
 				stmtNumParams:      stmtNumParams{5: 2},
 				clientCapabilities: clientCapabilities{},
+				charSet:            charSetUnknown,
+				maxPacketSize:      uint32(16 * 1024 * 1024),
 			},
 		},
 		[]dumper.DumpValue{},
@@ -141,6 +147,8 @@ var mysqlReadTests = []struct {
 			Internal: connMetadataInternal{
 				stmtNumParams:      stmtNumParams{5: 2},
 				clientCapabilities: clientCapabilities{},
+				charSet:            charSetUnknown,
+				maxPacketSize:      uint32(16 * 1024 * 1024),
 			},
 		},
 		[]dumper.DumpValue{},
@@ -160,6 +168,8 @@ var mysqlReadTests = []struct {
 			Internal: connMetadataInternal{
 				stmtNumParams:      stmtNumParams{5: 2},
 				clientCapabilities: clientCapabilities{},
+				charSet:            charSetUnknown,
+				maxPacketSize:      uint32(16 * 1024 * 1024),
 			},
 		},
 		[]dumper.DumpValue{},
@@ -197,6 +207,8 @@ var mysqlReadTests = []struct {
 			Internal: connMetadataInternal{
 				stmtNumParams:      stmtNumParams{5: 2},
 				clientCapabilities: clientCapabilities{clientCompress: true},
+				charSet:            charSetUnknown,
+				maxPacketSize:      uint32(16 * 1024 * 1024),
 			},
 		},
 		[]dumper.DumpValue{},
@@ -230,6 +242,8 @@ var mysqlReadTests = []struct {
 			Internal: connMetadataInternal{
 				stmtNumParams:      stmtNumParams{5: 2},
 				clientCapabilities: clientCapabilities{clientCompress: true},
+				charSet:            charSetUnknown,
+				maxPacketSize:      uint32(16 * 1024 * 1024),
 			},
 		},
 		[]dumper.DumpValue{},
@@ -266,6 +280,8 @@ var mysqlReadTests = []struct {
 			Internal: connMetadataInternal{
 				stmtNumParams:      stmtNumParams{},
 				clientCapabilities: clientCapabilities{clientCompress: true},
+				charSet:            charSetUnknown,
+				maxPacketSize:      uint32(16 * 1024 * 1024),
 			},
 		},
 		[]dumper.DumpValue{},
@@ -300,6 +316,8 @@ var mysqlReadTests = []struct {
 			Internal: connMetadataInternal{
 				stmtNumParams:      stmtNumParams{3: 3},
 				clientCapabilities: clientCapabilities{clientCompress: true},
+				charSet:            charSetUnknown,
+				maxPacketSize:      uint32(16 * 1024 * 1024),
 			},
 		},
 		[]dumper.DumpValue{},
@@ -335,6 +353,8 @@ var mysqlReadTests = []struct {
 			Internal: connMetadataInternal{
 				stmtNumParams:      stmtNumParams{},
 				clientCapabilities: clientCapabilities{clientCompress: true},
+				charSet:            charSetUnknown,
+				maxPacketSize:      uint32(16 * 1024 * 1024),
 			},
 		},
 		[]dumper.DumpValue{},
@@ -368,6 +388,8 @@ var mysqlReadTests = []struct {
 			Internal: connMetadataInternal{
 				stmtNumParams:      stmtNumParams{2: 3},
 				clientCapabilities: clientCapabilities{clientCompress: true},
+				charSet:            charSetUnknown,
+				maxPacketSize:      uint32(16 * 1024 * 1024),
 			},
 		},
 		[]dumper.DumpValue{},
