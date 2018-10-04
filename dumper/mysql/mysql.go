@@ -29,6 +29,7 @@ type connMetadataInternal struct {
 	clientCapabilities clientCapabilities
 	stmtNumParams      stmtNumParams
 	charSet            charSet
+	maxPacketSize      uint32
 }
 
 // NewDumper returns a Dumper
@@ -237,10 +238,12 @@ func (m *Dumper) readClientCapabilities(in []byte, direction dumper.Direction, c
 	}
 
 	clientCapabilities := binary.LittleEndian.Uint32(in[4:8])
+	maxPacketSize := binary.LittleEndian.Uint32(in[8:12])
 
 	// parse Protocol::HandshakeResponse41 to get username, database
 	if clientCapabilities&uint32(clientProtocol41) > 0 && bytes.Compare(in[13:36], []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}) == 0 {
 		internal := connMetadata.Internal.(connMetadataInternal)
+		internal.maxPacketSize = maxPacketSize
 		cSet := charSet(uint32(in[12]))
 		values = append(values, dumper.DumpValue{
 			Key:   "character_set",
