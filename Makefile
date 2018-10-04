@@ -59,7 +59,8 @@ proxy_integration: build
 	mysql --host=127.0.0.1 --port=33065 --user=root --password=$(MYSQL_ROOT_PASSWORD) --skip-ssl -e `cat ./test/query/long.sql` 2>&1 > ./result
 	@kill `cat ./tcpdp.pid`
 	@sleep 1
-	test `grep -c '"query":' ./dump.log` -eq 2 || (cat ./dump.log && exit 1)
+	test `grep -c 'query_start' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
+	test `grep -c 'query_last' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
 	@rm -f ./tcpdp.log* ./dump.log*
 
 probe_integration: build
