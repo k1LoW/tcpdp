@@ -3,8 +3,10 @@ COMMIT = $$(git describe --tags --always)
 OSNAME=${shell uname -s}
 ifeq ($(OSNAME),Darwin)
 	LO = "lo0"
+	MYSQL_DISABLE_SSL = --ssl-mode=DISABLED
 else
 	LO = "lo"
+	MYSQL_DISABLE_SSL = --skip-ssl
 endif
 
 GO ?= GO111MODULE=on go
@@ -27,58 +29,82 @@ MYSQL_ROOT_PASSWORD=mypass
 DISTS=centos7 centos6 ubuntu16
 
 default: build
-ci: depsdev test proxy_integration probe_integration read_integration
+ci: depsdev test proxy_integration probe_integration read_integration long_query
 
 test:
 	$(GO) test -cover -v $(shell go list ./... | grep -v vendor)
 
 proxy_integration: build
-	sudo rm -f ./tcpdp.log*
+	@sudo rm -f ./tcpdp.log* ./dump.log*
 	./tcpdp proxy -l localhost:54321 -r localhost:$(POSTGRES_PORT) -d pg &
 	@sleep 1
 	PGPASSWORD=$(POSTGRES_PASSWORD) pgbench -h 127.0.0.1 -p 54321 -U$(POSTGRES_USER) -i $(POSTGRES_DB)
 	PGPASSWORD=$(POSTGRES_PASSWORD) pgbench -h 127.0.0.1 -p 54321 -U$(POSTGRES_USER) -c 100 -t 10 $(POSTGRES_DB) 2>&1 > ./result
-	kill `cat ./tcpdp.pid`
+	@kill `cat ./tcpdp.pid`
 	@sleep 1
-	cat ./result
+	@cat ./result
 	@cat ./result | grep "number of transactions actually processed: 1000/1000" || (echo "pgbench faild" && exit 1)
 	test `grep -c '' ./tcpdp.log` -eq 4 || (cat ./tcpdp.log && exit 1)
-	rm ./result
+	@rm ./result
+	@rm -f ./tcpdp.log* ./dump.log*
 	./tcpdp proxy -l localhost:33065 -r localhost:$(MYSQL_PORT) -d mysql &
 	@sleep 1
-	mysqlslap --no-defaults --concurrency=100 --iterations=1 --auto-generate-sql --auto-generate-sql-add-autoincrement --auto-generate-sql-load-type=mixed --auto-generate-sql-write-number=100 --number-of-queries=1000 --host=127.0.0.1 --port=33065 --user=root --password=$(MYSQL_ROOT_PASSWORD) --skip-ssl 2>&1 > ./result
-	kill `cat ./tcpdp.pid`
+	mysqlslap --no-defaults --concurrency=100 --iterations=1 --auto-generate-sql --auto-generate-sql-add-autoincrement --auto-generate-sql-load-type=mixed --auto-generate-sql-write-number=100 --number-of-queries=1000 --host=127.0.0.1 --port=33065 --user=root --password=$(MYSQL_ROOT_PASSWORD) $(MYSQL_DISABLE_SSL) 2>&1 > ./result
+	@kill `cat ./tcpdp.pid`
 	@sleep 1
-	cat ./result
+	@cat ./result
 	@cat ./result | grep "Number of clients running queries: 100" || (echo "mysqlslap faild" && exit 1)
-	test `grep -c '' ./tcpdp.log` -eq 8 || (cat ./tcpdp.log && exit 1)
+	test `grep -c '' ./tcpdp.log` -eq 4 || (cat ./tcpdp.log && exit 1)
+	@rm -f ./tcpdp.log* ./dump.log*
 
 probe_integration: build
-	sudo rm -f ./tcpdp.log*
+	@sudo rm -f ./tcpdp.log* ./dump.log*
 	sudo ./tcpdp probe -i $(LO) -t $(POSTGRES_PORT) -d pg &
 	@sleep 1
 	PGPASSWORD=$(POSTGRES_PASSWORD) pgbench -h 127.0.0.1 -p $(POSTGRES_PORT) -U$(POSTGRES_USER) -i $(POSTGRES_DB)
 	PGPASSWORD=$(POSTGRES_PASSWORD) pgbench -h 127.0.0.1 -p $(POSTGRES_PORT) -U$(POSTGRES_USER) -c 100 -t 10 $(POSTGRES_DB) 2>&1 > ./result
-	sudo kill `cat ./tcpdp.pid`
+	@sudo kill `cat ./tcpdp.pid`
 	@sleep 1
-	cat ./result
+	@cat ./result
 	@cat ./result | grep "number of transactions actually processed: 1000/1000" || (echo "pgbench faild" && exit 1)
 	test `grep -c '' ./tcpdp.log` -eq 4 || (cat ./tcpdp.log && exit 1)
-	rm ./result
+	@rm ./result
+	@sudo rm -f ./tcpdp.log* ./dump.log*
 	sudo ./tcpdp probe -i $(LO) -t $(MYSQL_PORT) -d mysql &
 	@sleep 1
-	mysqlslap --no-defaults --concurrency=100 --iterations=1 --auto-generate-sql --auto-generate-sql-add-autoincrement --auto-generate-sql-load-type=mixed --auto-generate-sql-write-number=100 --number-of-queries=1000 --host=127.0.0.1 --port=$(MYSQL_PORT) --user=root --password=$(MYSQL_ROOT_PASSWORD) --skip-ssl 2>&1 > ./result
-	sudo kill `cat ./tcpdp.pid`
+	mysqlslap --no-defaults --concurrency=100 --iterations=1 --auto-generate-sql --auto-generate-sql-add-autoincrement --auto-generate-sql-load-type=mixed --auto-generate-sql-write-number=100 --number-of-queries=1000 --host=127.0.0.1 --port=$(MYSQL_PORT) --user=root --password=$(MYSQL_ROOT_PASSWORD) $(MYSQL_DISABLE_SSL) 2>&1 > ./result
+	@sudo kill `cat ./tcpdp.pid`
 	@sleep 1
-	cat ./result
+	@cat ./result
 	@cat ./result | grep "Number of clients running queries: 100" || (echo "mysqlslap faild" && exit 1)
-	test `grep -c '' ./tcpdp.log` -eq 8 || (cat ./tcpdp.log && exit 1)
+	test `grep -c '' ./tcpdp.log` -eq 4 || (cat ./tcpdp.log && exit 1)
+	@sudo rm -f ./tcpdp.log* ./dump.log*
 
 read_integration: build
 	./tcpdp read -t $(POSTGRES_PORT) -d pg test/pcap/pg_prepare.pcap > ./result
 	test `grep -c '' ./result` -eq 20 || (cat ./result && exit 1)
 	./tcpdp read -t $(MYSQL_PORT) -d mysql test/pcap/mysql_prepare.pcap > ./result
 	test `grep -c '' ./result` -eq 20 || (cat ./result && exit 1)
+
+long_query: build
+	@sudo rm -f ./tcpdp.log* ./dump.log*
+	./tcpdp proxy -l localhost:33065 -r localhost:$(MYSQL_PORT) -d mysql &
+	@sleep 1
+	mysql --host=127.0.0.1 --port=33065 --user=root --password=$(MYSQL_ROOT_PASSWORD) testdb $(MYSQL_DISABLE_SSL) < ./test/query/long.sql 2>&1 > /dev/null
+	@kill `cat ./tcpdp.pid`
+	@sleep 1
+	test `grep -c 'query_start' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
+	test `grep -c 'query_last' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
+	@rm -f ./tcpdp.log* ./dump.log*
+	@sudo rm -f ./tcpdp.log* ./dump.log*
+	sudo ./tcpdp probe -i $(LO) -t $(MYSQL_PORT) -d mysql &
+	@sleep 1
+	mysql --host=127.0.0.1 --port=$(MYSQL_PORT) --user=root --password=$(MYSQL_ROOT_PASSWORD) testdb $(MYSQL_DISABLE_SSL) < ./test/query/long.sql 2>&1 > /dev/null
+	@sudo kill `cat ./tcpdp.pid`
+	@sleep 1
+	test `grep -c 'query_start' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
+	test `grep -c 'query_last' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
+	@rm -f ./tcpdp.log* ./dump.log*
 
 cover: depsdev
 	goveralls -service=travis-ci
@@ -160,7 +186,6 @@ depsdev:
 	$(GO) get github.com/tcnksm/ghr
 	$(GO) get github.com/hairyhenderson/gomplate/cmd/gomplate
 	$(GO) get github.com/Songmu/ghch
-
 
 crossbuild: build_darwin
 	@for d in $(DISTS); do\

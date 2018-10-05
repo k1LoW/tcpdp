@@ -16,7 +16,7 @@ import (
 
 const anyIP = "0.0.0.0"
 
-var maxPacketLen = 0xFFFF
+var maxPacketLen = 0xFFFF // 65535
 
 // ParseTarget parse target to host:port
 func ParseTarget(target string) (string, uint16, error) {
@@ -209,7 +209,6 @@ func (r *PacketReader) ReadAndDump(host string, port uint16) error {
 				in = append(bb, in...)
 				delete(bMap, key)
 			}
-
 			if direction == dumper.Unknown {
 				for _, k := range []string{srcToDstKey, dstToSrcKey} {
 					_, ok := mMap[k]

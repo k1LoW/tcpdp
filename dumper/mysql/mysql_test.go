@@ -37,6 +37,7 @@ var mysqlReadTests = []struct {
 			Internal: connMetadataInternal{
 				stmtNumParams:      stmtNumParams{5: 2},
 				clientCapabilities: clientCapabilities{},
+				charSet:            charSetUnknown,
 			},
 		},
 		[]dumper.DumpValue{
@@ -79,6 +80,7 @@ var mysqlReadTests = []struct {
 			Internal: connMetadataInternal{
 				stmtNumParams:      stmtNumParams{5: 2},
 				clientCapabilities: clientCapabilities{},
+				charSet:            charSetUnknown,
 			},
 		},
 		[]dumper.DumpValue{
@@ -110,6 +112,7 @@ var mysqlReadTests = []struct {
 			Internal: connMetadataInternal{
 				stmtNumParams:      stmtNumParams{5: 2},
 				clientCapabilities: clientCapabilities{},
+				charSet:            charSetUnknown,
 			},
 		},
 		[]dumper.DumpValue{},
@@ -141,6 +144,7 @@ var mysqlReadTests = []struct {
 			Internal: connMetadataInternal{
 				stmtNumParams:      stmtNumParams{5: 2},
 				clientCapabilities: clientCapabilities{},
+				charSet:            charSetUnknown,
 			},
 		},
 		[]dumper.DumpValue{},
@@ -160,6 +164,7 @@ var mysqlReadTests = []struct {
 			Internal: connMetadataInternal{
 				stmtNumParams:      stmtNumParams{5: 2},
 				clientCapabilities: clientCapabilities{},
+				charSet:            charSetUnknown,
 			},
 		},
 		[]dumper.DumpValue{},
@@ -197,6 +202,7 @@ var mysqlReadTests = []struct {
 			Internal: connMetadataInternal{
 				stmtNumParams:      stmtNumParams{5: 2},
 				clientCapabilities: clientCapabilities{clientCompress: true},
+				charSet:            charSetUnknown,
 			},
 		},
 		[]dumper.DumpValue{},
@@ -230,6 +236,7 @@ var mysqlReadTests = []struct {
 			Internal: connMetadataInternal{
 				stmtNumParams:      stmtNumParams{5: 2},
 				clientCapabilities: clientCapabilities{clientCompress: true},
+				charSet:            charSetUnknown,
 			},
 		},
 		[]dumper.DumpValue{},
@@ -266,6 +273,7 @@ var mysqlReadTests = []struct {
 			Internal: connMetadataInternal{
 				stmtNumParams:      stmtNumParams{},
 				clientCapabilities: clientCapabilities{clientCompress: true},
+				charSet:            charSetUnknown,
 			},
 		},
 		[]dumper.DumpValue{},
@@ -300,6 +308,7 @@ var mysqlReadTests = []struct {
 			Internal: connMetadataInternal{
 				stmtNumParams:      stmtNumParams{3: 3},
 				clientCapabilities: clientCapabilities{clientCompress: true},
+				charSet:            charSetUnknown,
 			},
 		},
 		[]dumper.DumpValue{},
@@ -335,6 +344,7 @@ var mysqlReadTests = []struct {
 			Internal: connMetadataInternal{
 				stmtNumParams:      stmtNumParams{},
 				clientCapabilities: clientCapabilities{clientCompress: true},
+				charSet:            charSetUnknown,
 			},
 		},
 		[]dumper.DumpValue{},
@@ -368,6 +378,7 @@ var mysqlReadTests = []struct {
 			Internal: connMetadataInternal{
 				stmtNumParams:      stmtNumParams{2: 3},
 				clientCapabilities: clientCapabilities{clientCompress: true},
+				charSet:            charSetUnknown,
 			},
 		},
 		[]dumper.DumpValue{},
