@@ -29,6 +29,8 @@ type connMetadataInternal struct {
 	clientCapabilities clientCapabilities
 	stmtNumParams      stmtNumParams
 	charSet            charSet
+	payloadLength      uint32
+	longPacketCache    []byte
 }
 
 // NewDumper returns a Dumper
@@ -66,6 +68,13 @@ func (m *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 	values := m.readClientCapabilities(in, direction, connMetadata)
 	connMetadata.DumpValues = append(connMetadata.DumpValues, values...)
 	cSet := connMetadata.Internal.(connMetadataInternal).charSet
+
+	if len(connMetadata.Internal.(connMetadataInternal).longPacketCache) > 0 {
+		internal := connMetadata.Internal.(connMetadataInternal)
+		in = append(internal.longPacketCache, in...)
+		internal.longPacketCache = nil
+		connMetadata.Internal = internal
+	}
 
 	// Client Compress
 	compressed, ok := connMetadata.Internal.(connMetadataInternal).clientCapabilities[clientCompress]
@@ -109,6 +118,26 @@ func (m *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 	if len(in) < 6 {
 		return []dumper.DumpValue{}
 	}
+
+	var payloadLength uint32
+	internal := connMetadata.Internal.(connMetadataInternal)
+	if internal.payloadLength > 0 {
+		payloadLength = internal.payloadLength
+	} else {
+		pl := make([]byte, 3)
+		copy(pl, in[0:3])
+		payloadLength = bytesToUint32(pl) // 3:payload_length
+	}
+	if uint32(len(in[4:])) < payloadLength {
+		internal := connMetadata.Internal.(connMetadataInternal)
+		internal.payloadLength = payloadLength
+		internal.longPacketCache = append(internal.longPacketCache, in...)
+		connMetadata.Internal = internal
+		return []dumper.DumpValue{}
+	}
+	internal.payloadLength = uint32(0)
+	connMetadata.Internal = internal
+
 	seqNum := int64(in[3])
 	commandID := in[4]
 
@@ -223,6 +252,7 @@ func (m *Dumper) NewConnMetadata() *dumper.ConnMetadata {
 			stmtNumParams:      stmtNumParams{},
 			clientCapabilities: clientCapabilities{},
 			charSet:            charSetUnknown,
+			payloadLength:      uint32(0),
 		},
 	}
 }
@@ -241,6 +271,7 @@ func (m *Dumper) readClientCapabilities(in []byte, direction dumper.Direction, c
 	// parse Protocol::HandshakeResponse41 to get username, database
 	if clientCapabilities&uint32(clientProtocol41) > 0 && bytes.Compare(in[13:36], []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}) == 0 {
 		internal := connMetadata.Internal.(connMetadataInternal)
+
 		cSet := charSet(uint32(in[12]))
 		values = append(values, dumper.DumpValue{
 			Key:   "character_set",
@@ -423,6 +454,11 @@ func readTime(buff *bytes.Buffer) string {
 		return fmt.Sprintf("%s%dd %s", op, days, t.Format("15:04:05"))
 	}
 
+}
+
+func bytesToUint32(b []byte) uint32 {
+	padding := make([]byte, 4-len(b))
+	return binary.LittleEndian.Uint32(append(b, padding...))
 }
 
 func bytesToUint64(b []byte) uint64 {

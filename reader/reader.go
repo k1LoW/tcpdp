@@ -2,6 +2,7 @@ package reader
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
 	"net"
 	"strconv"
@@ -14,6 +15,8 @@ import (
 )
 
 const anyIP = "0.0.0.0"
+
+var maxPacketLen = 0xFFFF // 65535
 
 // ParseTarget parse target to host:port
 func ParseTarget(target string) (string, uint16, error) {
@@ -77,7 +80,9 @@ func NewPacketReader(ctx context.Context, packetSource *gopacket.PacketSource, d
 
 // ReadAndDump from gopacket.PacketSource
 func (r *PacketReader) ReadAndDump(host string, port uint16) error {
-	mMap := map[string]*dumper.ConnMetadata{}
+	mMap := map[string]*dumper.ConnMetadata{} // metadata map
+	mssMap := map[string]int{}                // TCP MSS map
+	bMap := map[string][]byte{}               // long payload map
 
 	packetChan := r.packetSource.Packets()
 	for {
@@ -135,6 +140,7 @@ func (r *PacketReader) ReadAndDump(host string, port uint16) error {
 					},
 				}
 				mMap[key] = connMetadata
+				mssMap[key] = int(binary.BigEndian.Uint16(tcp.LayerContents()[22:24]))
 
 			} else if tcp.SYN && tcp.ACK {
 				if direction == dumper.Unknown {
@@ -155,11 +161,25 @@ func (r *PacketReader) ReadAndDump(host string, port uint16) error {
 					mMap[key] = connMetadata
 				}
 
+				mss := int(binary.BigEndian.Uint16(tcp.LayerContents()[22:24]))
+				current, ok := mssMap[key]
+				if !ok || mss < current {
+					mssMap[key] = mss
+				}
+
 			} else if tcp.FIN {
 				// TCP connection end
 				_, ok := mMap[key]
 				if ok {
 					delete(mMap, key)
+				}
+				_, ok = mssMap[key]
+				if ok {
+					delete(mssMap, key)
+				}
+				_, ok = bMap[key]
+				if ok {
+					delete(bMap, key)
 				}
 				if direction == dumper.Unknown {
 					for _, key := range []string{srcToDstKey, dstToSrcKey} {
@@ -176,6 +196,19 @@ func (r *PacketReader) ReadAndDump(host string, port uint16) error {
 				continue
 			}
 
+			mss, ok := mssMap[key]
+			if ok {
+				maxPacketLen = mss - (len(tcp.LayerContents()) - 20)
+			}
+			if len(in) == maxPacketLen {
+				bMap[key] = append(bMap[key], in...)
+				continue
+			}
+			bb, ok := bMap[key]
+			if ok {
+				in = append(bb, in...)
+				delete(bMap, key)
+			}
 			if direction == dumper.Unknown {
 				for _, k := range []string{srcToDstKey, dstToSrcKey} {
 					_, ok := mMap[k]
