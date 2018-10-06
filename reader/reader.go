@@ -80,9 +80,9 @@ func NewPacketReader(ctx context.Context, packetSource *gopacket.PacketSource, d
 
 // ReadAndDump from gopacket.PacketSource
 func (r *PacketReader) ReadAndDump(host string, port uint16) error {
-	mMap := map[string]*dumper.ConnMetadata{} // metadata map
-	mssMap := map[string]int{}                // TCP MSS map
-	bMap := map[string][]byte{}               // long payload map
+	mMap := map[string]*dumper.ConnMetadata{}        // metadata map per connection
+	mssMap := map[string]int{}                       // TCP MSS map per connection
+	bMap := map[string]map[dumper.Direction][]byte{} // long payload map per direction
 
 	packetChan := r.packetSource.Packets()
 	for {
@@ -141,7 +141,7 @@ func (r *PacketReader) ReadAndDump(host string, port uint16) error {
 				}
 				mMap[key] = connMetadata
 				mssMap[key] = int(binary.BigEndian.Uint16(tcp.LayerContents()[22:24]))
-
+				bMap[key] = newByteMap()
 			} else if tcp.SYN && tcp.ACK {
 				if direction == dumper.Unknown {
 					key = dstToSrcKey
@@ -166,7 +166,6 @@ func (r *PacketReader) ReadAndDump(host string, port uint16) error {
 				if !ok || mss < current {
 					mssMap[key] = mss
 				}
-
 			} else if tcp.FIN {
 				// TCP connection end
 				_, ok := mMap[key]
@@ -191,6 +190,11 @@ func (r *PacketReader) ReadAndDump(host string, port uint16) error {
 				}
 			}
 
+			_, ok := bMap[key]
+			if !ok {
+				bMap[key] = newByteMap()
+			}
+
 			in := tcpLayer.LayerPayload()
 			if len(in) == 0 {
 				continue
@@ -201,13 +205,13 @@ func (r *PacketReader) ReadAndDump(host string, port uint16) error {
 				maxPacketLen = mss - (len(tcp.LayerContents()) - 20)
 			}
 			if len(in) == maxPacketLen {
-				bMap[key] = append(bMap[key], in...)
+				bMap[key][direction] = append(bMap[key][direction], in...)
 				continue
 			}
-			bb, ok := bMap[key]
+			bb, ok := bMap[key][direction]
 			if ok {
 				in = append(bb, in...)
-				delete(bMap, key)
+				bMap[key][direction] = nil
 			}
 			if direction == dumper.Unknown {
 				for _, k := range []string{srcToDstKey, dstToSrcKey} {
@@ -252,5 +256,13 @@ func (r *PacketReader) ReadAndDump(host string, port uint16) error {
 
 			r.dumper.Log(values)
 		}
+	}
+}
+
+func newByteMap() map[dumper.Direction][]byte {
+	return map[dumper.Direction][]byte{
+		dumper.SrcToDst: []byte{},
+		dumper.DstToSrc: []byte{},
+		dumper.Unknown:  []byte{},
 	}
 }
