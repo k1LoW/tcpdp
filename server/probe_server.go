@@ -129,6 +129,7 @@ func (s *ProbeServer) Start() error {
 		packetSource,
 		s.dumper,
 		pValues,
+		s.logger,
 	)
 
 	err = r.ReadAndDump(host, port)

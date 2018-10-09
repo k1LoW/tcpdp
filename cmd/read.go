@@ -63,6 +63,8 @@ var readCmd = &cobra.Command{
 		viper.Set("dumpLog.enable", false)
 		viper.Set("dumpLog.stdout", true)
 
+		defer logger.Sync()
+
 		var pcapFile string
 		if terminal.IsTerminal(0) {
 			pcapFile = args[0]
@@ -105,6 +107,7 @@ var readCmd = &cobra.Command{
 			packetSource,
 			d,
 			[]dumper.DumpValue{},
+			logger,
 		)
 
 		host, port, err := reader.ParseTarget(readTarget)
