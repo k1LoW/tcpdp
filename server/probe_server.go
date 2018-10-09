@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/pcap"
@@ -113,6 +114,7 @@ func (s *ProbeServer) Start() error {
 		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap OpenLive error", fields...)
 		return err
 	}
+	s.checkStats(handle)
 	defer func() {
 		stats, _ := handle.Stats()
 		s.logger.Info("pcap Stats", zap.Int("packet_received", stats.PacketsReceived), zap.Int("packet_dropped", stats.PacketsDropped), zap.Int("packet_if_dropped", stats.PacketsIfDropped))
@@ -148,6 +150,29 @@ func (s *ProbeServer) Start() error {
 // Shutdown server.
 func (s *ProbeServer) Shutdown() {
 	s.shutdown()
+}
+
+func (s *ProbeServer) checkStats(handle *pcap.Handle) {
+	go func() {
+		t := time.NewTicker(60 * time.Second)
+		packetsDropped := 0
+		packetsIfDropped := 0
+	L:
+		for {
+			select {
+			case <-s.ctx.Done():
+				break L
+			case <-t.C:
+				stats, _ := handle.Stats()
+				if stats.PacketsDropped > packetsDropped || stats.PacketsIfDropped > packetsIfDropped {
+					s.logger.Error("pcap packets dropped", zap.Int("packet_received", stats.PacketsReceived), zap.Int("packet_dropped", stats.PacketsDropped), zap.Int("packet_if_dropped", stats.PacketsIfDropped))
+				}
+				packetsDropped = stats.PacketsDropped
+				packetsIfDropped = stats.PacketsIfDropped
+			}
+		}
+		t.Stop()
+	}()
 }
 
 // https://gist.github.com/davidnewhall/3627895a9fc8fa0affbd747183abca39
