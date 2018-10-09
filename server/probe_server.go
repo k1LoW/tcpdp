@@ -113,7 +113,11 @@ func (s *ProbeServer) Start() error {
 		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap OpenLive error", fields...)
 		return err
 	}
-	defer handle.Close()
+	defer func() {
+		stats, _ := handle.Stats()
+		s.logger.Info("pcap Stats", zap.Int("packet_received", stats.PacketsReceived), zap.Int("packet_dropped", stats.PacketsDropped), zap.Int("packet_if_dropped", stats.PacketsIfDropped))
+		handle.Close()
+	}()
 
 	f := reader.NewBPFFilterString(host, port)
 
