@@ -12,6 +12,7 @@ import (
 	"github.com/google/gopacket/layers"
 	"github.com/k1LoW/tcpdp/dumper"
 	"github.com/rs/xid"
+	"go.uber.org/zap"
 )
 
 const anyIP = "0.0.0.0"
@@ -65,15 +66,17 @@ type PacketReader struct {
 	packetSource *gopacket.PacketSource
 	dumper       dumper.Dumper
 	pValues      []dumper.DumpValue
+	logger       *zap.Logger
 }
 
 // NewPacketReader return PacketReader
-func NewPacketReader(ctx context.Context, packetSource *gopacket.PacketSource, dumper dumper.Dumper, pValues []dumper.DumpValue) PacketReader {
+func NewPacketReader(ctx context.Context, packetSource *gopacket.PacketSource, dumper dumper.Dumper, pValues []dumper.DumpValue, logger *zap.Logger) PacketReader {
 	reader := PacketReader{
 		ctx:          ctx,
 		packetSource: packetSource,
 		dumper:       dumper,
 		pValues:      pValues,
+		logger:       logger,
 	}
 	return reader
 }
