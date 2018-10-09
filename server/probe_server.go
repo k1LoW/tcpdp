@@ -22,6 +22,8 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+const snaplen = int32(^uint32(0) >> 1)
+
 // ProbeServer struct
 type ProbeServer struct {
 	pidfile    string
@@ -89,7 +91,6 @@ func (s *ProbeServer) Start() error {
 		return err
 	}
 
-	snaplen := int32(0xFFFF)
 	promiscuous := true
 	pValues := []dumper.DumpValue{
 		dumper.DumpValue{
