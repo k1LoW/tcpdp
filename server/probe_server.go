@@ -120,32 +120,32 @@ func (s *ProbeServer) Start() error {
 	err = inactiveHandle.SetSnapLen(int(snaplen))
 	if err != nil {
 		fields := s.fieldsWithErrorAndValues(err, pValues)
-		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap create error", fields...)
+		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap create error (snaplen)", fields...)
 		return err
 	}
 	err = inactiveHandle.SetPromisc(promiscuous)
 	if err != nil {
 		fields := s.fieldsWithErrorAndValues(err, pValues)
-		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap create error", fields...)
+		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap create error (promiscuous)", fields...)
 		return err
 	}
 	err = inactiveHandle.SetTimeout(timeout)
 	if err != nil {
 		fields := s.fieldsWithErrorAndValues(err, pValues)
-		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap create error", fields...)
+		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap create error (timeout)", fields...)
 		return err
 	}
 	err = inactiveHandle.SetBufferSize(int(pcapBufferSize))
 	if err != nil {
 		fields := s.fieldsWithErrorAndValues(err, pValues)
-		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap create error", fields...)
+		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap create error (pcap_buffer_size)", fields...)
 		return err
 	}
 
 	handle, err := inactiveHandle.Activate()
 	if err != nil {
 		fields := s.fieldsWithErrorAndValues(err, pValues)
-		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap create error", fields...)
+		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap handle activate error", fields...)
 		return err
 	}
 
