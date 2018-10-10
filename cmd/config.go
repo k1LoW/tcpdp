@@ -40,7 +40,8 @@ dumper = "{{ .tcpdp.dumper }}"
 
 [probe]
 target = "{{ .probe.target }}"
-interface = "{{ .probe.interface}}"
+interface = "{{ .probe.interface }}"
+bufferSize = "{{ .probe.buffersize }}"
 
 [proxy]
 useServerSterter = {{ .proxy.useserversterter }}
