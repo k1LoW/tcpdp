@@ -86,11 +86,13 @@ func init() {
 	probeCmd.Flags().StringP("target", "t", "", "target addr. (ex. \"localhost:80\", \"3306\")")
 	probeCmd.Flags().StringP("interface", "i", "", "interface")
 	probeCmd.Flags().StringP("buffer-size", "B", "2MB", "buffer size (pcap_buffer_size)")
+	probeCmd.Flags().BoolP("immediate-mode", "", false, "immediate mote")
 	probeCmd.Flags().StringVarP(&probeDumper, "dumper", "d", "hex", "dumper")
 
 	viper.BindPFlag("probe.target", probeCmd.Flags().Lookup("target"))
 	viper.BindPFlag("probe.interface", probeCmd.Flags().Lookup("interface"))
 	viper.BindPFlag("probe.bufferSize", probeCmd.Flags().Lookup("buffer-size"))
+	viper.BindPFlag("probe.immediateMode", probeCmd.Flags().Lookup("immediate-mode"))
 
 	rootCmd.AddCommand(probeCmd)
 }
