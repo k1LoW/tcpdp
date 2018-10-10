@@ -89,6 +89,8 @@ func (s *ProbeServer) Start() error {
 	device := viper.GetString("probe.interface")
 	target := viper.GetString("probe.target")
 	pcapBufferSize, err := bytefmt.ToBytes(viper.GetString("probe.bufferSize"))
+	immediateMode := viper.GetBool("probe.immediateMode")
+
 	if err != nil {
 		s.logger.WithOptions(zap.AddCaller()).Fatal("parse buffer-size error", zap.Error(err))
 		return err
@@ -139,6 +141,12 @@ func (s *ProbeServer) Start() error {
 	if err != nil {
 		fields := s.fieldsWithErrorAndValues(err, pValues)
 		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap create error (pcap_buffer_size)", fields...)
+		return err
+	}
+	err = inactiveHandle.SetImmediateMode(immediateMode)
+	if err != nil {
+		fields := s.fieldsWithErrorAndValues(err, pValues)
+		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap create error (pcap_set_immediate_mode)", fields...)
 		return err
 	}
 
