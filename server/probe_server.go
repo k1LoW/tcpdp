@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"code.cloudfoundry.org/bytefmt"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/pcap"
 	"github.com/k1LoW/tcpdp/dumper"
@@ -24,6 +25,8 @@ import (
 )
 
 const snaplen = int32(^uint32(0) >> 1)
+const promiscuous = true
+const timeout = pcap.BlockForever
 
 // ProbeServer struct
 type ProbeServer struct {
@@ -85,6 +88,11 @@ func (s *ProbeServer) Start() error {
 
 	device := viper.GetString("probe.interface")
 	target := viper.GetString("probe.target")
+	pcapBufferSize, err := bytefmt.ToBytes(viper.GetString("probe.bufferSize"))
+	if err != nil {
+		s.logger.WithOptions(zap.AddCaller()).Fatal("parse buffer-size error", zap.Error(err))
+		return err
+	}
 
 	host, port, err := reader.ParseTarget(target)
 	if err != nil {
@@ -92,7 +100,6 @@ func (s *ProbeServer) Start() error {
 		return err
 	}
 
-	promiscuous := true
 	pValues := []dumper.DumpValue{
 		dumper.DumpValue{
 			Key:   "interface",
@@ -104,17 +111,44 @@ func (s *ProbeServer) Start() error {
 		},
 	}
 
-	handle, err := pcap.OpenLive(
-		device,
-		snaplen,
-		promiscuous,
-		pcap.BlockForever,
-	)
+	inactiveHandle, err := pcap.NewInactiveHandle(device)
 	if err != nil {
 		fields := s.fieldsWithErrorAndValues(err, pValues)
-		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap OpenLive error", fields...)
+		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap create error", fields...)
 		return err
 	}
+	err = inactiveHandle.SetSnapLen(int(snaplen))
+	if err != nil {
+		fields := s.fieldsWithErrorAndValues(err, pValues)
+		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap create error (snaplen)", fields...)
+		return err
+	}
+	err = inactiveHandle.SetPromisc(promiscuous)
+	if err != nil {
+		fields := s.fieldsWithErrorAndValues(err, pValues)
+		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap create error (promiscuous)", fields...)
+		return err
+	}
+	err = inactiveHandle.SetTimeout(timeout)
+	if err != nil {
+		fields := s.fieldsWithErrorAndValues(err, pValues)
+		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap create error (timeout)", fields...)
+		return err
+	}
+	err = inactiveHandle.SetBufferSize(int(pcapBufferSize))
+	if err != nil {
+		fields := s.fieldsWithErrorAndValues(err, pValues)
+		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap create error (pcap_buffer_size)", fields...)
+		return err
+	}
+
+	handle, err := inactiveHandle.Activate()
+	if err != nil {
+		fields := s.fieldsWithErrorAndValues(err, pValues)
+		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap handle activate error", fields...)
+		return err
+	}
+
 	s.checkStats(handle)
 	defer func() {
 		stats, _ := handle.Stats()

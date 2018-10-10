@@ -1,6 +1,7 @@
 module github.com/k1LoW/tcpdp
 
 require (
+	code.cloudfoundry.org/bytefmt v0.0.0-20180906201452-2aa6f33b730c
 	github.com/Masterminds/goutils v1.0.1 // indirect
 	github.com/Songmu/ghch v0.3.0 // indirect
 	github.com/Songmu/retry v0.1.0 // indirect
@@ -51,5 +52,5 @@ require (
 	golang.org/x/oauth2 v0.0.0-20180821212333-d2e6202438be // indirect
 	golang.org/x/text v0.3.0
 	golang.org/x/time v0.0.0-20180412165947-fbb02b2291d2 // indirect
-	golang.org/x/tools v0.0.0-20181008205924-a2b3f7f249e9 // indirect
+	golang.org/x/tools v0.0.0-20181010000725-29f11e2b93f4 // indirect
 )
