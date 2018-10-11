@@ -45,7 +45,7 @@ bufferSize = "{{ .probe.buffersize }}"
 immediateMode = {{ .probe.immediatemode }}
 
 [proxy]
-useServerSterter = {{ .proxy.useserversterter }}
+useServerStarter = {{ .proxy.useserverstarter }}
 listenAddr = "{{ .proxy.listenaddr }}"
 remoteAddr = "{{ .proxy.remoteaddr }}"
 

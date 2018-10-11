@@ -75,7 +75,7 @@ bufferSize = "2MB"
 immediateMode = false
 
 [proxy]
-useServerSterter = false
+useServerStarter = false
 listenAddr = "localhost:3306"
 remoteAddr = "db.example.com:3306"
 
