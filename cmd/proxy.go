@@ -52,9 +52,10 @@ var proxyCmd = &cobra.Command{
 			viper.Set("tcpdp.dumper", proxyDumper) // because share with `probe`
 		}
 
+		dumper := viper.GetString("tcpdp.dumper")
 		listenAddr := viper.GetString("proxy.listenAddr")
 		remoteAddr := viper.GetString("proxy.remoteAddr")
-		useProxySterter := viper.GetBool("proxy.useProxySterter")
+		useServerStarter := viper.GetBool("proxy.useServerStarter")
 
 		defer logger.Sync()
 
@@ -75,12 +76,20 @@ var proxyCmd = &cobra.Command{
 
 		s := server.NewServer(context.Background(), lAddr, rAddr, logger)
 
-		if useProxySterter {
-			logger.Info(fmt.Sprintf("Starting proxy. [server_starter] <-> %s:%d", rAddr.IP, rAddr.Port))
+		if useServerStarter {
+			logger.Info(fmt.Sprintf("Starting proxy. [server_starter] <-> %s:%d", rAddr.IP, rAddr.Port),
+				zap.String("dumper", dumper),
+				zap.String("remoteAddr", remoteAddr),
+				zap.Bool("useServerStarter", useServerStarter),
+			)
 		} else {
-			logger.Info(fmt.Sprintf("Starting proxy. %s:%d <-> %s:%d", lAddr.IP, lAddr.Port, rAddr.IP, rAddr.Port))
+			logger.Info(fmt.Sprintf("Starting proxy. %s:%d <-> %s:%d", lAddr.IP, lAddr.Port, rAddr.IP, rAddr.Port),
+				zap.String("dumper", dumper),
+				zap.String("listenAddr", listenAddr),
+				zap.String("remoteAddr", remoteAddr),
+				zap.Bool("useServerStarter", useServerStarter),
+			)
 		}
-		logger.Info(fmt.Sprintf("Select dumper %s.", viper.GetString("tcpdp.dumper")))
 
 		go s.Start()
 
@@ -113,7 +122,7 @@ func init() {
 
 	viper.BindPFlag("proxy.listenAddr", proxyCmd.Flags().Lookup("listen"))
 	viper.BindPFlag("proxy.remoteAddr", proxyCmd.Flags().Lookup("remote"))
-	viper.BindPFlag("proxy.useProxySterter", proxyCmd.Flags().Lookup("use-proxy-starter"))
+	viper.BindPFlag("proxy.useServerStarter", proxyCmd.Flags().Lookup("use-proxy-starter"))
 	viper.BindPFlag("tcpdp.dumper", proxyCmd.Flags().Lookup("dumper"))
 
 	rootCmd.AddCommand(proxyCmd)

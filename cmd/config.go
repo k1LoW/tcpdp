@@ -39,13 +39,13 @@ pidfile = "{{ .tcpdp.pidfile }}"
 dumper = "{{ .tcpdp.dumper }}"
 
 [probe]
-target = "{{ .probe.target }}"
 interface = "{{ .probe.interface }}"
+target = "{{ .probe.target }}"
 bufferSize = "{{ .probe.buffersize }}"
 immediateMode = {{ .probe.immediatemode }}
 
 [proxy]
-useServerSterter = {{ .proxy.useserversterter }}
+useServerStarter = {{ .proxy.useserverstarter }}
 listenAddr = "{{ .proxy.listenaddr }}"
 remoteAddr = "{{ .proxy.remoteaddr }}"
 

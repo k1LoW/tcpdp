@@ -44,7 +44,7 @@ proxy_integration: build
 	@sleep 1
 	@cat ./result
 	@cat ./result | grep "number of transactions actually processed: 1000/1000" || (echo "pgbench faild" && exit 1)
-	test `grep -c '' ./tcpdp.log` -eq 4 || (cat ./tcpdp.log && exit 1)
+	test `grep -c '' ./tcpdp.log` -eq 3 || (cat ./tcpdp.log && exit 1)
 	@rm ./result
 	@rm -f ./tcpdp.log* ./dump.log*
 	./tcpdp proxy -l localhost:33065 -r localhost:$(MYSQL_PORT) -d mysql &
@@ -54,7 +54,7 @@ proxy_integration: build
 	@sleep 1
 	@cat ./result
 	@cat ./result | grep "Number of clients running queries: 100" || (echo "mysqlslap faild" && exit 1)
-	test `grep -c '' ./tcpdp.log` -eq 4 || (cat ./tcpdp.log && exit 1)
+	test `grep -c '' ./tcpdp.log` -eq 3 || (cat ./tcpdp.log && exit 1)
 	@rm -f ./tcpdp.log* ./dump.log*
 
 probe_integration: build
@@ -67,7 +67,7 @@ probe_integration: build
 	@sleep 1
 	@cat ./result
 	@cat ./result | grep "number of transactions actually processed: 1000/1000" || (echo "pgbench faild" && exit 1)
-	test `grep -c '' ./tcpdp.log` -eq 5 || (cat ./tcpdp.log && exit 1)
+	test `grep -c '' ./tcpdp.log` -eq 4 || (cat ./tcpdp.log && exit 1)
 	@rm ./result
 	@sudo rm -f ./tcpdp.log* ./dump.log*
 	sudo ./tcpdp probe -i $(LO) -t $(MYSQL_PORT) -d mysql &
@@ -77,7 +77,7 @@ probe_integration: build
 	@sleep 1
 	@cat ./result
 	@cat ./result | grep "Number of clients running queries: 100" || (echo "mysqlslap faild" && exit 1)
-	test `grep -c '' ./tcpdp.log` -eq 5 || (cat ./tcpdp.log && exit 1)
+	test `grep -c '' ./tcpdp.log` -eq 4 || (cat ./tcpdp.log && exit 1)
 	@sudo rm -f ./tcpdp.log* ./dump.log*
 
 read_integration: build
