@@ -71,6 +71,8 @@ dumper = "mysql"
 [probe]
 target = "db.example.com:3306"
 interface = "en0"
+bufferSize = "2MB"
+immediateMode = false
 
 [proxy]
 useServerSterter = false
