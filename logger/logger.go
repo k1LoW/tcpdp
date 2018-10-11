@@ -188,9 +188,6 @@ func newLogWriter(logType string) io.Writer {
 	var t time.Duration
 	if rotateEnable {
 		switch rotationTime {
-		case "secondly":
-			logSuffix = ".%Y%m%d%H%M%S"
-			t = 1 * time.Second
 		case "minutely":
 			logSuffix = ".%Y%m%d%H%M"
 			t = 1 * time.Minute
@@ -201,7 +198,7 @@ func newLogWriter(logType string) io.Writer {
 			logSuffix = ".%Y%m%d"
 			t = 24 * time.Hour
 		default:
-			log.Fatal("Log setting error, please specify one of the periods [daily, hourly, minutely, secondly]")
+			log.Fatal("Log setting error, please specify one of the periods [daily, hourly, minutely]")
 		}
 		options = append(options, rotatelogs.WithLinkName(path))
 		options = append(options, rotatelogs.WithRotationTime(t))
