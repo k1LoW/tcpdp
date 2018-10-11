@@ -82,9 +82,9 @@ func (s *Server) Start() error {
 		return err
 	}
 	defer s.deletePID()
-	useServerSterter := viper.GetBool("proxy.useServerSterter")
+	useServerStarter := viper.GetBool("proxy.useServerStarter")
 
-	if useServerSterter {
+	if useServerStarter {
 		listeners, err := listener.ListenAll()
 		if listeners == nil || err != nil {
 			s.logger.WithOptions(zap.AddCaller()).Fatal("server-starter listen error", zap.Error(err))
