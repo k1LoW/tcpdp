@@ -223,16 +223,19 @@ func newLogWriter(logType string) io.Writer {
 	return w
 }
 
+// NewRotateHandler return RotateHandler
 func NewRotateHandler(c string) *RotateHandler {
 	return &RotateHandler{
 		command: c,
 	}
 }
 
+// RotateHandler struct
 type RotateHandler struct {
 	command string
 }
 
+// Handle rotatelogs.Event
 func (r *RotateHandler) Handle(e rotatelogs.Event) {
 	if e.Type() == rotatelogs.FileRotatedEventType {
 		fre := e.(*rotatelogs.FileRotatedEvent)
