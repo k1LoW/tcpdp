@@ -105,6 +105,7 @@ func (r *PacketReader) handlePacket(host string, port uint16) error {
 	bMap := map[string]map[dumper.Direction][]byte{} // long payload map per direction
 
 	for {
+		fmt.Printf("packetBuffer:%d\n", len(r.packetBuffer))
 		select {
 		case <-r.ctx.Done():
 			return nil

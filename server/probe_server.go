@@ -197,7 +197,7 @@ func (s *ProbeServer) Shutdown() {
 
 func (s *ProbeServer) checkStats(handle *pcap.Handle) {
 	go func() {
-		t := time.NewTicker(60 * time.Second)
+		t := time.NewTicker(1 * time.Second)
 		packetsDropped := 0
 		packetsIfDropped := 0
 	L:
