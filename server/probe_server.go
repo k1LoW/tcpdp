@@ -25,7 +25,7 @@ import (
 )
 
 const snaplen = int32(^uint32(0) >> 1)
-const promiscuous = true
+const promiscuous = false
 const timeout = pcap.BlockForever
 
 // ProbeServer struct
