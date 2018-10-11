@@ -118,11 +118,11 @@ func init() {
 	proxyCmd.Flags().StringP("listen", "l", "localhost:8080", "listen address")
 	proxyCmd.Flags().StringP("remote", "r", "localhost:80", "remote address")
 	proxyCmd.Flags().StringVarP(&proxyDumper, "dumper", "d", "hex", "dumper")
-	proxyCmd.Flags().BoolP("use-proxy-starter", "s", false, "use proxy_starter")
+	proxyCmd.Flags().BoolP("use-server-starter", "s", false, "use server_starter")
 
 	viper.BindPFlag("proxy.listenAddr", proxyCmd.Flags().Lookup("listen"))
 	viper.BindPFlag("proxy.remoteAddr", proxyCmd.Flags().Lookup("remote"))
-	viper.BindPFlag("proxy.useServerStarter", proxyCmd.Flags().Lookup("use-proxy-starter"))
+	viper.BindPFlag("proxy.useServerStarter", proxyCmd.Flags().Lookup("use-server-starter"))
 	viper.BindPFlag("tcpdp.dumper", proxyCmd.Flags().Lookup("dumper"))
 
 	rootCmd.AddCommand(proxyCmd)
