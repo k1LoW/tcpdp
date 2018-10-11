@@ -67,6 +67,7 @@ type PacketReader struct {
 	dumper       dumper.Dumper
 	pValues      []dumper.DumpValue
 	logger       *zap.Logger
+	packetBuffer chan gopacket.Packet
 }
 
 // NewPacketReader return PacketReader
@@ -77,22 +78,37 @@ func NewPacketReader(ctx context.Context, packetSource *gopacket.PacketSource, d
 		dumper:       dumper,
 		pValues:      pValues,
 		logger:       logger,
+		packetBuffer: make(chan gopacket.Packet, 10000),
 	}
 	return reader
 }
 
 // ReadAndDump from gopacket.PacketSource
 func (r *PacketReader) ReadAndDump(host string, port uint16) error {
-	mMap := map[string]*dumper.ConnMetadata{}        // metadata map per connection
-	mssMap := map[string]int{}                       // TCP MSS map per connection
-	bMap := map[string]map[dumper.Direction][]byte{} // long payload map per direction
+	go r.handlePacket(host, port)
 
 	packetChan := r.packetSource.Packets()
+
 	for {
 		select {
 		case <-r.ctx.Done():
 			return nil
 		case packet := <-packetChan:
+			r.packetBuffer <- packet
+		}
+	}
+}
+
+func (r *PacketReader) handlePacket(host string, port uint16) error {
+	mMap := map[string]*dumper.ConnMetadata{}        // metadata map per connection
+	mssMap := map[string]int{}                       // TCP MSS map per connection
+	bMap := map[string]map[dumper.Direction][]byte{} // long payload map per direction
+
+	for {
+		select {
+		case <-r.ctx.Done():
+			return nil
+		case packet := <-r.packetBuffer:
 			if packet == nil {
 				return nil
 			}
