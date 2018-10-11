@@ -22,7 +22,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -51,8 +50,11 @@ var probeCmd = &cobra.Command{
 			viper.Set("tcpdp.dumper", probeDumper) // because share with `server`
 		}
 
+		dumper := viper.GetString("tcpdp.dumper")
 		target := viper.GetString("probe.target")
 		device := viper.GetString("probe.interface")
+		bufferSize := viper.GetString("probe.bufferSize")
+		immediateMode := viper.GetBool("probe.immediateMode")
 
 		defer logger.Sync()
 
@@ -62,8 +64,13 @@ var probeCmd = &cobra.Command{
 
 		s := server.NewProbeServer(context.Background(), logger)
 
-		logger.Info(fmt.Sprintf("Starting probe. interface: %s, target: %s", device, target))
-		logger.Info(fmt.Sprintf("Select dumper %s.", viper.GetString("tcpdp.dumper")))
+		logger.Info("Starting probe.",
+			zap.String("dumper", dumper),
+			zap.String("interface", device),
+			zap.String("target", target),
+			zap.String("bufferSize", bufferSize),
+			zap.Bool("immediateMode", immediateMode),
+		)
 
 		go s.Start()
 
