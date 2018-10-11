@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+
 	"time"
 
 	"github.com/hnakamur/zap-ltsv"
@@ -188,12 +189,6 @@ func newLogWriter(logType string) io.Writer {
 	var t time.Duration
 	if rotateEnable {
 		switch rotationTime {
-		case "secondly":
-			logSuffix = ".%Y%m%d%H%M%S"
-			t = 1 * time.Second
-		case "minutely":
-			logSuffix = ".%Y%m%d%H%M"
-			t = 1 * time.Minute
 		case "hourly":
 			logSuffix = ".%Y%m%d%H"
 			t = 1 * time.Hour
@@ -201,7 +196,7 @@ func newLogWriter(logType string) io.Writer {
 			logSuffix = ".%Y%m%d"
 			t = 24 * time.Hour
 		default:
-			log.Fatal("Log setting error, please specify one of the periods [daily, hourly, minutely, secondly]")
+			log.Fatal("Log setting error, please specify one of the periods [hourly, daily]")
 		}
 		options = append(options, rotatelogs.WithLinkName(path))
 		options = append(options, rotatelogs.WithRotationTime(t))
@@ -222,19 +217,16 @@ func newLogWriter(logType string) io.Writer {
 	return w
 }
 
-// NewRotateHandler return RotateHandler
 func NewRotateHandler(c string) *RotateHandler {
 	return &RotateHandler{
 		command: c,
 	}
 }
 
-// RotateHandler struct
 type RotateHandler struct {
 	command string
 }
 
-// Handle rotatelogs.Event
 func (r *RotateHandler) Handle(e rotatelogs.Event) {
 	if e.Type() == rotatelogs.FileRotatedEventType {
 		fre := e.(*rotatelogs.FileRotatedEvent)
