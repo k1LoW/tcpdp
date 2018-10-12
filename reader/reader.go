@@ -99,27 +99,10 @@ func NewPacketReader(
 
 // ReadAndDump from gopacket.PacketSource
 func (r *PacketReader) ReadAndDump(host string, port uint16) error {
-	go r.handlePacket(host, port)
-
 	packetChan := r.packetSource.Packets()
 
-	go func() {
-		t := time.NewTicker(1 * time.Second)
-	L:
-		for {
-			select {
-			case <-r.ctx.Done():
-				break L
-			case <-t.C:
-				gopacketBuffered := len(packetChan)
-				internalPacketBuffered := len(r.packetBuffer)
-				if internalPacketBuffered > (cap(r.packetBuffer)/10) || gopacketBuffered > (cap(packetChan)/10) {
-					r.logger.Info("buffered packet stats", zap.Int("internal_buffered", internalPacketBuffered), zap.Int("gopacket_buffered", gopacketBuffered))
-				}
-			}
-		}
-		t.Stop()
-	}()
+	go r.handlePacket(host, port)
+	go r.checkBufferdPacket(packetChan)
 
 	for {
 		select {
@@ -309,6 +292,24 @@ func (r *PacketReader) handlePacket(host string, port uint16) error {
 			r.dumper.Log(values)
 		}
 	}
+}
+
+func (r *PacketReader) checkBufferdPacket(packetChan chan gopacket.Packet) {
+	t := time.NewTicker(1 * time.Second)
+L:
+	for {
+		select {
+		case <-r.ctx.Done():
+			break L
+		case <-t.C:
+			gopacketBuffered := len(packetChan)
+			internalPacketBuffered := len(r.packetBuffer)
+			if internalPacketBuffered > (cap(r.packetBuffer)/10) || gopacketBuffered > (cap(packetChan)/10) {
+				r.logger.Info("buffered packet stats", zap.Int("internal_buffered", internalPacketBuffered), zap.Int("gopacket_buffered", gopacketBuffered))
+			}
+		}
+	}
+	t.Stop()
 }
 
 func newByteMap() map[dumper.Direction][]byte {

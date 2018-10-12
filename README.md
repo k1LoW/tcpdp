@@ -73,6 +73,7 @@ target = "db.example.com:3306"
 interface = "en0"
 bufferSize = "2MB"
 immediateMode = false
+internalBufferLength = 10000
 
 [proxy]
 useServerStarter = false
@@ -170,12 +171,19 @@ $ go get github.com/k1LoW/tcpdp
 | error | error info | proxy / probe |
 | caller | error caller | proxy / probe |
 | conn_id | TCP connection ID by tcpdp | proxy / probe |
+| target | probe target | proxy / probe |
+| dumper | dumper type | proxy / probe |
+| use_server_starter | use server_starter | proxy |
 | conn_seq_num | TCP comunication sequence number by tcpdp | proxy |
 | client_addr | client address | tcpdp.log, hex, mysql, pg | proxy |
+| remote_addr | remote address | proxy |
 | proxy_listen_addr | listen address| proxy |
 | direction | client to remote: `->` / remote to client: `<-` | proxy |
 | interface | probe target interface | probe |
 | probe_target_addr | probe target address | probe |
+| buffer_size | libpcap buffer_size | probe |
+| immediate_mode | libpcap immediate_mode | probe |
+| internal_buffer_length | tcpdp internal packet buffer length | probe |
 
 ## Dumper
 

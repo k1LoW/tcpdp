@@ -68,10 +68,10 @@ var probeCmd = &cobra.Command{
 		logger.Info("Starting probe.",
 			zap.String("dumper", dumper),
 			zap.String("interface", device),
-			zap.String("target", target),
-			zap.String("bufferSize", bufferSize),
-			zap.Bool("immediateMode", immediateMode),
-			zap.Int("internalBufferLength", internalBufferLength),
+			zap.String("probe_target_addr", target),
+			zap.String("buffer_size", bufferSize),
+			zap.Bool("immediate_mode", immediateMode),
+			zap.Int("internal_buffer_length", internalBufferLength),
 		)
 
 		go s.Start()
