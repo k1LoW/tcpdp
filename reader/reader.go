@@ -2,16 +2,13 @@ package reader
 
 import (
 	"context"
-	"encoding/binary"
 	"fmt"
 	"net"
 	"strconv"
 	"strings"
 
 	"github.com/google/gopacket"
-	"github.com/google/gopacket/layers"
 	"github.com/k1LoW/tcpdp/dumper"
-	"github.com/rs/xid"
 	"go.uber.org/zap"
 )
 
@@ -83,181 +80,14 @@ func NewPacketReader(ctx context.Context, packetSource *gopacket.PacketSource, d
 
 // ReadAndDump from gopacket.PacketSource
 func (r *PacketReader) ReadAndDump(host string, port uint16) error {
-	mMap := map[string]*dumper.ConnMetadata{}        // metadata map per connection
-	mssMap := map[string]int{}                       // TCP MSS map per connection
-	bMap := map[string]map[dumper.Direction][]byte{} // long payload map per direction
-
 	packetChan := r.packetSource.Packets()
 	for {
 		select {
 		case <-r.ctx.Done():
 			return nil
-		case packet := <-packetChan:
-			if packet == nil {
-				return nil
-			}
-			ipLayer := packet.Layer(layers.LayerTypeIPv4)
-			if ipLayer == nil {
-				continue
-			}
-			tcpLayer := packet.Layer(layers.LayerTypeTCP)
-			if tcpLayer == nil {
-				continue
-			}
-			ip, _ := ipLayer.(*layers.IPv4)
-			tcp, _ := tcpLayer.(*layers.TCP)
-
-			var key string
-			var direction dumper.Direction
-			srcToDstKey := fmt.Sprintf("%s:%d->%s:%d", ip.SrcIP.String(), tcp.SrcPort, ip.DstIP.String(), tcp.DstPort)
-			dstToSrcKey := fmt.Sprintf("%s:%d->%s:%d", ip.DstIP.String(), tcp.DstPort, ip.SrcIP.String(), tcp.SrcPort)
-			if (host == "" || ip.DstIP.String() == host) && uint16(tcp.DstPort) == port {
-				key = srcToDstKey
-				direction = dumper.SrcToDst
-			} else if (host == "" || ip.SrcIP.String() == host) && uint16(tcp.SrcPort) == port {
-				key = dstToSrcKey
-				direction = dumper.DstToSrc
-			} else {
-				key = "-"
-				direction = dumper.Unknown
-			}
-
-			if tcp.SYN && !tcp.ACK {
-				if direction == dumper.Unknown {
-					key = srcToDstKey
-				}
-
-				// TCP connection start
-				_, ok := mMap[key]
-				if ok {
-					delete(mMap, key)
-				}
-
-				// TCP connection start ( hex, mysql, pg )
-				connID := xid.New().String()
-				connMetadata := r.dumper.NewConnMetadata()
-				connMetadata.DumpValues = []dumper.DumpValue{
-					dumper.DumpValue{
-						Key:   "conn_id",
-						Value: connID,
-					},
-				}
-				mMap[key] = connMetadata
-				mssMap[key] = int(binary.BigEndian.Uint16(tcp.LayerContents()[22:24]))
-				bMap[key] = newByteMap()
-			} else if tcp.SYN && tcp.ACK {
-				if direction == dumper.Unknown {
-					key = dstToSrcKey
-				}
-
-				_, ok := mMap[key]
-				if !ok {
-					// TCP connection start ( hex, mysql, pg )
-					connID := xid.New().String()
-					connMetadata := r.dumper.NewConnMetadata()
-					connMetadata.DumpValues = []dumper.DumpValue{
-						dumper.DumpValue{
-							Key:   "conn_id",
-							Value: connID,
-						},
-					}
-					mMap[key] = connMetadata
-				}
-
-				mss := int(binary.BigEndian.Uint16(tcp.LayerContents()[22:24]))
-				current, ok := mssMap[key]
-				if !ok || mss < current {
-					mssMap[key] = mss
-				}
-			} else if tcp.FIN {
-				// TCP connection end
-				_, ok := mMap[key]
-				if ok {
-					delete(mMap, key)
-				}
-				_, ok = mssMap[key]
-				if ok {
-					delete(mssMap, key)
-				}
-				_, ok = bMap[key]
-				if ok {
-					delete(bMap, key)
-				}
-				if direction == dumper.Unknown {
-					for _, key := range []string{srcToDstKey, dstToSrcKey} {
-						_, ok := mMap[key]
-						if ok {
-							delete(mMap, key)
-						}
-					}
-				}
-			}
-
-			_, ok := bMap[key]
-			if !ok {
-				bMap[key] = newByteMap()
-			}
-
-			in := tcpLayer.LayerPayload()
-			if len(in) == 0 {
-				continue
-			}
-
-			mss, ok := mssMap[key]
-			if ok {
-				maxPacketLen = mss - (len(tcp.LayerContents()) - 20)
-			}
-			if len(in) == maxPacketLen {
-				bMap[key][direction] = append(bMap[key][direction], in...)
-				continue
-			}
-			bb, ok := bMap[key][direction]
-			if ok {
-				in = append(bb, in...)
-				bMap[key][direction] = nil
-			}
-			if direction == dumper.Unknown {
-				for _, k := range []string{srcToDstKey, dstToSrcKey} {
-					_, ok := mMap[k]
-					if ok {
-						key = k
-					}
-				}
-			}
-
-			connMetadata, ok := mMap[key]
-			if !ok {
-				connMetadata = r.dumper.NewConnMetadata()
-			}
-
-			ts := packet.Metadata().CaptureInfo.Timestamp
-
-			values := []dumper.DumpValue{
-				dumper.DumpValue{
-					Key:   "ts",
-					Value: ts,
-				},
-				dumper.DumpValue{
-					Key:   "src_addr",
-					Value: fmt.Sprintf("%s:%d", ip.SrcIP.String(), tcp.SrcPort),
-				},
-				dumper.DumpValue{
-					Key:   "dst_addr",
-					Value: fmt.Sprintf("%s:%d", ip.DstIP.String(), tcp.DstPort),
-				},
-			}
-
-			read := r.dumper.Read(in, direction, connMetadata)
-			mMap[key] = connMetadata
-			if len(read) == 0 {
-				continue
-			}
-
-			values = append(values, read...)
-			values = append(values, r.pValues...)
-			values = append(values, connMetadata.DumpValues...)
-
-			r.dumper.Log(values)
+		case <-packetChan:
+			// empty logic
+			continue
 		}
 	}
 }
