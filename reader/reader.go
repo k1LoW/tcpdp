@@ -106,7 +106,7 @@ func (r *PacketReader) ReadAndDump(host string, port uint16) error {
 				gopacketBuffered := len(packetChan)
 				internalPacketBuffered := len(r.packetBuffer)
 				if internalPacketBuffered > (internalPacketBufferLen/100) || gopacketBuffered > (cap(packetChan)/10) {
-					r.logger.Info("packet buffered stats", zap.Int("internal_packet_buffered", internalPacketBuffered), zap.Int("gopacket_buffered", gopacketBuffered))
+					r.logger.Info("buffered packet stats", zap.Int("internal_buffered", internalPacketBuffered), zap.Int("gopacket_buffered", gopacketBuffered))
 				}
 			}
 		}
