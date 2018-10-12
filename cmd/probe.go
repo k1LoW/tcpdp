@@ -55,6 +55,7 @@ var probeCmd = &cobra.Command{
 		device := viper.GetString("probe.interface")
 		bufferSize := viper.GetString("probe.bufferSize")
 		immediateMode := viper.GetBool("probe.immediateMode")
+		internalBufferLength := viper.GetInt("probe.internalBufferLength")
 
 		defer logger.Sync()
 
@@ -70,6 +71,7 @@ var probeCmd = &cobra.Command{
 			zap.String("target", target),
 			zap.String("bufferSize", bufferSize),
 			zap.Bool("immediateMode", immediateMode),
+			zap.Int("internalBufferLength", internalBufferLength),
 		)
 
 		go s.Start()

@@ -43,6 +43,8 @@ var (
 	readTarget string
 )
 
+const readIternalBufferLength = 10000
+
 // readCmd represents the read command
 var readCmd = &cobra.Command{
 	Use:   "read [PCAP]",
@@ -112,6 +114,7 @@ var readCmd = &cobra.Command{
 			d,
 			[]dumper.DumpValue{},
 			logger,
+			readIternalBufferLength,
 		)
 
 		host, port, err := reader.ParseTarget(readTarget)

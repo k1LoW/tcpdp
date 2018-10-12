@@ -90,6 +90,7 @@ func (s *ProbeServer) Start() error {
 	target := viper.GetString("probe.target")
 	pcapBufferSize, err := bytefmt.ToBytes(viper.GetString("probe.bufferSize"))
 	immediateMode := viper.GetBool("probe.immediateMode")
+	internalBufferLength := viper.GetInt("probe.internalBufferLength")
 
 	if err != nil {
 		s.logger.WithOptions(zap.AddCaller()).Fatal("parse buffer-size error", zap.Error(err))
@@ -180,6 +181,7 @@ func (s *ProbeServer) Start() error {
 		s.dumper,
 		pValues,
 		s.logger,
+		internalBufferLength,
 	)
 
 	err = r.ReadAndDump(host, port)

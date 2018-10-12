@@ -43,6 +43,7 @@ interface = "{{ .probe.interface }}"
 target = "{{ .probe.target }}"
 bufferSize = "{{ .probe.buffersize }}"
 immediateMode = {{ .probe.immediatemode }}
+internalBufferLength = {{ .probe.internalbufferlength }}
 
 [proxy]
 useServerStarter = {{ .proxy.useserverstarter }}

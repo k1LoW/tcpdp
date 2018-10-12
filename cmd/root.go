@@ -65,6 +65,7 @@ func initConfig() {
 	viper.SetDefault("probe.interface", "")
 	viper.SetDefault("probe.bufferSize", "2MB")
 	viper.SetDefault("probe.immediateMode", false)
+	viper.SetDefault("probe.internalBufferLength", 10000)
 
 	viper.SetDefault("log.dir", ".")
 	viper.SetDefault("log.enable", true)

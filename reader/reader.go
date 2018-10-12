@@ -18,8 +18,6 @@ import (
 
 const anyIP = "0.0.0.0"
 
-const internalPacketBufferLen = 10000
-
 var maxPacketLen = 0xFFFF // 65535
 
 // ParseTarget parse target to host:port
@@ -75,8 +73,16 @@ type PacketReader struct {
 }
 
 // NewPacketReader return PacketReader
-func NewPacketReader(ctx context.Context, cancel context.CancelFunc, packetSource *gopacket.PacketSource, dumper dumper.Dumper, pValues []dumper.DumpValue, logger *zap.Logger) PacketReader {
-	internalPacketBuffer := make(chan gopacket.Packet, internalPacketBufferLen)
+func NewPacketReader(
+	ctx context.Context,
+	cancel context.CancelFunc,
+	packetSource *gopacket.PacketSource,
+	dumper dumper.Dumper,
+	pValues []dumper.DumpValue,
+	logger *zap.Logger,
+	internalBufferLength int,
+) PacketReader {
+	internalPacketBuffer := make(chan gopacket.Packet, internalBufferLength)
 
 	reader := PacketReader{
 		ctx:          ctx,
@@ -107,7 +113,7 @@ func (r *PacketReader) ReadAndDump(host string, port uint16) error {
 			case <-t.C:
 				gopacketBuffered := len(packetChan)
 				internalPacketBuffered := len(r.packetBuffer)
-				if internalPacketBuffered > (internalPacketBufferLen/100) || gopacketBuffered > (cap(packetChan)/10) {
+				if internalPacketBuffered > (cap(r.packetBuffer)/10) || gopacketBuffered > (cap(packetChan)/10) {
 					r.logger.Info("buffered packet stats", zap.Int("internal_buffered", internalPacketBuffered), zap.Int("gopacket_buffered", gopacketBuffered))
 				}
 			}
