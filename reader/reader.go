@@ -7,6 +7,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -16,6 +17,8 @@ import (
 )
 
 const anyIP = "0.0.0.0"
+
+const internalPacketBufferLen = 10000
 
 var maxPacketLen = 0xFFFF // 65535
 
@@ -72,14 +75,17 @@ type PacketReader struct {
 
 // NewPacketReader return PacketReader
 func NewPacketReader(ctx context.Context, packetSource *gopacket.PacketSource, dumper dumper.Dumper, pValues []dumper.DumpValue, logger *zap.Logger) PacketReader {
+	internalPacketBuffer := make(chan gopacket.Packet, internalPacketBufferLen)
+
 	reader := PacketReader{
 		ctx:          ctx,
 		packetSource: packetSource,
 		dumper:       dumper,
 		pValues:      pValues,
 		logger:       logger,
-		packetBuffer: make(chan gopacket.Packet, 10000),
+		packetBuffer: internalPacketBuffer,
 	}
+
 	return reader
 }
 
@@ -88,6 +94,24 @@ func (r *PacketReader) ReadAndDump(host string, port uint16) error {
 	go r.handlePacket(host, port)
 
 	packetChan := r.packetSource.Packets()
+
+	go func() {
+		t := time.NewTicker(1 * time.Second)
+	L:
+		for {
+			select {
+			case <-r.ctx.Done():
+				break L
+			case <-t.C:
+				gopacketBuffered := len(packetChan)
+				internalPacketBuffered := len(r.packetBuffer)
+				if internalPacketBuffered > (internalPacketBufferLen/100) || gopacketBuffered > (cap(packetChan)/10) {
+					r.logger.Info("packet buffered stats", zap.Int("internal_packet_buffered", internalPacketBuffered), zap.Int("gopacket_buffered", gopacketBuffered))
+				}
+			}
+		}
+		t.Stop()
+	}()
 
 	for {
 		select {
@@ -105,7 +129,6 @@ func (r *PacketReader) handlePacket(host string, port uint16) error {
 	bMap := map[string]map[dumper.Direction][]byte{} // long payload map per direction
 
 	for {
-		fmt.Printf("packetBuffer:%d\n", len(r.packetBuffer))
 		select {
 		case <-r.ctx.Done():
 			return nil
