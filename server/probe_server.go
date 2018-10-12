@@ -175,6 +175,7 @@ func (s *ProbeServer) Start() error {
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 	r := reader.NewPacketReader(
 		s.ctx,
+		s.shutdown,
 		packetSource,
 		s.dumper,
 		pValues,

@@ -56,7 +56,7 @@ proxy_integration: build
 	@cat ./result | grep "Number of clients running queries: 100" || (echo "mysqlslap faild" && exit 1)
 	test `grep -c '' ./tcpdp.log` -eq 3 || (cat ./tcpdp.log && exit 1)
 	@rm -f ./tcpdp.log* ./dump.log*
-	echo "proxy_integration OK"
+	@echo "proxy_integration OK"
 
 probe_integration: build
 	@sudo rm -f ./tcpdp.log* ./dump.log*
@@ -80,7 +80,7 @@ probe_integration: build
 	@cat ./result | grep "Number of clients running queries: 100" || (echo "mysqlslap faild" && exit 1)
 	test `grep -c '' ./tcpdp.log` -eq 4 || (cat ./tcpdp.log && exit 1)
 	@sudo rm -f ./tcpdp.log* ./dump.log*
-	echo "probe_integration OK"
+	@echo "probe_integration OK"
 
 
 read_integration: build
@@ -88,7 +88,7 @@ read_integration: build
 	test `grep -c '' ./result` -eq 20 || (cat ./result && exit 1)
 	./tcpdp read -t $(MYSQL_PORT) -d mysql test/pcap/mysql_prepare.pcap > ./result
 	test `grep -c '' ./result` -eq 20 || (cat ./result && exit 1)
-	echo "read_integration OK"
+	@echo "read_integration OK"
 
 long_query_integration: build
 	@sudo rm -f ./tcpdp.log* ./dump.log*
@@ -109,7 +109,7 @@ long_query_integration: build
 	test `grep -c 'query_start' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
 	test `grep -c 'query_last' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
 	@rm -f ./tcpdp.log* ./dump.log*
-	echo "long_query_integration OK"
+	@echo "long_query_integration OK"
 
 cover: depsdev
 	goveralls -service=travis-ci

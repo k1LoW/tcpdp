@@ -66,6 +66,7 @@ func NewBPFFilterString(host string, port uint16) string {
 // PacketReader struct
 type PacketReader struct {
 	ctx          context.Context
+	cancel       context.CancelFunc
 	packetSource *gopacket.PacketSource
 	dumper       dumper.Dumper
 	pValues      []dumper.DumpValue
@@ -74,11 +75,12 @@ type PacketReader struct {
 }
 
 // NewPacketReader return PacketReader
-func NewPacketReader(ctx context.Context, packetSource *gopacket.PacketSource, dumper dumper.Dumper, pValues []dumper.DumpValue, logger *zap.Logger) PacketReader {
+func NewPacketReader(ctx context.Context, cancel context.CancelFunc, packetSource *gopacket.PacketSource, dumper dumper.Dumper, pValues []dumper.DumpValue, logger *zap.Logger) PacketReader {
 	internalPacketBuffer := make(chan gopacket.Packet, internalPacketBufferLen)
 
 	reader := PacketReader{
 		ctx:          ctx,
+		cancel:       cancel,
 		packetSource: packetSource,
 		dumper:       dumper,
 		pValues:      pValues,
@@ -134,6 +136,7 @@ func (r *PacketReader) handlePacket(host string, port uint16) error {
 			return nil
 		case packet := <-r.packetBuffer:
 			if packet == nil {
+				r.cancel()
 				return nil
 			}
 			ipLayer := packet.Layer(layers.LayerTypeIPv4)

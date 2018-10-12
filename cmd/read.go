@@ -102,8 +102,12 @@ var readCmd = &cobra.Command{
 		}
 
 		packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
+
+		ctx, cancel := context.WithCancel(context.Background())
+
 		r := reader.NewPacketReader(
-			context.Background(),
+			ctx,
+			cancel,
 			packetSource,
 			d,
 			[]dumper.DumpValue{},
