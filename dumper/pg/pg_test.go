@@ -30,7 +30,12 @@ var pgValueTests = []struct {
 			0x44, 0x59, 0x00, 0x00,
 		},
 		dumper.SrcToDst,
-		dumper.ConnMetadata{},
+		dumper.ConnMetadata{
+			DumpValues: []dumper.DumpValue{},
+			Internal: connMetadataInternal{
+				messageLength: uint32(0),
+			},
+		},
 		[]dumper.DumpValue{
 			dumper.DumpValue{
 				Key:   "username",
@@ -50,7 +55,12 @@ var pgValueTests = []struct {
 			0x4f, 0x4d, 0x20, 0x75, 0x73, 0x65, 0x72, 0x73, 0x3b, 0x00,
 		},
 		dumper.SrcToDst,
-		dumper.ConnMetadata{},
+		dumper.ConnMetadata{
+			DumpValues: []dumper.DumpValue{},
+			Internal: connMetadataInternal{
+				messageLength: uint32(0),
+			},
+		},
 		[]dumper.DumpValue{},
 		[]dumper.DumpValue{
 			dumper.DumpValue{
@@ -73,7 +83,12 @@ var pgValueTests = []struct {
 			0x04,
 		},
 		dumper.SrcToDst,
-		dumper.ConnMetadata{},
+		dumper.ConnMetadata{
+			DumpValues: []dumper.DumpValue{},
+			Internal: connMetadataInternal{
+				messageLength: uint32(0),
+			},
+		},
 		[]dumper.DumpValue{},
 		[]dumper.DumpValue{
 			dumper.DumpValue{
@@ -100,7 +115,12 @@ var pgValueTests = []struct {
 			0x45, 0x00, 0x00, 0x00, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x53, 0x00, 0x00, 0x00, 0x04,
 		},
 		dumper.SrcToDst,
-		dumper.ConnMetadata{},
+		dumper.ConnMetadata{
+			DumpValues: []dumper.DumpValue{},
+			Internal: connMetadataInternal{
+				messageLength: uint32(0),
+			},
+		},
 		[]dumper.DumpValue{},
 		[]dumper.DumpValue{
 			dumper.DumpValue{
@@ -128,7 +148,12 @@ var pgValueTests = []struct {
 			0x4f, 0x4d, 0x20, 0x75, 0x73, 0x65, 0x72, 0x73, 0x3b, 0x00,
 		},
 		dumper.RemoteToClient,
-		dumper.ConnMetadata{},
+		dumper.ConnMetadata{
+			DumpValues: []dumper.DumpValue{},
+			Internal: connMetadataInternal{
+				messageLength: uint32(0),
+			},
+		},
 		[]dumper.DumpValue{},
 		[]dumper.DumpValue{},
 	},
