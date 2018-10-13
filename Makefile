@@ -91,11 +91,11 @@ long_query: build
 	./tcpdp proxy -l localhost:33065 -r localhost:$(MYSQL_PORT) -d mysql &
 	@sleep 1
 	mysql --host=127.0.0.1 --port=33065 --user=root --password=$(MYSQL_ROOT_PASSWORD) testdb $(MYSQL_DISABLE_SSL) < ./test/query/long.sql 2>&1 > /dev/null
-	@kill `cat ./tcpdp.pid`
+	@sudo kill `cat ./tcpdp.pid`
 	@sleep 1
 	test `grep -c 'query_start' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
 	test `grep -c 'query_last' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
-	@rm -f ./tcpdp.log* ./dump.log*
+	@sudo rm -f ./tcpdp.log* ./dump.log*
 	@sudo rm -f ./tcpdp.log* ./dump.log*
 	sudo ./tcpdp probe -i $(LO) -t $(MYSQL_PORT) -d mysql &
 	@sleep 1
@@ -104,7 +104,23 @@ long_query: build
 	@sleep 1
 	test `grep -c 'query_start' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
 	test `grep -c 'query_last' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
-	@rm -f ./tcpdp.log* ./dump.log*
+	@sudo rm -f ./tcpdp.log* ./dump.log*
+	./tcpdp proxy -l localhost:54321 -r localhost:$(POSTGRES_PORT) -d pg &
+	@sleep 1
+	PGPASSWORD=$(POSTGRES_PASSWORD) psql -h 127.0.0.1 -p 54321 -U$(POSTGRES_USER) $(POSTGRES_DB) < ./test/query/long.sql 2>&1 > /dev/null
+	@sudo kill `cat ./tcpdp.pid`
+	@sleep 1
+	test `grep -c 'query_start' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
+	test `grep -c 'query_last' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
+	@sudo rm -f ./tcpdp.log* ./dump.log*
+	sudo ./tcpdp probe -i $(LO) -t $(POSTGRES_PORT) -d pg &
+	@sleep 1
+	PGPASSWORD=$(POSTGRES_PASSWORD) psql -h 127.0.0.1 -p $(POSTGRES_PORT) -U$(POSTGRES_USER) $(POSTGRES_DB) < ./test/query/long.sql 2>&1 > /dev/null
+	@sudo kill `cat ./tcpdp.pid`
+	@sleep 1
+	test `grep -c 'query_start' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
+	test `grep -c 'query_last' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
+	@sudo rm -f ./tcpdp.log* ./dump.log*
 
 cover: depsdev
 	goveralls -service=travis-ci
