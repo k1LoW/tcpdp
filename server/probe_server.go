@@ -75,8 +75,7 @@ func NewProbeServer(ctx context.Context, logger *zap.Logger) *ProbeServer {
 
 // Start probe server.
 func (s *ProbeServer) Start() error {
-	err := s.writePID()
-	if err != nil {
+	if err := s.writePID(); err != nil {
 		s.logger.WithOptions(zap.AddCaller()).Fatal(fmt.Sprintf("can not write %s", s.pidfile), zap.Error(err))
 		return err
 	}
@@ -120,32 +119,27 @@ func (s *ProbeServer) Start() error {
 		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap create error", fields...)
 		return err
 	}
-	err = inactiveHandle.SetSnapLen(int(snaplen))
-	if err != nil {
+	if err := inactiveHandle.SetSnapLen(int(snaplen)); err != nil {
 		fields := s.fieldsWithErrorAndValues(err, pValues)
 		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap create error (snaplen)", fields...)
 		return err
 	}
-	err = inactiveHandle.SetPromisc(promiscuous)
-	if err != nil {
+	if err := inactiveHandle.SetPromisc(promiscuous); err != nil {
 		fields := s.fieldsWithErrorAndValues(err, pValues)
 		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap create error (promiscuous)", fields...)
 		return err
 	}
-	err = inactiveHandle.SetTimeout(timeout)
-	if err != nil {
+	if err := inactiveHandle.SetTimeout(timeout); err != nil {
 		fields := s.fieldsWithErrorAndValues(err, pValues)
 		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap create error (timeout)", fields...)
 		return err
 	}
-	err = inactiveHandle.SetBufferSize(int(pcapBufferSize))
-	if err != nil {
+	if err := inactiveHandle.SetBufferSize(int(pcapBufferSize)); err != nil {
 		fields := s.fieldsWithErrorAndValues(err, pValues)
 		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap create error (pcap_buffer_size)", fields...)
 		return err
 	}
-	err = inactiveHandle.SetImmediateMode(immediateMode)
-	if err != nil {
+	if err := inactiveHandle.SetImmediateMode(immediateMode); err != nil {
 		fields := s.fieldsWithErrorAndValues(err, pValues)
 		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap create error (pcap_set_immediate_mode)", fields...)
 		return err
@@ -184,12 +178,12 @@ func (s *ProbeServer) Start() error {
 		internalBufferLength,
 	)
 
-	err = r.ReadAndDump(host, port)
-	if err != nil {
+	if err := r.ReadAndDump(host, port); err != nil {
 		fields := s.fieldsWithErrorAndValues(err, pValues)
 		s.logger.WithOptions(zap.AddCaller()).Fatal("ReadAndDump error", fields...)
 		return err
 	}
+
 	return err
 }
 
