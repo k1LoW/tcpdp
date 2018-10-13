@@ -22,6 +22,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -96,10 +97,22 @@ func init() {
 	probeCmd.Flags().BoolP("immediate-mode", "", false, "immediate mode")
 	probeCmd.Flags().StringVarP(&probeDumper, "dumper", "d", "hex", "dumper")
 
-	viper.BindPFlag("probe.target", probeCmd.Flags().Lookup("target"))
-	viper.BindPFlag("probe.interface", probeCmd.Flags().Lookup("interface"))
-	viper.BindPFlag("probe.bufferSize", probeCmd.Flags().Lookup("buffer-size"))
-	viper.BindPFlag("probe.immediateMode", probeCmd.Flags().Lookup("immediate-mode"))
+	if err := viper.BindPFlag("probe.target", probeCmd.Flags().Lookup("target")); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	if err := viper.BindPFlag("probe.interface", probeCmd.Flags().Lookup("interface")); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	if err := viper.BindPFlag("probe.bufferSize", probeCmd.Flags().Lookup("buffer-size")); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	if err := viper.BindPFlag("probe.immediateMode", probeCmd.Flags().Lookup("immediate-mode")); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 
 	rootCmd.AddCommand(probeCmd)
 }

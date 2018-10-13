@@ -71,8 +71,12 @@ func NewProxy(s *Server, conn, remoteConn *net.TCPConn) *Proxy {
 // Start proxy
 func (p *Proxy) Start() {
 	defer func() {
-		p.conn.Close()
-		p.remoteConn.Close()
+		if err := p.conn.Close(); err != nil {
+			p.server.logger.WithOptions(zap.AddCaller()).Error("proxy conn Close error")
+		}
+		if err := p.remoteConn.Close(); err != nil {
+			p.server.logger.WithOptions(zap.AddCaller()).Error("proxy remoteConn Close error")
+		}
 	}()
 
 	go p.pipe(p.conn, p.remoteConn)
