@@ -32,7 +32,9 @@ default: build
 ci: depsdev test proxy_integration probe_integration read_integration long_query
 
 lint:
+	golint $(shell go list ./... | grep -v misc)
 	$(GO) vet $(shell go list ./... | grep -v misc)
+	$(GO) fmt $(shell go list ./... | grep -v misc)
 
 test:
 	$(GO) test -cover -v $(shell go list ./... | grep -v misc)
