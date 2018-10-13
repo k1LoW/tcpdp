@@ -102,8 +102,8 @@ func (s *Server) Start() error {
 	}
 
 	defer func() {
-		if err := s.listener.Close(); err != nil {
-			s.logger.WithOptions(zap.AddCaller()).Error("server listener Close error")
+		if err := s.listener.Close(); err != nil && !strings.Contains(err.Error(), "use of closed network connection") {
+			s.logger.WithOptions(zap.AddCaller()).Error("server listener Close error", zap.Error(err))
 		}
 		close(s.ClosedChan)
 	}()
@@ -137,8 +137,8 @@ func (s *Server) Shutdown() {
 	case <-s.ctx.Done():
 	default:
 		s.shutdown()
-		if err := s.listener.Close(); err != nil {
-			s.logger.WithOptions(zap.AddCaller()).Error("server listener Close error")
+		if err := s.listener.Close(); err != nil && !strings.Contains(err.Error(), "use of closed network connection") {
+			s.logger.WithOptions(zap.AddCaller()).Error("server listener Close error", zap.Error(err))
 		}
 	}
 }
@@ -148,8 +148,8 @@ func (s *Server) GracefulShutdown() {
 	select {
 	case <-s.ctx.Done():
 	default:
-		if err := s.listener.Close(); err != nil {
-			s.logger.WithOptions(zap.AddCaller()).Error("server listener Close error")
+		if err := s.listener.Close(); err != nil && !strings.Contains(err.Error(), "use of closed network connection") {
+			s.logger.WithOptions(zap.AddCaller()).Error("server listener Close error", zap.Error(err))
 		}
 	}
 }
