@@ -143,8 +143,7 @@ func (p *Proxy) pipe(srcConn, destConn *net.TCPConn) {
 			}
 		}
 
-		n, err = destConn.Write(b)
-		if err != nil {
+		if _, err := destConn.Write(b); err != nil {
 			fields := p.fieldsWithErrorAndDirection(err, direction)
 			p.server.logger.WithOptions(zap.AddCaller()).Error("destCon Write error", fields...)
 			break
