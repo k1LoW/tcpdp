@@ -31,6 +31,11 @@ type Dumper struct {
 	logger *zap.Logger
 }
 
+type connMetadataInternal struct {
+	messageLength   uint32
+	longPacketCache []byte
+}
+
 // NewDumper returns a Dumper
 func NewDumper() *Dumper {
 	dumper := &Dumper{
@@ -69,16 +74,46 @@ func (p *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 	if direction == dumper.RemoteToClient || direction == dumper.DstToSrc || direction == dumper.Unknown {
 		return []dumper.DumpValue{}
 	}
+
+	if len(connMetadata.Internal.(connMetadataInternal).longPacketCache) > 0 {
+		internal := connMetadata.Internal.(connMetadataInternal)
+		in = append(internal.longPacketCache, in...)
+		internal.longPacketCache = nil
+		connMetadata.Internal = internal
+	}
+
 	if len(in) == 0 {
 		return []dumper.DumpValue{}
 	}
 
 	messageType := in[0]
+
+	switch messageType {
+	case messageQuery, messageParse, messageBind, messageExecute:
+		var messageLength uint32
+		internal := connMetadata.Internal.(connMetadataInternal)
+		if internal.messageLength > 0 {
+			messageLength = internal.messageLength
+		} else {
+			ml := make([]byte, 4)
+			copy(ml, in[1:5])
+			messageLength = binary.BigEndian.Uint32(ml)
+		}
+		if uint32(len(in[1:])) < messageLength {
+			internal.messageLength = messageLength
+			internal.longPacketCache = append(internal.longPacketCache, in...)
+			connMetadata.Internal = internal
+			return []dumper.DumpValue{}
+		}
+		internal.messageLength = uint32(0)
+		connMetadata.Internal = internal
+	}
+
 	var dumps = []dumper.DumpValue{}
 	// https://www.postgresql.org/docs/10/static/protocol-message-formats.html
 	switch messageType {
 	case messageQuery:
-		query := strings.Trim(string(in[5:]), "\x00")
+		query := strings.TrimRight(string(in[5:]), "\x00")
 
 		dumps = []dumper.DumpValue{
 			dumper.DumpValue{
@@ -89,9 +124,9 @@ func (p *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 	case messageParse:
 		buff := bytes.NewBuffer(in[5:])
 		b, _ := buff.ReadString(0x00)
-		stmtName := strings.Trim(b, "\x00")
+		stmtName := strings.TrimRight(b, "\x00")
 		b, _ = buff.ReadString(0x00)
-		query := strings.Trim(b, "\x00")
+		query := strings.TrimRight(b, "\x00")
 		numParams := int(binary.BigEndian.Uint16(readBytes(buff, 2)))
 		for i := 0; i < numParams; i++ {
 			// TODO
@@ -111,9 +146,9 @@ func (p *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 	case messageBind:
 		buff := bytes.NewBuffer(in[5:])
 		b, _ := buff.ReadString(0x00)
-		portalName := strings.Trim(b, "\x00")
+		portalName := strings.TrimRight(b, "\x00")
 		b, _ = buff.ReadString(0x00)
-		stmtName := strings.Trim(b, "\x00")
+		stmtName := strings.TrimRight(b, "\x00")
 		c := int(binary.BigEndian.Uint16(readBytes(buff, 2)))
 		dataTypes := []dataType{}
 		for i := 0; i < c; i++ {
@@ -187,10 +222,13 @@ func (p *Dumper) Log(values []dumper.DumpValue) {
 	p.logger.Info("-", fields...)
 }
 
-// NewConnMetadata ...
+// NewConnMetadata return metadata per TCP connection
 func (p *Dumper) NewConnMetadata() *dumper.ConnMetadata {
 	return &dumper.ConnMetadata{
 		DumpValues: []dumper.DumpValue{},
+		Internal: connMetadataInternal{
+			messageLength: uint32(0),
+		},
 	}
 }
 
