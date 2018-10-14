@@ -6,10 +6,9 @@
 * Add `make lint` [#60](https://github.com/k1LoW/tcpdp/pull/60) ([k1LoW](https://github.com/k1LoW))
 * Support PostgreSQL long query [#59](https://github.com/k1LoW/tcpdp/pull/59) ([k1LoW](https://github.com/k1LoW))
 * Fix probe / proxy starting log format [#56](https://github.com/k1LoW/tcpdp/pull/56) ([k1LoW](https://github.com/k1LoW))
-* fix `--use-server-starter` option ( replace miss ) [#55](https://github.com/k1LoW/tcpdp/pull/55) ([k1LoW](https://github.com/k1LoW))
+* Fix `--use-server-starter` option ( replace miss ) [#55](https://github.com/k1LoW/tcpdp/pull/55) ([k1LoW](https://github.com/k1LoW))
 * Disable promiscuous mode [#54](https://github.com/k1LoW/tcpdp/pull/54) ([k1LoW](https://github.com/k1LoW))
-* Remove rotationTime `secondly` [#53](https://github.com/k1LoW/tcpdp/pull/53) ([k1LoW](https://github.com/k1LoW))
-* Add rotationTime `minutely` `secondly` [#51](https://github.com/k1LoW/tcpdp/pull/51) ([k1LoW](https://github.com/k1LoW))
+* Add rotationTime `secondly` [#51](https://github.com/k1LoW/tcpdp/pull/51) [#53](https://github.com/k1LoW/tcpdp/pull/53) ([k1LoW](https://github.com/k1LoW))
 
 ## [v0.11.0](https://github.com/k1LoW/tcpdp/compare/v0.10.0...v0.11.0) (2018-10-10)
 
