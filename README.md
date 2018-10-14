@@ -6,7 +6,7 @@ tcpdp is TCP dump tool with custom dumper written in Go.
 
 - TCP **Proxy** server mode
 - **Probe** mode ( using libpcap )
-- pcap **Read** mode
+- **Read** pcap file mode
 
 ## Usage
 
