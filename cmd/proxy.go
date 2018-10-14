@@ -79,15 +79,15 @@ var proxyCmd = &cobra.Command{
 		if useServerStarter {
 			logger.Info(fmt.Sprintf("Starting proxy. [server_starter] <-> %s:%d", rAddr.IP, rAddr.Port),
 				zap.String("dumper", dumper),
-				zap.String("remoteAddr", remoteAddr),
-				zap.Bool("useServerStarter", useServerStarter),
+				zap.String("remote_addr", remoteAddr),
+				zap.Bool("use_server_starter", useServerStarter),
 			)
 		} else {
 			logger.Info(fmt.Sprintf("Starting proxy. %s:%d <-> %s:%d", lAddr.IP, lAddr.Port, rAddr.IP, rAddr.Port),
 				zap.String("dumper", dumper),
-				zap.String("listenAddr", listenAddr),
-				zap.String("remoteAddr", remoteAddr),
-				zap.Bool("useServerStarter", useServerStarter),
+				zap.String("proxy_listen_addr", listenAddr),
+				zap.String("remote_addr", remoteAddr),
+				zap.Bool("use_server_starter", useServerStarter),
 			)
 		}
 

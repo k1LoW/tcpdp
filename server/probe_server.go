@@ -89,6 +89,7 @@ func (s *ProbeServer) Start() error {
 	target := viper.GetString("probe.target")
 	pcapBufferSize, err := bytefmt.ToBytes(viper.GetString("probe.bufferSize"))
 	immediateMode := viper.GetBool("probe.immediateMode")
+	internalBufferLength := viper.GetInt("probe.internalBufferLength")
 
 	if err != nil {
 		s.logger.WithOptions(zap.AddCaller()).Fatal("parse buffer-size error", zap.Error(err))
@@ -169,10 +170,12 @@ func (s *ProbeServer) Start() error {
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 	r := reader.NewPacketReader(
 		s.ctx,
+		s.shutdown,
 		packetSource,
 		s.dumper,
 		pValues,
 		s.logger,
+		internalBufferLength,
 	)
 
 	if err := r.ReadAndDump(host, port); err != nil {
@@ -191,7 +194,7 @@ func (s *ProbeServer) Shutdown() {
 
 func (s *ProbeServer) checkStats(handle *pcap.Handle) {
 	go func() {
-		t := time.NewTicker(60 * time.Second)
+		t := time.NewTicker(1 * time.Second)
 		packetsDropped := 0
 		packetsIfDropped := 0
 	L:

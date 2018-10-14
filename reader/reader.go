@@ -7,6 +7,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -63,37 +64,68 @@ func NewBPFFilterString(host string, port uint16) string {
 // PacketReader struct
 type PacketReader struct {
 	ctx          context.Context
+	cancel       context.CancelFunc
 	packetSource *gopacket.PacketSource
 	dumper       dumper.Dumper
 	pValues      []dumper.DumpValue
 	logger       *zap.Logger
+	packetBuffer chan gopacket.Packet
 }
 
 // NewPacketReader return PacketReader
-func NewPacketReader(ctx context.Context, packetSource *gopacket.PacketSource, dumper dumper.Dumper, pValues []dumper.DumpValue, logger *zap.Logger) PacketReader {
+func NewPacketReader(
+	ctx context.Context,
+	cancel context.CancelFunc,
+	packetSource *gopacket.PacketSource,
+	dumper dumper.Dumper,
+	pValues []dumper.DumpValue,
+	logger *zap.Logger,
+	internalBufferLength int,
+) PacketReader {
+	internalPacketBuffer := make(chan gopacket.Packet, internalBufferLength)
+
 	reader := PacketReader{
 		ctx:          ctx,
+		cancel:       cancel,
 		packetSource: packetSource,
 		dumper:       dumper,
 		pValues:      pValues,
 		logger:       logger,
+		packetBuffer: internalPacketBuffer,
 	}
+
 	return reader
 }
 
 // ReadAndDump from gopacket.PacketSource
 func (r *PacketReader) ReadAndDump(host string, port uint16) error {
-	mMap := map[string]*dumper.ConnMetadata{}        // metadata map per connection
-	mssMap := map[string]int{}                       // TCP MSS map per connection
-	bMap := map[string]map[dumper.Direction][]byte{} // long payload map per direction
-
 	packetChan := r.packetSource.Packets()
+
+	go r.handlePacket(host, port)
+	go r.checkBufferdPacket(packetChan)
+
 	for {
 		select {
 		case <-r.ctx.Done():
 			return nil
 		case packet := <-packetChan:
+			r.packetBuffer <- packet
+		}
+	}
+}
+
+func (r *PacketReader) handlePacket(host string, port uint16) error {
+	mMap := map[string]*dumper.ConnMetadata{}        // metadata map per connection
+	mssMap := map[string]int{}                       // TCP MSS map per connection
+	bMap := map[string]map[dumper.Direction][]byte{} // long payload map per direction
+
+	for {
+		select {
+		case <-r.ctx.Done():
+			return nil
+		case packet := <-r.packetBuffer:
 			if packet == nil {
+				r.cancel()
 				return nil
 			}
 			ipLayer := packet.Layer(layers.LayerTypeIPv4)
@@ -260,6 +292,24 @@ func (r *PacketReader) ReadAndDump(host string, port uint16) error {
 			r.dumper.Log(values)
 		}
 	}
+}
+
+func (r *PacketReader) checkBufferdPacket(packetChan chan gopacket.Packet) {
+	t := time.NewTicker(1 * time.Second)
+L:
+	for {
+		select {
+		case <-r.ctx.Done():
+			break L
+		case <-t.C:
+			gopacketBuffered := len(packetChan)
+			internalPacketBuffered := len(r.packetBuffer)
+			if internalPacketBuffered > (cap(r.packetBuffer)/10) || gopacketBuffered > (cap(packetChan)/10) {
+				r.logger.Info("buffered packet stats", zap.Int("internal_buffered", internalPacketBuffered), zap.Int("gopacket_buffered", gopacketBuffered))
+			}
+		}
+	}
+	t.Stop()
 }
 
 func newByteMap() map[dumper.Direction][]byte {

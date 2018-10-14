@@ -43,6 +43,8 @@ var (
 	readTarget string
 )
 
+const readIternalBufferLength = 10000
+
 // readCmd represents the read command
 var readCmd = &cobra.Command{
 	Use:   "read [PCAP]",
@@ -108,12 +110,17 @@ var readCmd = &cobra.Command{
 		}
 
 		packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
+
+		ctx, cancel := context.WithCancel(context.Background())
+
 		r := reader.NewPacketReader(
-			context.Background(),
+			ctx,
+			cancel,
 			packetSource,
 			d,
 			[]dumper.DumpValue{},
 			logger,
+			readIternalBufferLength,
 		)
 
 		host, port, err := reader.ParseTarget(readTarget)
