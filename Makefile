@@ -181,6 +181,7 @@ build_rpm:
 	$(eval pkg = tcpdp-$(shell gobump show -r version/))
 	$(GO) build -ldflags="$(RELEASE_BUILD_LDFLAGS) -X $(PKG).version=$(ver)"
 	cat ./template/tcpdp.spec.template | VERSION=$(no_v_ver) gomplate > tcpdp.spec
+	rm -rf /root/rpmbuild/
 	rpmdev-setuptree
 	yum-builddep tcpdp.spec
 	mkdir $(pkg)
@@ -190,7 +191,7 @@ build_rpm:
 	mv $(pkg).tar.gz /root/rpmbuild/SOURCES
 	spectool -g -R tcpdp.spec
 	rpmbuild -ba tcpdp.spec
-	cp /root/rpmbuild/RPMS/*/*.rpm /go/src/github.com/k1LoW/tcpdp/dist/$(ver)
+	mv /root/rpmbuild/RPMS/*/*.rpm /go/src/github.com/k1LoW/tcpdp/dist/$(ver)
 	rm tcpdp tcpdp.spec
 
 build_deb:
