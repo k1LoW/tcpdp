@@ -51,8 +51,12 @@ var probeCmd = &cobra.Command{
 			viper.Set("tcpdp.dumper", probeDumper) // because share with `server`
 		}
 
+		dumper := viper.GetString("tcpdp.dumper")
 		target := viper.GetString("probe.target")
 		device := viper.GetString("probe.interface")
+		bufferSize := viper.GetString("probe.bufferSize")
+		immediateMode := viper.GetBool("probe.immediateMode")
+		internalBufferLength := viper.GetInt("probe.internalBufferLength")
 
 		defer logger.Sync()
 
@@ -62,8 +66,14 @@ var probeCmd = &cobra.Command{
 
 		s := server.NewProbeServer(context.Background(), logger)
 
-		logger.Info(fmt.Sprintf("Starting probe. interface: %s, target: %s", device, target))
-		logger.Info(fmt.Sprintf("Select dumper %s.", viper.GetString("tcpdp.dumper")))
+		logger.Info("Starting probe.",
+			zap.String("dumper", dumper),
+			zap.String("interface", device),
+			zap.String("probe_target_addr", target),
+			zap.String("buffer_size", bufferSize),
+			zap.Bool("immediate_mode", immediateMode),
+			zap.Int("internal_buffer_length", internalBufferLength),
+		)
 
 		go s.Start()
 
@@ -85,10 +95,26 @@ func init() {
 	probeCmd.Flags().StringVarP(&cfgFile, "config", "c", "", "config file path")
 	probeCmd.Flags().StringP("target", "t", "", "target addr. (ex. \"localhost:80\", \"3306\")")
 	probeCmd.Flags().StringP("interface", "i", "", "interface")
+	probeCmd.Flags().StringP("buffer-size", "B", "2MB", "buffer size (pcap_buffer_size)")
+	probeCmd.Flags().BoolP("immediate-mode", "", false, "immediate mode")
 	probeCmd.Flags().StringVarP(&probeDumper, "dumper", "d", "hex", "dumper")
 
-	viper.BindPFlag("probe.target", probeCmd.Flags().Lookup("target"))
-	viper.BindPFlag("probe.interface", probeCmd.Flags().Lookup("interface"))
+	if err := viper.BindPFlag("probe.target", probeCmd.Flags().Lookup("target")); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	if err := viper.BindPFlag("probe.interface", probeCmd.Flags().Lookup("interface")); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	if err := viper.BindPFlag("probe.bufferSize", probeCmd.Flags().Lookup("buffer-size")); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	if err := viper.BindPFlag("probe.immediateMode", probeCmd.Flags().Lookup("immediate-mode")); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 
 	rootCmd.AddCommand(probeCmd)
 }

@@ -9,7 +9,9 @@ import (
 	"strconv"
 	"sync"
 	"syscall"
+	"time"
 
+	"code.cloudfoundry.org/bytefmt"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/pcap"
 	"github.com/k1LoW/tcpdp/dumper"
@@ -21,6 +23,10 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
+
+const snaplen = int32(^uint32(0) >> 1)
+const promiscuous = false
+const timeout = pcap.BlockForever
 
 // ProbeServer struct
 type ProbeServer struct {
@@ -69,8 +75,7 @@ func NewProbeServer(ctx context.Context, logger *zap.Logger) *ProbeServer {
 
 // Start probe server.
 func (s *ProbeServer) Start() error {
-	err := s.writePID()
-	if err != nil {
+	if err := s.writePID(); err != nil {
 		s.logger.WithOptions(zap.AddCaller()).Fatal(fmt.Sprintf("can not write %s", s.pidfile), zap.Error(err))
 		return err
 	}
@@ -82,6 +87,14 @@ func (s *ProbeServer) Start() error {
 
 	device := viper.GetString("probe.interface")
 	target := viper.GetString("probe.target")
+	pcapBufferSize, err := bytefmt.ToBytes(viper.GetString("probe.bufferSize"))
+	immediateMode := viper.GetBool("probe.immediateMode")
+	internalBufferLength := viper.GetInt("probe.internalBufferLength")
+
+	if err != nil {
+		s.logger.WithOptions(zap.AddCaller()).Fatal("parse buffer-size error", zap.Error(err))
+		return err
+	}
 
 	host, port, err := reader.ParseTarget(target)
 	if err != nil {
@@ -89,8 +102,6 @@ func (s *ProbeServer) Start() error {
 		return err
 	}
 
-	snaplen := int32(0xFFFF)
-	promiscuous := true
 	pValues := []dumper.DumpValue{
 		dumper.DumpValue{
 			Key:   "interface",
@@ -102,18 +113,51 @@ func (s *ProbeServer) Start() error {
 		},
 	}
 
-	handle, err := pcap.OpenLive(
-		device,
-		snaplen,
-		promiscuous,
-		pcap.BlockForever,
-	)
+	inactiveHandle, err := pcap.NewInactiveHandle(device)
 	if err != nil {
 		fields := s.fieldsWithErrorAndValues(err, pValues)
-		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap OpenLive error", fields...)
+		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap create error", fields...)
 		return err
 	}
-	defer handle.Close()
+	if err := inactiveHandle.SetSnapLen(int(snaplen)); err != nil {
+		fields := s.fieldsWithErrorAndValues(err, pValues)
+		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap create error (snaplen)", fields...)
+		return err
+	}
+	if err := inactiveHandle.SetPromisc(promiscuous); err != nil {
+		fields := s.fieldsWithErrorAndValues(err, pValues)
+		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap create error (promiscuous)", fields...)
+		return err
+	}
+	if err := inactiveHandle.SetTimeout(timeout); err != nil {
+		fields := s.fieldsWithErrorAndValues(err, pValues)
+		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap create error (timeout)", fields...)
+		return err
+	}
+	if err := inactiveHandle.SetBufferSize(int(pcapBufferSize)); err != nil {
+		fields := s.fieldsWithErrorAndValues(err, pValues)
+		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap create error (pcap_buffer_size)", fields...)
+		return err
+	}
+	if err := inactiveHandle.SetImmediateMode(immediateMode); err != nil {
+		fields := s.fieldsWithErrorAndValues(err, pValues)
+		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap create error (pcap_set_immediate_mode)", fields...)
+		return err
+	}
+
+	handle, err := inactiveHandle.Activate()
+	if err != nil {
+		fields := s.fieldsWithErrorAndValues(err, pValues)
+		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap handle activate error", fields...)
+		return err
+	}
+
+	s.checkStats(handle)
+	defer func() {
+		stats, _ := handle.Stats()
+		s.logger.Info("pcap Stats", zap.Int("packet_received", stats.PacketsReceived), zap.Int("packet_dropped", stats.PacketsDropped), zap.Int("packet_if_dropped", stats.PacketsIfDropped))
+		handle.Close()
+	}()
 
 	f := reader.NewBPFFilterString(host, port)
 
@@ -126,23 +170,49 @@ func (s *ProbeServer) Start() error {
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 	r := reader.NewPacketReader(
 		s.ctx,
+		s.shutdown,
 		packetSource,
 		s.dumper,
 		pValues,
+		s.logger,
+		internalBufferLength,
 	)
 
-	err = r.ReadAndDump(host, port)
-	if err != nil {
+	if err := r.ReadAndDump(host, port); err != nil {
 		fields := s.fieldsWithErrorAndValues(err, pValues)
 		s.logger.WithOptions(zap.AddCaller()).Fatal("ReadAndDump error", fields...)
 		return err
 	}
+
 	return err
 }
 
 // Shutdown server.
 func (s *ProbeServer) Shutdown() {
 	s.shutdown()
+}
+
+func (s *ProbeServer) checkStats(handle *pcap.Handle) {
+	go func() {
+		t := time.NewTicker(1 * time.Second)
+		packetsDropped := 0
+		packetsIfDropped := 0
+	L:
+		for {
+			select {
+			case <-s.ctx.Done():
+				break L
+			case <-t.C:
+				stats, _ := handle.Stats()
+				if stats.PacketsDropped > packetsDropped || stats.PacketsIfDropped > packetsIfDropped {
+					s.logger.Error("pcap packets dropped", zap.Int("packet_received", stats.PacketsReceived), zap.Int("packet_dropped", stats.PacketsDropped), zap.Int("packet_if_dropped", stats.PacketsIfDropped))
+				}
+				packetsDropped = stats.PacketsDropped
+				packetsIfDropped = stats.PacketsIfDropped
+			}
+		}
+		t.Stop()
+	}()
 }
 
 // https://gist.github.com/davidnewhall/3627895a9fc8fa0affbd747183abca39

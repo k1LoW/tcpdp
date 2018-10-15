@@ -43,6 +43,8 @@ var (
 	readTarget string
 )
 
+const readIternalBufferLength = 10000
+
 // readCmd represents the read command
 var readCmd = &cobra.Command{
 	Use:   "read [PCAP]",
@@ -63,6 +65,8 @@ var readCmd = &cobra.Command{
 		viper.Set("dumpLog.enable", false)
 		viper.Set("dumpLog.stdout", true)
 
+		defer logger.Sync()
+
 		var pcapFile string
 		if terminal.IsTerminal(0) {
 			pcapFile = args[0]
@@ -70,8 +74,14 @@ var readCmd = &cobra.Command{
 			pcap, _ := ioutil.ReadAll(os.Stdin)
 			tmpfile, _ := ioutil.TempFile("", "tcpdptmp")
 			defer func() {
-				tmpfile.Close()
-				os.Remove(tmpfile.Name())
+				if err := tmpfile.Close(); err != nil {
+					fmt.Println(err)
+					os.Exit(1)
+				}
+				if err := os.Remove(tmpfile.Name()); err != nil {
+					fmt.Println(err)
+					os.Exit(1)
+				}
 			}()
 			pcapFile = tmpfile.Name()
 			if _, err := tmpfile.Write(pcap); err != nil {
@@ -100,11 +110,17 @@ var readCmd = &cobra.Command{
 		}
 
 		packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
+
+		ctx, cancel := context.WithCancel(context.Background())
+
 		r := reader.NewPacketReader(
-			context.Background(),
+			ctx,
+			cancel,
 			packetSource,
 			d,
 			[]dumper.DumpValue{},
+			logger,
+			readIternalBufferLength,
 		)
 
 		host, port, err := reader.ParseTarget(readTarget)
@@ -113,8 +129,7 @@ var readCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		err = r.ReadAndDump(host, port)
-		if err != nil {
+		if err := r.ReadAndDump(host, port); err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
@@ -126,7 +141,10 @@ func init() {
 	readCmd.Flags().StringP("format", "f", "json", "STDOUT format. (\"console\", \"json\" , \"ltsv\") ")
 	readCmd.Flags().StringVarP(&readDumper, "dumper", "d", "hex", "dumper")
 
-	viper.BindPFlag("dumpLog.stdoutFormat", readCmd.Flags().Lookup("format"))
+	if err := viper.BindPFlag("dumpLog.stdoutFormat", readCmd.Flags().Lookup("format")); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 
 	rootCmd.AddCommand(readCmd)
 }

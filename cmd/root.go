@@ -57,12 +57,15 @@ func initConfig() {
 	viper.SetDefault("tcpdp.pidfile", "./tcpdp.pid")
 	viper.SetDefault("tcpdp.dumper", "hex")
 
-	viper.SetDefault("proxy.useServerSterter", false)
+	viper.SetDefault("proxy.useServerStarter", false)
 	viper.SetDefault("proxy.listenAddr", "localhost:8080")
 	viper.SetDefault("proxy.remoteAddr", "localhost:80")
 
 	viper.SetDefault("probe.target", "localhost:80")
 	viper.SetDefault("probe.interface", "")
+	viper.SetDefault("probe.bufferSize", "2MB")
+	viper.SetDefault("probe.immediateMode", false)
+	viper.SetDefault("probe.internalBufferLength", 10000)
 
 	viper.SetDefault("log.dir", ".")
 	viper.SetDefault("log.enable", true)

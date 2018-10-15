@@ -129,7 +129,6 @@ func (m *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 		payloadLength = bytesToUint32(pl) // 3:payload_length
 	}
 	if uint32(len(in[4:])) < payloadLength {
-		internal := connMetadata.Internal.(connMetadataInternal)
 		internal.payloadLength = payloadLength
 		internal.longPacketCache = append(internal.longPacketCache, in...)
 		connMetadata.Internal = internal

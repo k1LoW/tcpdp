@@ -29,10 +29,15 @@ MYSQL_ROOT_PASSWORD=mypass
 DISTS=centos7 centos6 ubuntu16
 
 default: build
-ci: depsdev test proxy_integration probe_integration read_integration long_query
+ci: depsdev test proxy_integration probe_integration read_integration long_query_integration
+
+lint:
+	golint $(shell go list ./... | grep -v misc)
+	$(GO) vet $(shell go list ./... | grep -v misc)
+	$(GO) fmt $(shell go list ./... | grep -v misc)
 
 test:
-	$(GO) test -cover -v $(shell go list ./... | grep -v vendor)
+	$(GO) test -cover -v $(shell go list ./... | grep -v misc)
 
 proxy_integration: build
 	@sudo rm -f ./tcpdp.log* ./dump.log*
@@ -44,7 +49,7 @@ proxy_integration: build
 	@sleep 1
 	@cat ./result
 	@cat ./result | grep "number of transactions actually processed: 1000/1000" || (echo "pgbench faild" && exit 1)
-	test `grep -c '' ./tcpdp.log` -eq 4 || (cat ./tcpdp.log && exit 1)
+	test `grep -c '' ./tcpdp.log` -eq 3 || (cat ./tcpdp.log && exit 1)
 	@rm ./result
 	@rm -f ./tcpdp.log* ./dump.log*
 	./tcpdp proxy -l localhost:33065 -r localhost:$(MYSQL_PORT) -d mysql &
@@ -54,8 +59,9 @@ proxy_integration: build
 	@sleep 1
 	@cat ./result
 	@cat ./result | grep "Number of clients running queries: 100" || (echo "mysqlslap faild" && exit 1)
-	test `grep -c '' ./tcpdp.log` -eq 4 || (cat ./tcpdp.log && exit 1)
+	test `grep -c '' ./tcpdp.log` -eq 3 || (cat ./tcpdp.log && exit 1)
 	@rm -f ./tcpdp.log* ./dump.log*
+	@echo "proxy_integration OK"
 
 probe_integration: build
 	@sudo rm -f ./tcpdp.log* ./dump.log*
@@ -79,32 +85,52 @@ probe_integration: build
 	@cat ./result | grep "Number of clients running queries: 100" || (echo "mysqlslap faild" && exit 1)
 	test `grep -c '' ./tcpdp.log` -eq 4 || (cat ./tcpdp.log && exit 1)
 	@sudo rm -f ./tcpdp.log* ./dump.log*
+	@echo "probe_integration OK"
+
 
 read_integration: build
-	./tcpdp read -t $(POSTGRES_PORT) -d pg test/pcap/pg_prepare.pcap > ./result
+	./tcpdp read -t $(POSTGRES_PORT) -d pg testdata/pcap/pg_prepare.pcap > ./result
 	test `grep -c '' ./result` -eq 20 || (cat ./result && exit 1)
-	./tcpdp read -t $(MYSQL_PORT) -d mysql test/pcap/mysql_prepare.pcap > ./result
+	./tcpdp read -t $(MYSQL_PORT) -d mysql testdata/pcap/mysql_prepare.pcap > ./result
 	test `grep -c '' ./result` -eq 20 || (cat ./result && exit 1)
+	@echo "read_integration OK"
 
-long_query: build
+long_query_integration: build
 	@sudo rm -f ./tcpdp.log* ./dump.log*
 	./tcpdp proxy -l localhost:33065 -r localhost:$(MYSQL_PORT) -d mysql &
 	@sleep 1
-	mysql --host=127.0.0.1 --port=33065 --user=root --password=$(MYSQL_ROOT_PASSWORD) testdb $(MYSQL_DISABLE_SSL) < ./test/query/long.sql 2>&1 > /dev/null
-	@kill `cat ./tcpdp.pid`
-	@sleep 1
-	test `grep -c 'query_start' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
-	test `grep -c 'query_last' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
-	@rm -f ./tcpdp.log* ./dump.log*
-	@sudo rm -f ./tcpdp.log* ./dump.log*
-	sudo ./tcpdp probe -i $(LO) -t $(MYSQL_PORT) -d mysql &
-	@sleep 1
-	mysql --host=127.0.0.1 --port=$(MYSQL_PORT) --user=root --password=$(MYSQL_ROOT_PASSWORD) testdb $(MYSQL_DISABLE_SSL) < ./test/query/long.sql 2>&1 > /dev/null
+	mysql --host=127.0.0.1 --port=33065 --user=root --password=$(MYSQL_ROOT_PASSWORD) testdb $(MYSQL_DISABLE_SSL) < ./testdata/query/long.sql 2>&1 > /dev/null
 	@sudo kill `cat ./tcpdp.pid`
 	@sleep 1
 	test `grep -c 'query_start' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
 	test `grep -c 'query_last' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
-	@rm -f ./tcpdp.log* ./dump.log*
+	@sudo rm -f ./tcpdp.log* ./dump.log*
+	@sudo rm -f ./tcpdp.log* ./dump.log*
+	sudo ./tcpdp probe -i $(LO) -t $(MYSQL_PORT) -d mysql &
+	@sleep 1
+	mysql --host=127.0.0.1 --port=$(MYSQL_PORT) --user=root --password=$(MYSQL_ROOT_PASSWORD) testdb $(MYSQL_DISABLE_SSL) < ./testdata/query/long.sql 2>&1 > /dev/null
+	@sudo kill `cat ./tcpdp.pid`
+	@sleep 1
+	test `grep -c 'query_start' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
+	test `grep -c 'query_last' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
+	@sudo rm -f ./tcpdp.log* ./dump.log*
+	./tcpdp proxy -l localhost:54321 -r localhost:$(POSTGRES_PORT) -d pg &
+	@sleep 1
+	PGPASSWORD=$(POSTGRES_PASSWORD) psql -h 127.0.0.1 -p 54321 -U$(POSTGRES_USER) $(POSTGRES_DB) < ./testdata/query/long.sql 2>&1 > /dev/null
+	@sudo kill `cat ./tcpdp.pid`
+	@sleep 1
+	test `grep -c 'query_start' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
+	test `grep -c 'query_last' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
+	@sudo rm -f ./tcpdp.log* ./dump.log*
+	sudo ./tcpdp probe -i $(LO) -t $(POSTGRES_PORT) -d pg &
+	@sleep 1
+	PGPASSWORD=$(POSTGRES_PASSWORD) psql -h 127.0.0.1 -p $(POSTGRES_PORT) -U$(POSTGRES_USER) $(POSTGRES_DB) < ./testdata/query/long.sql 2>&1 > /dev/null
+	@sudo kill `cat ./tcpdp.pid`
+	@sleep 1
+	test `grep -c 'query_start' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
+	test `grep -c 'query_last' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
+	@sudo rm -f ./tcpdp.log* ./dump.log*
+	@echo "long_query_integration OK"
 
 cover: depsdev
 	goveralls -service=travis-ci
@@ -155,6 +181,7 @@ build_rpm:
 	$(eval pkg = tcpdp-$(shell gobump show -r version/))
 	$(GO) build -ldflags="$(RELEASE_BUILD_LDFLAGS) -X $(PKG).version=$(ver)"
 	cat ./template/tcpdp.spec.template | VERSION=$(no_v_ver) gomplate > tcpdp.spec
+	rm -rf /root/rpmbuild/
 	rpmdev-setuptree
 	yum-builddep tcpdp.spec
 	mkdir $(pkg)
@@ -164,7 +191,7 @@ build_rpm:
 	mv $(pkg).tar.gz /root/rpmbuild/SOURCES
 	spectool -g -R tcpdp.spec
 	rpmbuild -ba tcpdp.spec
-	cp /root/rpmbuild/RPMS/*/*.rpm /go/src/github.com/k1LoW/tcpdp/dist/$(ver)
+	mv /root/rpmbuild/RPMS/*/*.rpm /go/src/github.com/k1LoW/tcpdp/dist/$(ver)
 	rm tcpdp tcpdp.spec
 
 build_deb:

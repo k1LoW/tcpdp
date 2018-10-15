@@ -21,6 +21,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"text/template"
 
@@ -39,11 +40,14 @@ pidfile = "{{ .tcpdp.pidfile }}"
 dumper = "{{ .tcpdp.dumper }}"
 
 [probe]
+interface = "{{ .probe.interface }}"
 target = "{{ .probe.target }}"
-interface = "{{ .probe.interface}}"
+bufferSize = "{{ .probe.buffersize }}"
+immediateMode = {{ .probe.immediatemode }}
+internalBufferLength = {{ .probe.internalbufferlength }}
 
 [proxy]
-useServerSterter = {{ .proxy.useserversterter }}
+useServerStarter = {{ .proxy.useserverstarter }}
 listenAddr = "{{ .proxy.listenaddr }}"
 remoteAddr = "{{ .proxy.remoteaddr }}"
 
@@ -67,12 +71,13 @@ rotationCount = {{ .dumplog.rotationcount }}
 `
 		tpl, err := template.New("config").Parse(cfgTemplate)
 		if err != nil {
-			panic(err)
+			fmt.Println(err)
+			os.Exit(1)
 		}
 
-		err = tpl.Execute(os.Stdout, viper.AllSettings())
-		if err != nil {
-			panic(err)
+		if err := tpl.Execute(os.Stdout, viper.AllSettings()); err != nil {
+			fmt.Println(err)
+			os.Exit(1)
 		}
 	},
 }

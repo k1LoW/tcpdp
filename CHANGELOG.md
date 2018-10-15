@@ -1,5 +1,27 @@
 # Changelog
 
+## [v0.12.0](https://github.com/k1LoW/tcpdp/compare/v0.11.0...v0.12.0) (2018-10-14)
+
+* Make internal packet buffer [#57](https://github.com/k1LoW/tcpdp/pull/57) ([k1LoW](https://github.com/k1LoW))
+* Add `make lint` [#60](https://github.com/k1LoW/tcpdp/pull/60) ([k1LoW](https://github.com/k1LoW))
+* Support PostgreSQL long query [#59](https://github.com/k1LoW/tcpdp/pull/59) ([k1LoW](https://github.com/k1LoW))
+* Fix probe / proxy starting log format [#56](https://github.com/k1LoW/tcpdp/pull/56) ([k1LoW](https://github.com/k1LoW))
+* Fix `--use-server-starter` option ( replace miss ) [#55](https://github.com/k1LoW/tcpdp/pull/55) ([k1LoW](https://github.com/k1LoW))
+* Disable promiscuous mode [#54](https://github.com/k1LoW/tcpdp/pull/54) ([k1LoW](https://github.com/k1LoW))
+* Add rotationTime `secondly` [#51](https://github.com/k1LoW/tcpdp/pull/51) [#53](https://github.com/k1LoW/tcpdp/pull/53) ([k1LoW](https://github.com/k1LoW))
+
+## [v0.11.0](https://github.com/k1LoW/tcpdp/compare/v0.10.0...v0.11.0) (2018-10-10)
+
+* Add `--immediate-mode` option to `tcpdp probe` [#50](https://github.com/k1LoW/tcpdp/pull/50) ([k1LoW](https://github.com/k1LoW))
+* Add `--buffer-size (-B)` option to `tcpdp probe` [#49](https://github.com/k1LoW/tcpdp/pull/49) ([k1LoW](https://github.com/k1LoW))
+* Log pcap_stats when shutdown probe server or packets dropped [#48](https://github.com/k1LoW/tcpdp/pull/48) ([k1LoW](https://github.com/k1LoW))
+* Increase snaplen so as not to lost packets [#47](https://github.com/k1LoW/tcpdp/pull/47) ([k1LoW](https://github.com/k1LoW))
+* Add logger to PacketReader [#46](https://github.com/k1LoW/tcpdp/pull/46) ([k1LoW](https://github.com/k1LoW))
+* bMap should be per direction ( not per connection ) [#45](https://github.com/k1LoW/tcpdp/pull/45) ([k1LoW](https://github.com/k1LoW))
+* Support MySQL long query with payload_length [#44](https://github.com/k1LoW/tcpdp/pull/44) ([k1LoW](https://github.com/k1LoW))
+* Support long packet [#43](https://github.com/k1LoW/tcpdp/pull/43) ([k1LoW](https://github.com/k1LoW))
+* update ghch [#42](https://github.com/k1LoW/tcpdp/pull/42) ([pyama86](https://github.com/pyama86))
+
 ## [v0.10.0](https://github.com/k1LoW/tcpdp/compare/v0.9.1...v0.10.0) (2018-09-30)
 
 * Build deb package [#39](https://github.com/k1LoW/tcpdp/pull/39) ([k1LoW](https://github.com/k1LoW))

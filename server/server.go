@@ -82,9 +82,9 @@ func (s *Server) Start() error {
 		return err
 	}
 	defer s.deletePID()
-	useServerSterter := viper.GetBool("proxy.useServerSterter")
+	useServerStarter := viper.GetBool("proxy.useServerStarter")
 
-	if useServerSterter {
+	if useServerStarter {
 		listeners, err := listener.ListenAll()
 		if listeners == nil || err != nil {
 			s.logger.WithOptions(zap.AddCaller()).Fatal("server-starter listen error", zap.Error(err))
@@ -102,7 +102,9 @@ func (s *Server) Start() error {
 	}
 
 	defer func() {
-		s.listener.Close()
+		if err := s.listener.Close(); err != nil && !strings.Contains(err.Error(), "use of closed network connection") {
+			s.logger.WithOptions(zap.AddCaller()).Error("server listener Close error", zap.Error(err))
+		}
 		close(s.ClosedChan)
 	}()
 
@@ -135,7 +137,9 @@ func (s *Server) Shutdown() {
 	case <-s.ctx.Done():
 	default:
 		s.shutdown()
-		s.listener.Close()
+		if err := s.listener.Close(); err != nil && !strings.Contains(err.Error(), "use of closed network connection") {
+			s.logger.WithOptions(zap.AddCaller()).Error("server listener Close error", zap.Error(err))
+		}
 	}
 }
 
@@ -144,7 +148,9 @@ func (s *Server) GracefulShutdown() {
 	select {
 	case <-s.ctx.Done():
 	default:
-		s.listener.Close()
+		if err := s.listener.Close(); err != nil && !strings.Contains(err.Error(), "use of closed network connection") {
+			s.logger.WithOptions(zap.AddCaller()).Error("server listener Close error", zap.Error(err))
+		}
 	}
 }
 
@@ -155,7 +161,9 @@ func (s *Server) handleConn(conn *net.TCPConn) {
 	if err != nil {
 		fields := s.fieldsWithErrorAndConn(err, conn)
 		s.logger.WithOptions(zap.AddCaller()).Error("remoteAddr DialTCP error", fields...)
-		conn.Close()
+		if err := conn.Close(); err != nil {
+			s.logger.WithOptions(zap.AddCaller()).Error("server conn Close error", fields...)
+		}
 		return
 	}
 
