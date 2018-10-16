@@ -98,6 +98,7 @@ rotationCount = 7
 # $1 = prev filename
 # $2 = current filename
 rotationHook = "/path/to/after_rotate.sh"
+fileName = "tcpdp.log"
 
 [dumpLog]
 dir = "/var/log/dump"
@@ -107,6 +108,7 @@ format = "json"
 rotateEnable = true
 rotationTime = "hourly"
 rotationCount = 24
+fileName = "dump.log"
 ```
 
 ## Installation

@@ -74,6 +74,8 @@ func initConfig() {
 	viper.SetDefault("log.rotateEnable", true)
 	viper.SetDefault("log.rotationTime", "daily")
 	viper.SetDefault("log.rotationCount", 7)
+	viper.SetDefault("log.rotationHook", "")
+	viper.SetDefault("log.fileName", "tcpdp.log")
 
 	viper.SetDefault("dumpLog.dir", ".")
 	viper.SetDefault("dumpLog.enable", true)
@@ -82,6 +84,8 @@ func initConfig() {
 	viper.SetDefault("dumpLog.rotateEnable", true)
 	viper.SetDefault("dumpLog.rotationTime", "daily")
 	viper.SetDefault("dumpLog.rotationCount", 7)
+	viper.SetDefault("dumpLog.rotationHook", "")
+	viper.SetDefault("dumpLog.fileName", "dump.log")
 
 	if cfgFile != "" {
 		viper.SetConfigFile(cfgFile)
