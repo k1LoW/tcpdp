@@ -37,8 +37,8 @@ var (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "tcpdp",
-	Short: "tcpdp is TCP dump tool with custom dumper written in Go.",
-	Long:  `tcpdp is TCP dump tool with custom dumper written in Go.`,
+	Short: "tcpdp is TCP dump tool with custom dumper and structured logger written in Go.",
+	Long:  `tcpdp is TCP dump tool with custom dumper and structured logger written in Go.`,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
