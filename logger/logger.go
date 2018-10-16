@@ -158,16 +158,9 @@ func newLogWriter(logType string) io.Writer {
 	rotationTime := viper.GetString(fmt.Sprintf("%s.rotationTime", logType))
 	rotationCount := uint(viper.GetInt(fmt.Sprintf("%s.rotationCount", logType)))
 	rotationHook := viper.GetString(fmt.Sprintf("%s.rotationHook", logType))
+	fileName := viper.GetString(fmt.Sprintf("%s.fileName", logType))
 
-	var filename string
-	switch logType {
-	case LogTypeLog:
-		filename = "tcpdp.log"
-	case LogTypeDumpLog:
-		filename = "dump.log"
-	}
-
-	path, err := filepath.Abs(fmt.Sprintf("%s/%s", dir, filename))
+	path, err := filepath.Abs(fmt.Sprintf("%s/%s", dir, fileName))
 	if err != nil {
 		log.Fatalf("Log setting error %v", err)
 	}

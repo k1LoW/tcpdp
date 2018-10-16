@@ -59,6 +59,12 @@ format = "{{ .log.format }}"
 rotateEnable = {{ .log.rotateenable }}
 rotationTime = "{{ .log.rotationtime }}"
 rotationCount = {{ .log.rotationcount }}
+{{ if (ne .log.rotationhook "") -}}
+rotationHook = "{{ .log.rotationhook }}"
+fileName = "{{ .log.filename }}"
+{{ else -}}
+fileName = "{{ .log.filename }}"
+{{- end }}
 
 [dumpLog]
 dir = "{{ .dumplog.dir }}"
@@ -68,6 +74,12 @@ format = "{{ .dumplog.format }}"
 rotateEnable = {{ .dumplog.rotateenable }}
 rotationTime = "{{ .dumplog.rotationtime }}"
 rotationCount = {{ .dumplog.rotationcount }}
+{{ if (ne .dumplog.rotationhook "") -}}
+rotationHook = "{{ .dumplog.rotationhook }}"
+fileName = "{{ .dumplog.filename }}"
+{{ else -}}
+fileName = "{{ .dumplog.filename }}"
+{{- end -}}
 `
 		tpl, err := template.New("config").Parse(cfgTemplate)
 		if err != nil {
