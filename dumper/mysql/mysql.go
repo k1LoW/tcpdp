@@ -11,6 +11,7 @@ import (
 
 	"github.com/k1LoW/tcpdp/dumper"
 	"github.com/k1LoW/tcpdp/logger"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -261,7 +262,8 @@ func (m *Dumper) readHandshakeResponse(in []byte, direction dumper.Direction, co
 	if direction == dumper.RemoteToClient || direction == dumper.DstToSrc {
 		return values
 	}
-	if len(in) < 37 {
+
+	if len(in) < 36 {
 		return values
 	}
 
@@ -278,8 +280,23 @@ func (m *Dumper) readHandshakeResponse(in []byte, direction dumper.Direction, co
 		})
 		internal.charSet = cSet
 		connMetadata.Internal = internal
-
 		connMetadata.Internal.(connMetadataInternal).clientCapabilities[clientProtocol41] = true
+
+		if clientCapabilities&uint32(clientSSL) > 0 {
+			// tcpdp mysql dumper not support SSL connection.
+			fields := []zapcore.Field{
+				zap.Error(errors.New("client is trying to connect using SSL. tcpdp mysql dumper not support SSL connection")),
+			}
+			for _, kv := range connMetadata.DumpValues {
+				fields = append(fields, zap.Any(kv.Key, kv.Value))
+			}
+			for _, kv := range values {
+				fields = append(fields, zap.Any(kv.Key, kv.Value))
+			}
+			m.logger.Warn("-", fields...)
+			return values
+		}
+
 		buff := bytes.NewBuffer(in[36:])
 		readed, _ := buff.ReadBytes(0x00)
 		username := readString(readed, cSet)
