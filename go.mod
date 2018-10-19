@@ -37,6 +37,7 @@ require (
 	github.com/mattn/go-isatty v0.0.4 // indirect
 	github.com/mitchellh/colorstring v0.0.0-20150917214807-8631ce90f286 // indirect
 	github.com/mitchellh/go-homedir v1.0.0 // indirect
+	github.com/pkg/errors v0.8.0
 	github.com/rainycape/unidecode v0.0.0-20150907023854-cb7f23ec59be // indirect
 	github.com/rs/xid v1.2.1
 	github.com/ryanuber/go-glob v0.0.0-20170128012129-256dc444b735 // indirect
@@ -53,5 +54,5 @@ require (
 	golang.org/x/oauth2 v0.0.0-20180821212333-d2e6202438be // indirect
 	golang.org/x/text v0.3.0
 	golang.org/x/time v0.0.0-20180412165947-fbb02b2291d2 // indirect
-	golang.org/x/tools v0.0.0-20181016205153-5ef16f43e633 // indirect
+	golang.org/x/tools v0.0.0-20181017214349-06f26fdaaa28 // indirect
 )
