@@ -65,7 +65,7 @@ func (m *Dumper) Dump(in []byte, direction dumper.Direction, connMetadata *dumpe
 
 // Read return byte to analyzed string
 func (m *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumper.ConnMetadata) []dumper.DumpValue {
-	values := m.readClientCapabilities(in, direction, connMetadata)
+	values := m.readHandshakeResponse(in, direction, connMetadata)
 	connMetadata.DumpValues = append(connMetadata.DumpValues, values...)
 	cSet := connMetadata.Internal.(connMetadataInternal).charSet
 
@@ -256,7 +256,7 @@ func (m *Dumper) NewConnMetadata() *dumper.ConnMetadata {
 	}
 }
 
-func (m *Dumper) readClientCapabilities(in []byte, direction dumper.Direction, connMetadata *dumper.ConnMetadata) []dumper.DumpValue {
+func (m *Dumper) readHandshakeResponse(in []byte, direction dumper.Direction, connMetadata *dumper.ConnMetadata) []dumper.DumpValue {
 	values := []dumper.DumpValue{}
 	if direction == dumper.RemoteToClient || direction == dumper.DstToSrc {
 		return values
@@ -267,7 +267,7 @@ func (m *Dumper) readClientCapabilities(in []byte, direction dumper.Direction, c
 
 	clientCapabilities := binary.LittleEndian.Uint32(in[4:8])
 
-	// parse Protocol::HandshakeResponse41 to get username, database
+	// parse Protocol::HandshakeResponse41
 	if clientCapabilities&uint32(clientProtocol41) > 0 && bytes.Compare(in[13:36], []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}) == 0 {
 		internal := connMetadata.Internal.(connMetadataInternal)
 

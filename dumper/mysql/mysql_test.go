@@ -414,7 +414,7 @@ func TestMysqlReadUsernameAndDatabaseHandshakeResponse41(t *testing.T) {
 		direction := tt.direction
 		connMetadata := &tt.connMetadata
 
-		actual := d.readClientCapabilities(in, direction, connMetadata)
+		actual := d.readHandshakeResponse(in, direction, connMetadata)
 		expected := tt.expected
 
 		if len(actual) != len(expected) {
