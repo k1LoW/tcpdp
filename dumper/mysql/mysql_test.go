@@ -402,6 +402,31 @@ var mysqlReadTests = []struct {
 		},
 		"\"stmt_execute_values\":[1,23.4,0]",
 	},
+	{
+		"tcpdp mysql dumper not support SSL connection (https://dev.mysql.com/doc/internals/en/ssl.html)",
+		[]byte{
+			0x20, 0x00, 0x00, 0x01, 0x05, 0xae, 0x03, 0x00, 0x00, 0x00, 0x00, 0x01, 0x08, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00,
+		},
+		dumper.ClientToRemote,
+		dumper.ConnMetadata{
+			DumpValues: []dumper.DumpValue{},
+			Internal: connMetadataInternal{
+				stmtNumParams:      stmtNumParams{},
+				clientCapabilities: clientCapabilities{},
+				charSet:            charSetUnknown,
+			},
+		},
+		[]dumper.DumpValue{
+			dumper.DumpValue{
+				Key:   "character_set",
+				Value: "latin1",
+			},
+		},
+		[]dumper.DumpValue{},
+		"\"error\":\"client is trying to connect using SSL. tcpdp mysql dumper not support SSL connection\"",
+	},
 }
 
 func TestMysqlReadUsernameAndDatabaseHandshakeResponse41(t *testing.T) {
