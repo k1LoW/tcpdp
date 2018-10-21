@@ -24,7 +24,6 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-const snaplen = int32(^uint32(0) >> 1)
 const promiscuous = false
 const timeout = pcap.BlockForever
 
@@ -88,13 +87,17 @@ func (s *ProbeServer) Start() error {
 	device := viper.GetString("probe.interface")
 	target := viper.GetString("probe.target")
 	pcapBufferSize, err := bytefmt.ToBytes(viper.GetString("probe.bufferSize"))
-	immediateMode := viper.GetBool("probe.immediateMode")
-	internalBufferLength := viper.GetInt("probe.internalBufferLength")
-
 	if err != nil {
 		s.logger.WithOptions(zap.AddCaller()).Fatal("parse buffer-size error", zap.Error(err))
 		return err
 	}
+	immediateMode := viper.GetBool("probe.immediateMode")
+	snapshotLength, err := bytefmt.ToBytes(viper.GetString("probe.snapshotLength"))
+	if err != nil {
+		s.logger.WithOptions(zap.AddCaller()).Fatal("parse snapshot-length error", zap.Error(err))
+		return err
+	}
+	internalBufferLength := viper.GetInt("probe.internalBufferLength")
 
 	host, port, err := reader.ParseTarget(target)
 	if err != nil {
@@ -119,7 +122,7 @@ func (s *ProbeServer) Start() error {
 		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap create error", fields...)
 		return err
 	}
-	if err := inactiveHandle.SetSnapLen(int(snaplen)); err != nil {
+	if err := inactiveHandle.SetSnapLen(int(snapshotLength)); err != nil {
 		fields := s.fieldsWithErrorAndValues(err, pValues)
 		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap create error (snaplen)", fields...)
 		return err
