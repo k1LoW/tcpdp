@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.13.0](https://github.com/k1LoW/tcpdp/compare/v0.12.0...v0.13.0) (2018-10-22)
+
+* Add `--snapshot-length` option to `tcpdp probe` [#63](https://github.com/k1LoW/tcpdp/pull/63) ([k1LoW](https://github.com/k1LoW))
+* Check clientSSL when parsing HandshakeResponse and write warning to dump.log [#62](https://github.com/k1LoW/tcpdp/pull/62) ([k1LoW](https://github.com/k1LoW))
+* Add *log.fileName config option [#61](https://github.com/k1LoW/tcpdp/pull/61) ([k1LoW](https://github.com/k1LoW))
+
 ## [v0.12.0](https://github.com/k1LoW/tcpdp/compare/v0.11.0...v0.12.0) (2018-10-14)
 
 * Make internal packet buffer [#57](https://github.com/k1LoW/tcpdp/pull/57) ([k1LoW](https://github.com/k1LoW))
