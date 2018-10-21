@@ -23,6 +23,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
@@ -58,6 +59,15 @@ var probeCmd = &cobra.Command{
 		immediateMode := viper.GetBool("probe.immediateMode")
 		snapshotLength := viper.GetString("probe.snapshotLength")
 		internalBufferLength := viper.GetInt("probe.internalBufferLength")
+
+		if snapshotLength == "auto" {
+			ifi, err := net.InterfaceByName(device)
+			if err != nil {
+				logger.Fatal("interface error.", zap.Error(err))
+			}
+			snapshotLength = fmt.Sprintf("%dB (auto)", ifi.MTU)
+			viper.Set("probe.snapshotLength", fmt.Sprintf("%dB", ifi.MTU))
+		}
 
 		defer logger.Sync()
 
@@ -99,7 +109,7 @@ func init() {
 	probeCmd.Flags().StringP("interface", "i", "", "interface")
 	probeCmd.Flags().StringP("buffer-size", "B", "2MB", "buffer size (pcap_buffer_size)")
 	probeCmd.Flags().BoolP("immediate-mode", "", false, "immediate mode")
-	probeCmd.Flags().StringP("snapshot-length", "s", "256KB", "snapshot length")
+	probeCmd.Flags().StringP("snapshot-length", "s", "auto", "snapshot length")
 	probeCmd.Flags().StringVarP(&probeDumper, "dumper", "d", "hex", "dumper")
 
 	if err := viper.BindPFlag("probe.target", probeCmd.Flags().Lookup("target")); err != nil {
