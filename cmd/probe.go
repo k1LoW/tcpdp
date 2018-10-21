@@ -60,8 +60,6 @@ var probeCmd = &cobra.Command{
 		bufferSize := viper.GetString("probe.bufferSize")
 		immediateMode := viper.GetBool("probe.immediateMode")
 		snapshotLength := viper.GetString("probe.snapshotLength")
-		internalBufferLength := viper.GetInt("probe.internalBufferLength")
-
 		if snapshotLength == snaplenAuto {
 			ifi, err := net.InterfaceByName(device)
 			if err != nil {
@@ -70,6 +68,7 @@ var probeCmd = &cobra.Command{
 			snapshotLength = fmt.Sprintf("%dB (auto)", ifi.MTU)
 			viper.Set("probe.snapshotLength", fmt.Sprintf("%dB", ifi.MTU))
 		}
+		internalBufferLength := viper.GetInt("probe.internalBufferLength")
 
 		defer logger.Sync()
 
