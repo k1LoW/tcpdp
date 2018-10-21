@@ -44,7 +44,7 @@ interface = "{{ .probe.interface }}"
 target = "{{ .probe.target }}"
 bufferSize = "{{ .probe.buffersize }}"
 immediateMode = {{ .probe.immediatemode }}
-snapshotLength = {{ .probe.snapshotlength }}
+snapshotLength = "{{ .probe.snapshotlength }}"
 internalBufferLength = {{ .probe.internalbufferlength }}
 
 [proxy]
