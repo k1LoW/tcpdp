@@ -65,7 +65,7 @@ proxy_integration: build
 
 probe_integration: build
 	@sudo rm -f ./tcpdp.log* ./dump.log*
-	sudo ./tcpdp probe -i $(LO) -t $(POSTGRES_PORT) -d pg &
+	sudo ./tcpdp probe -i $(LO) -t $(POSTGRES_PORT) -d pg -B 64MB &
 	@sleep 1
 	PGPASSWORD=$(POSTGRES_PASSWORD) pgbench -h 127.0.0.1 -p $(POSTGRES_PORT) -U$(POSTGRES_USER) -i $(POSTGRES_DB)
 	PGPASSWORD=$(POSTGRES_PASSWORD) pgbench -h 127.0.0.1 -p $(POSTGRES_PORT) -U$(POSTGRES_USER) -c 100 -t 10 $(POSTGRES_DB) 2>&1 > ./result
@@ -76,7 +76,7 @@ probe_integration: build
 	test `grep -c '' ./tcpdp.log` -eq 4 || (cat ./tcpdp.log && exit 1)
 	@rm ./result
 	@sudo rm -f ./tcpdp.log* ./dump.log*
-	sudo ./tcpdp probe -i $(LO) -t $(MYSQL_PORT) -d mysql &
+	sudo ./tcpdp probe -i $(LO) -t $(MYSQL_PORT) -d mysql -B 64MB &
 	@sleep 1
 	mysqlslap --no-defaults --concurrency=100 --iterations=1 --auto-generate-sql --auto-generate-sql-add-autoincrement --auto-generate-sql-load-type=mixed --auto-generate-sql-write-number=100 --number-of-queries=1000 --host=127.0.0.1 --port=$(MYSQL_PORT) --user=root --password=$(MYSQL_ROOT_PASSWORD) $(MYSQL_DISABLE_SSL) 2>&1 > ./result
 	@sudo kill `cat ./tcpdp.pid`
@@ -106,7 +106,7 @@ long_query_integration: build
 	test `grep -c 'query_last' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
 	@sudo rm -f ./tcpdp.log* ./dump.log*
 	@sudo rm -f ./tcpdp.log* ./dump.log*
-	sudo ./tcpdp probe -i $(LO) -t $(MYSQL_PORT) -d mysql &
+	sudo ./tcpdp probe -i $(LO) -t $(MYSQL_PORT) -d mysql -B 64MB &
 	@sleep 1
 	mysql --host=127.0.0.1 --port=$(MYSQL_PORT) --user=root --password=$(MYSQL_ROOT_PASSWORD) testdb $(MYSQL_DISABLE_SSL) < ./testdata/query/long.sql 2>&1 > /dev/null
 	@sudo kill `cat ./tcpdp.pid`
@@ -122,7 +122,7 @@ long_query_integration: build
 	test `grep -c 'query_start' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
 	test `grep -c 'query_last' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
 	@sudo rm -f ./tcpdp.log* ./dump.log*
-	sudo ./tcpdp probe -i $(LO) -t $(POSTGRES_PORT) -d pg &
+	sudo ./tcpdp probe -i $(LO) -t $(POSTGRES_PORT) -d pg -B 64MB &
 	@sleep 1
 	PGPASSWORD=$(POSTGRES_PASSWORD) psql -h 127.0.0.1 -p $(POSTGRES_PORT) -U$(POSTGRES_USER) $(POSTGRES_DB) < ./testdata/query/long.sql 2>&1 > /dev/null
 	@sudo kill `cat ./tcpdp.pid`

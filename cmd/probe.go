@@ -23,6 +23,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
@@ -36,6 +37,8 @@ import (
 var (
 	probeDumper string
 )
+
+const snaplenAuto = "auto"
 
 // probeCmd represents the probe command
 var probeCmd = &cobra.Command{
@@ -56,6 +59,15 @@ var probeCmd = &cobra.Command{
 		device := viper.GetString("probe.interface")
 		bufferSize := viper.GetString("probe.bufferSize")
 		immediateMode := viper.GetBool("probe.immediateMode")
+		snapshotLength := viper.GetString("probe.snapshotLength")
+		if snapshotLength == snaplenAuto {
+			ifi, err := net.InterfaceByName(device)
+			if err != nil {
+				logger.Fatal("interface error.", zap.Error(err))
+			}
+			snapshotLength = fmt.Sprintf("%dB (auto)", ifi.MTU)
+			viper.Set("probe.snapshotLength", fmt.Sprintf("%dB", ifi.MTU))
+		}
 		internalBufferLength := viper.GetInt("probe.internalBufferLength")
 
 		defer logger.Sync()
@@ -72,6 +84,7 @@ var probeCmd = &cobra.Command{
 			zap.String("probe_target_addr", target),
 			zap.String("buffer_size", bufferSize),
 			zap.Bool("immediate_mode", immediateMode),
+			zap.String("snapshot_length", snapshotLength),
 			zap.Int("internal_buffer_length", internalBufferLength),
 		)
 
@@ -97,6 +110,7 @@ func init() {
 	probeCmd.Flags().StringP("interface", "i", "", "interface")
 	probeCmd.Flags().StringP("buffer-size", "B", "2MB", "buffer size (pcap_buffer_size)")
 	probeCmd.Flags().BoolP("immediate-mode", "", false, "immediate mode")
+	probeCmd.Flags().StringP("snapshot-length", "s", "auto", "snapshot length")
 	probeCmd.Flags().StringVarP(&probeDumper, "dumper", "d", "hex", "dumper")
 
 	if err := viper.BindPFlag("probe.target", probeCmd.Flags().Lookup("target")); err != nil {
@@ -112,6 +126,10 @@ func init() {
 		os.Exit(1)
 	}
 	if err := viper.BindPFlag("probe.immediateMode", probeCmd.Flags().Lookup("immediate-mode")); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	if err := viper.BindPFlag("probe.snapshotLength", probeCmd.Flags().Lookup("snapshot-length")); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
