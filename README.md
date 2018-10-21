@@ -79,6 +79,7 @@ target = "db.example.com:3306"
 interface = "en0"
 bufferSize = "2MB"
 immediateMode = false
+snapshotLength = "auto"
 internalBufferLength = 10000
 
 [proxy]
