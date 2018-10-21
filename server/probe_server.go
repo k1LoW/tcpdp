@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"sync"
 	"syscall"
@@ -23,6 +24,8 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
+
+var numberRegexp = regexp.MustCompile(`^\d+$`)
 
 const promiscuous = false
 const timeout = pcap.BlockForever
@@ -86,13 +89,13 @@ func (s *ProbeServer) Start() error {
 
 	device := viper.GetString("probe.interface")
 	target := viper.GetString("probe.target")
-	pcapBufferSize, err := bytefmt.ToBytes(viper.GetString("probe.bufferSize"))
+	pcapBufferSize, err := byteFormat(viper.GetString("probe.bufferSize"))
 	if err != nil {
 		s.logger.WithOptions(zap.AddCaller()).Fatal("parse buffer-size error", zap.Error(err))
 		return err
 	}
 	immediateMode := viper.GetBool("probe.immediateMode")
-	snapshotLength, err := bytefmt.ToBytes(viper.GetString("probe.snapshotLength"))
+	snapshotLength, err := byteFormat(viper.GetString("probe.snapshotLength"))
 	if err != nil {
 		s.logger.WithOptions(zap.AddCaller()).Fatal("parse snapshot-length error", zap.Error(err))
 		return err
@@ -248,4 +251,15 @@ func (s *ProbeServer) fieldsWithErrorAndValues(err error, pValues []dumper.DumpV
 	}
 
 	return fields
+}
+
+func byteFormat(s string) (int, error) {
+	if numberRegexp.MatchString(s) {
+		s = s + "B"
+	}
+	i, err := bytefmt.ToBytes(s)
+	if err != nil {
+		return -1, err
+	}
+	return int(i), nil
 }
