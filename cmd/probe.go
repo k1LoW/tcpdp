@@ -38,6 +38,8 @@ var (
 	probeDumper string
 )
 
+const snaplenAuto = "auto"
+
 // probeCmd represents the probe command
 var probeCmd = &cobra.Command{
 	Use:   "probe",
@@ -60,7 +62,7 @@ var probeCmd = &cobra.Command{
 		snapshotLength := viper.GetString("probe.snapshotLength")
 		internalBufferLength := viper.GetInt("probe.internalBufferLength")
 
-		if snapshotLength == "auto" {
+		if snapshotLength == snaplenAuto {
 			ifi, err := net.InterfaceByName(device)
 			if err != nil {
 				logger.Fatal("interface error.", zap.Error(err))
