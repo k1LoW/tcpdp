@@ -54,5 +54,5 @@ require (
 	golang.org/x/oauth2 v0.0.0-20180821212333-d2e6202438be // indirect
 	golang.org/x/text v0.3.0
 	golang.org/x/time v0.0.0-20180412165947-fbb02b2291d2 // indirect
-	golang.org/x/tools v0.0.0-20181019201213-3e7aa9e59977 // indirect
+	golang.org/x/tools v0.0.0-20181022211751-9650c66da3ff // indirect
 )
