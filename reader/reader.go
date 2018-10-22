@@ -167,6 +167,7 @@ func (r *PacketReader) handlePacket(host string, port uint16) error {
 
 				// TCP connection start ( hex, mysql, pg )
 				connID := xid.New().String()
+				mss := int(binary.BigEndian.Uint16(tcp.LayerContents()[22:24]))
 				connMetadata := r.dumper.NewConnMetadata()
 				connMetadata.DumpValues = []dumper.DumpValue{
 					dumper.DumpValue{
@@ -175,7 +176,7 @@ func (r *PacketReader) handlePacket(host string, port uint16) error {
 					},
 				}
 				mMap[key] = connMetadata
-				mssMap[key] = int(binary.BigEndian.Uint16(tcp.LayerContents()[22:24]))
+				mssMap[key] = mss
 				bMap[key] = newByteMap()
 			} else if tcp.SYN && tcp.ACK {
 				if direction == dumper.Unknown {
@@ -201,6 +202,10 @@ func (r *PacketReader) handlePacket(host string, port uint16) error {
 				if !ok || mss < current {
 					mssMap[key] = mss
 				}
+				mMap[key].DumpValues = append(mMap[key].DumpValues, dumper.DumpValue{
+					Key:   "mss",
+					Value: mss,
+				})
 			} else if tcp.FIN {
 				// TCP connection end
 				_, ok := mMap[key]
