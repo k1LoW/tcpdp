@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.13.1](https://github.com/k1LoW/tcpdp/compare/v0.13.0...v0.13.1) (2018-10-23)
+
+* Write `mtu` `mss` to log [#65](https://github.com/k1LoW/tcpdp/pull/65) ([k1LoW](https://github.com/k1LoW))
+* Fix default snapshotLength and Fix auto detect snapshotLength [#64](https://github.com/k1LoW/tcpdp/pull/64) ([k1LoW](https://github.com/k1LoW))
+
 ## [v0.13.0](https://github.com/k1LoW/tcpdp/compare/v0.12.0...v0.13.0) (2018-10-22)
 
 * Add `--snapshot-length` option to `tcpdp probe` [#63](https://github.com/k1LoW/tcpdp/pull/63) ([k1LoW](https://github.com/k1LoW))
