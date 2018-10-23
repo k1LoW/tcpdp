@@ -39,6 +39,7 @@ var (
 )
 
 const snaplenAuto = "auto"
+const snaplenDefault = 0xFFFF
 
 // probeCmd represents the probe command
 var probeCmd = &cobra.Command{
@@ -65,8 +66,8 @@ var probeCmd = &cobra.Command{
 			if err != nil {
 				logger.Fatal("interface error.", zap.Error(err))
 			}
-			snapshotLength = fmt.Sprintf("%dB (auto)", ifi.MTU)
-			viper.Set("probe.snapshotLength", fmt.Sprintf("%dB", ifi.MTU))
+			snapshotLength = fmt.Sprintf("%dB (auto)", ifi.MTU+14+4) // 14:Ethernet header 4:FCS
+			viper.Set("probe.snapshotLength", fmt.Sprintf("%dB", ifi.MTU+14+4))
 		}
 		internalBufferLength := viper.GetInt("probe.internalBufferLength")
 
@@ -110,7 +111,7 @@ func init() {
 	probeCmd.Flags().StringP("interface", "i", "", "interface")
 	probeCmd.Flags().StringP("buffer-size", "B", "2MB", "buffer size (pcap_buffer_size)")
 	probeCmd.Flags().BoolP("immediate-mode", "", false, "immediate mode")
-	probeCmd.Flags().StringP("snapshot-length", "s", "auto", "snapshot length")
+	probeCmd.Flags().StringP("snapshot-length", "s", fmt.Sprintf("%dB", snaplenDefault), "snapshot length")
 	probeCmd.Flags().StringVarP(&probeDumper, "dumper", "d", "hex", "dumper")
 
 	if err := viper.BindPFlag("probe.target", probeCmd.Flags().Lookup("target")); err != nil {
