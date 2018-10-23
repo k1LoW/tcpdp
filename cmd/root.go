@@ -21,6 +21,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	l "github.com/k1LoW/tcpdp/logger"
@@ -66,7 +67,7 @@ func initConfig() {
 	viper.SetDefault("probe.bufferSize", "2MB")
 	viper.SetDefault("probe.immediateMode", false)
 	viper.SetDefault("probe.internalBufferLength", 10000)
-	viper.SetDefault("probe.snapshotLength", "auto")
+	viper.SetDefault("probe.snapshotLength", fmt.Sprintf("%dB", snaplenDefault))
 
 	viper.SetDefault("log.dir", ".")
 	viper.SetDefault("log.enable", true)
