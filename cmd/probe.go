@@ -67,12 +67,8 @@ var probeCmd = &cobra.Command{
 		}
 		mtu := ifi.MTU
 		if snapshotLength == snaplenAuto {
-			ifi, err := net.InterfaceByName(device)
-			if err != nil {
-				logger.Fatal("interface error.", zap.Error(err))
-			}
-			snapshotLength = fmt.Sprintf("%dB (auto)", ifi.MTU+14+4) // 14:Ethernet header 4:FCS
-			viper.Set("probe.snapshotLength", fmt.Sprintf("%dB", ifi.MTU+14+4))
+			snapshotLength = fmt.Sprintf("%dB (auto)", mtu+14+4) // 14:Ethernet header 4:FCS
+			viper.Set("probe.snapshotLength", fmt.Sprintf("%dB", mtu+14+4))
 		}
 		internalBufferLength := viper.GetInt("probe.internalBufferLength")
 
