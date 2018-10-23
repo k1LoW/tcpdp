@@ -189,9 +189,12 @@ $ go get github.com/k1LoW/tcpdp
 | proxy_listen_addr | listen address| proxy |
 | direction | client to remote: `->` / remote to client: `<-` | proxy |
 | interface | probe target interface | probe |
+| mtu | interface MTU (Maximum Transmission Unit) | probe |
+| mss | TCP connection MSS (Max Segment Size) | probe |
 | probe_target_addr | probe target address | probe |
 | buffer_size | libpcap buffer_size | probe |
 | immediate_mode | libpcap immediate_mode | probe |
+| snapshot_length | libpcap snapshot length | probe |
 | internal_buffer_length | tcpdp internal packet buffer length | probe |
 
 ## Dumper

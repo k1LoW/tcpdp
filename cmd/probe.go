@@ -61,13 +61,14 @@ var probeCmd = &cobra.Command{
 		bufferSize := viper.GetString("probe.bufferSize")
 		immediateMode := viper.GetBool("probe.immediateMode")
 		snapshotLength := viper.GetString("probe.snapshotLength")
+		ifi, err := net.InterfaceByName(device)
+		if err != nil {
+			logger.Fatal("interface error.", zap.Error(err))
+		}
+		mtu := ifi.MTU
 		if snapshotLength == snaplenAuto {
-			ifi, err := net.InterfaceByName(device)
-			if err != nil {
-				logger.Fatal("interface error.", zap.Error(err))
-			}
-			snapshotLength = fmt.Sprintf("%dB (auto)", ifi.MTU+14+4) // 14:Ethernet header 4:FCS
-			viper.Set("probe.snapshotLength", fmt.Sprintf("%dB", ifi.MTU+14+4))
+			snapshotLength = fmt.Sprintf("%dB (auto)", mtu+14+4) // 14:Ethernet header 4:FCS
+			viper.Set("probe.snapshotLength", fmt.Sprintf("%dB", mtu+14+4))
 		}
 		internalBufferLength := viper.GetInt("probe.internalBufferLength")
 
@@ -82,6 +83,7 @@ var probeCmd = &cobra.Command{
 		logger.Info("Starting probe.",
 			zap.String("dumper", dumper),
 			zap.String("interface", device),
+			zap.String("mtu", fmt.Sprintf("%d", mtu)),
 			zap.String("probe_target_addr", target),
 			zap.String("buffer_size", bufferSize),
 			zap.Bool("immediate_mode", immediateMode),
