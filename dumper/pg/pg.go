@@ -7,6 +7,7 @@ import (
 
 	"github.com/k1LoW/tcpdp/dumper"
 	"github.com/k1LoW/tcpdp/logger"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -68,7 +69,7 @@ func (p *Dumper) Dump(in []byte, direction dumper.Direction, connMetadata *dumpe
 
 // Read return byte to analyzed string
 func (p *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumper.ConnMetadata) []dumper.DumpValue {
-	values := p.readUsernameAndDatabase(in, direction)
+	values := p.readUsernameAndDatabase(in, direction, connMetadata)
 	connMetadata.DumpValues = append(connMetadata.DumpValues, values...)
 
 	if direction == dumper.RemoteToClient || direction == dumper.DstToSrc || direction == dumper.Unknown {
@@ -232,13 +233,39 @@ func (p *Dumper) NewConnMetadata() *dumper.ConnMetadata {
 	}
 }
 
-func (p *Dumper) readUsernameAndDatabase(in []byte, direction dumper.Direction) []dumper.DumpValue {
+func (p *Dumper) readUsernameAndDatabase(in []byte, direction dumper.Direction, connMetadata *dumper.ConnMetadata) []dumper.DumpValue {
 	values := []dumper.DumpValue{}
 	if direction == dumper.RemoteToClient || direction == dumper.DstToSrc {
 		return values
 	}
+	if len(in) < 8 {
+		return values
+	}
+	b := make([]byte, 2)
+	copy(b, in[4:6])
+	pNo := binary.BigEndian.Uint16(b)
+	if pNo == 1234 {
+		// SSLRequest
+		b := make([]byte, 2)
+		copy(b, in[6:8])
+		uNo := binary.BigEndian.Uint16(b)
+		if uNo == 5679 {
+			// tcpdp pg dumper not support SSL connection.
+			fields := []zapcore.Field{
+				zap.Error(errors.New("client is trying to connect using SSL. tcpdp pg dumper not support SSL connection")),
+			}
+			for _, kv := range connMetadata.DumpValues {
+				fields = append(fields, zap.Any(kv.Key, kv.Value))
+			}
+			for _, kv := range values {
+				fields = append(fields, zap.Any(kv.Key, kv.Value))
+			}
+			p.logger.Warn("-", fields...)
+			return values
+		}
+	}
 	// parse StartupMessage to get username, database
-	if len(in) < 10 {
+	if pNo != 3 {
 		return values
 	}
 	splited := bytes.Split(in[8:], []byte{0x00})
