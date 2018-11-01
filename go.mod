@@ -11,7 +11,7 @@ require (
 	github.com/boltdb/bolt v1.3.1 // indirect
 	github.com/docker/libkv v0.2.1 // indirect
 	github.com/go-sql-driver/mysql v1.4.0
-	github.com/golang/lint v0.0.0-20181011164241-5906bd5c48cd // indirect
+	github.com/golang/lint v0.0.0-20181023015148-c2de83ec1785 // indirect
 	github.com/google/go-github v17.0.0+incompatible // indirect
 	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/google/gopacket v1.1.15
@@ -54,5 +54,5 @@ require (
 	golang.org/x/oauth2 v0.0.0-20180821212333-d2e6202438be // indirect
 	golang.org/x/text v0.3.0
 	golang.org/x/time v0.0.0-20180412165947-fbb02b2291d2 // indirect
-	golang.org/x/tools v0.0.0-20181022211751-9650c66da3ff // indirect
+	golang.org/x/tools v0.0.0-20181023010539-40a48ad93fbe // indirect
 )
