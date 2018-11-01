@@ -159,7 +159,7 @@ var pgValueTests = []struct {
 	},
 }
 
-func TestPgReadUsernameAndDatabaseStartupMessage(t *testing.T) {
+func TestPgReadHandshakeStartupMessage(t *testing.T) {
 	for _, tt := range pgValueTests {
 		out := new(bytes.Buffer)
 		dumper := &Dumper{
@@ -167,8 +167,9 @@ func TestPgReadUsernameAndDatabaseStartupMessage(t *testing.T) {
 		}
 		in := tt.in
 		direction := tt.direction
+		connMetadata := &tt.connMetadata
 
-		actual := dumper.readUsernameAndDatabase(in, direction)
+		actual := dumper.readHandshake(in, direction, connMetadata)
 		expected := tt.expected
 
 		if len(actual) != len(expected) {

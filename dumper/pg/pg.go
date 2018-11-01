@@ -69,7 +69,7 @@ func (p *Dumper) Dump(in []byte, direction dumper.Direction, connMetadata *dumpe
 
 // Read return byte to analyzed string
 func (p *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumper.ConnMetadata) []dumper.DumpValue {
-	values := p.readUsernameAndDatabase(in, direction, connMetadata)
+	values := p.readHandshake(in, direction, connMetadata)
 	connMetadata.DumpValues = append(connMetadata.DumpValues, values...)
 
 	if direction == dumper.RemoteToClient || direction == dumper.DstToSrc || direction == dumper.Unknown {
@@ -233,7 +233,7 @@ func (p *Dumper) NewConnMetadata() *dumper.ConnMetadata {
 	}
 }
 
-func (p *Dumper) readUsernameAndDatabase(in []byte, direction dumper.Direction, connMetadata *dumper.ConnMetadata) []dumper.DumpValue {
+func (p *Dumper) readHandshake(in []byte, direction dumper.Direction, connMetadata *dumper.ConnMetadata) []dumper.DumpValue {
 	values := []dumper.DumpValue{}
 	if direction == dumper.RemoteToClient || direction == dumper.DstToSrc {
 		return values
