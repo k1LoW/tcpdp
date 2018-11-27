@@ -28,6 +28,7 @@ require (
 	github.com/hashicorp/serf v0.8.1 // indirect
 	github.com/hashicorp/vault v0.11.1 // indirect
 	github.com/hnakamur/zap-ltsv v0.0.0-20170731143423-10a3dd1d839c
+	github.com/jinzhu/copier v0.0.0-20180308034124-7e38e58719c3
 	github.com/lestrrat-go/file-rotatelogs v2.2.1-0.20180926095352-d72d6cf46fc8+incompatible
 	github.com/lestrrat-go/server-starter v0.0.0-20180220224305-e24b30b99ae6
 	github.com/lestrrat-go/strftime v0.0.0-20180821113735-8b31f9c59b0f // indirect

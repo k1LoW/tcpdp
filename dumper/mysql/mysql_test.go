@@ -2,16 +2,18 @@ package mysql
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"strings"
 	"testing"
 
+	"github.com/jinzhu/copier"
 	"github.com/k1LoW/tcpdp/dumper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
-var mysqlReadTests = []struct {
+type mysqlReadTest struct {
 	description   string
 	in            []byte
 	direction     dumper.Direction
@@ -19,7 +21,9 @@ var mysqlReadTests = []struct {
 	expected      []dumper.DumpValue
 	expectedQuery []dumper.DumpValue
 	logContain    string
-}{
+}
+
+var mysqlReadTests = []mysqlReadTest{
 	{
 		"Parse username/database from HandshakeResponse41 packet (https://dev.mysql.com/doc/internals/en/connection-phase-packets.html)",
 		// https://dev.mysql.com/doc/internals/en/connection-phase-packets.html
@@ -430,7 +434,10 @@ var mysqlReadTests = []struct {
 }
 
 func TestMysqlReadUsernameAndDatabaseHandshakeResponse41(t *testing.T) {
-	for _, tt := range mysqlReadTests {
+	tts := []mysqlReadTest{}
+	copier.Copy(&mysqlReadTests, &tts)
+
+	for _, tt := range tts {
 		out := new(bytes.Buffer)
 		d := &Dumper{
 			logger: newTestLogger(out),
@@ -443,7 +450,7 @@ func TestMysqlReadUsernameAndDatabaseHandshakeResponse41(t *testing.T) {
 		expected := tt.expected
 
 		if len(actual) != len(expected) {
-			t.Errorf("actual %v\nwant %v", actual, expected)
+			t.Errorf("%v\nactual %v\nwant %v", tt.description, actual, expected)
 		}
 		for i := 0; i < len(actual); i++ {
 			v := actual[i].Value
@@ -465,7 +472,10 @@ func TestMysqlReadUsernameAndDatabaseHandshakeResponse41(t *testing.T) {
 }
 
 func TestMysqlRead(t *testing.T) {
-	for _, tt := range mysqlReadTests {
+	tts := []mysqlReadTest{}
+	copier.Copy(&mysqlReadTests, &tts)
+
+	for _, tt := range tts {
 		out := new(bytes.Buffer)
 		d := &Dumper{
 			logger: newTestLogger(out),
@@ -500,7 +510,12 @@ func TestMysqlRead(t *testing.T) {
 }
 
 func TestMysqlDump(t *testing.T) {
-	for _, tt := range mysqlReadTests {
+	tts := []mysqlReadTest{}
+	copier.Copy(&mysqlReadTests, &tts)
+
+	for _, tt := range tts {
+		fmt.Printf("%#v\n", tt.connMetadata.Internal)
+
 		out := new(bytes.Buffer)
 		d := &Dumper{
 			logger: newTestLogger(out),
@@ -520,7 +535,7 @@ func TestMysqlDump(t *testing.T) {
 
 		actual := connMetadata.DumpValues
 		if len(actual) != len(expected) {
-			t.Errorf("actual %v\nwant %v", actual, expected)
+			t.Errorf("%v\nactual %v\nwant %v", tt.description, actual, expected)
 		}
 		for i := 0; i < len(actual); i++ {
 			v := actual[i].Value
@@ -697,6 +712,56 @@ func TestReadBytes(t *testing.T) {
 		actual := readBytes(buff, tt.len)
 		if !bytes.Equal(actual, tt.expected) {
 			t.Errorf("actual %#v\nwant %#v", actual, tt.expected)
+		}
+	}
+}
+
+func TestMysqlReadUsernameAndDatabaseHandshakeResponse320(t *testing.T) {
+	in := []byte{
+		0x11, 0x00, 0x00, 0x01, 0x8d, 0x24, 0x00, 0x00, 0x00, 0x72, 0x6f, 0x6f, 0x74, 0x00, 0x00, 0x74, 0x65, 0x73, 0x74, 0x64, 0x62,
+	}
+	expected := []dumper.DumpValue{
+		dumper.DumpValue{
+			Key:   "username",
+			Value: "root",
+		},
+		dumper.DumpValue{
+			Key:   "database",
+			Value: "testdb",
+		},
+	}
+	out := new(bytes.Buffer)
+	d := &Dumper{
+		logger: newTestLogger(out),
+	}
+	direction := dumper.ClientToRemote
+	connMetadata := &dumper.ConnMetadata{
+		DumpValues: []dumper.DumpValue{},
+		Internal: connMetadataInternal{
+			stmtNumParams:      stmtNumParams{5: 2},
+			clientCapabilities: clientCapabilities{},
+			charSet:            charSetUnknown,
+		},
+	}
+
+	actual := d.readHandshakeResponse(in, direction, connMetadata)
+	if len(actual) != len(expected) {
+		t.Errorf("actual %v\nwant %v", actual, expected)
+	}
+	for i := 0; i < len(actual); i++ {
+		v := actual[i].Value
+		ev := expected[i].Value
+		switch v.(type) {
+		case []interface{}:
+			for j := 0; j < len(v.([]interface{})); j++ {
+				if v.([]interface{})[j] != ev.([]interface{})[j] {
+					t.Errorf("actual %#v\nwant %#v", v.([]interface{})[j], ev.([]interface{})[j])
+				}
+			}
+		default:
+			if actual[i] != expected[i] {
+				t.Errorf("actual %#v\nwant %#v", actual[i], expected[i])
+			}
 		}
 	}
 }

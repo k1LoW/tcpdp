@@ -263,14 +263,18 @@ func (m *Dumper) readHandshakeResponse(in []byte, direction dumper.Direction, co
 		return values
 	}
 
-	if len(in) < 36 {
+	if len(connMetadata.Internal.(connMetadataInternal).clientCapabilities) > 0 {
+		return values
+	}
+
+	if len(in) < 9 {
 		return values
 	}
 
 	clientCapabilities := binary.LittleEndian.Uint32(in[4:8])
 
 	// parse Protocol::HandshakeResponse41
-	if clientCapabilities&uint32(clientProtocol41) > 0 && bytes.Compare(in[13:36], []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}) == 0 {
+	if len(in) > 35 && clientCapabilities&uint32(clientProtocol41) > 0 && bytes.Compare(in[13:36], []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}) == 0 {
 		internal := connMetadata.Internal.(connMetadataInternal)
 
 		cSet := charSet(uint32(in[12]))
@@ -325,6 +329,37 @@ func (m *Dumper) readHandshakeResponse(in []byte, direction dumper.Direction, co
 			})
 		}
 		connMetadata.Internal.(connMetadataInternal).clientCapabilities[clientCompress] = (clientCapabilities&uint32(clientCompress) > 0)
+		return values
+	}
+
+	// parse Protocol::HandshakeResponse320
+	clientCapabilities = bytesToUint32(in[4:6]) // 2:capability flags, CLIENT_PROTOCOL_41 never set
+	if clientCapabilities&uint32(clientProtocol41) == 0 {
+		v := []dumper.DumpValue{}
+		internal := connMetadata.Internal.(connMetadataInternal)
+		connMetadata.Internal = internal
+		connMetadata.Internal.(connMetadataInternal).clientCapabilities[clientProtocol41] = false
+		buff := bytes.NewBuffer(in[9:])
+		readed, _ := buff.ReadBytes(0x00)
+		username := readString(readed, charSetUtf8)
+		v = append(v, dumper.DumpValue{
+			Key:   "username",
+			Value: username,
+		})
+		if clientCapabilities&uint32(clientConnectWithDB) > 0 {
+			_, _ = buff.ReadBytes(0x00)
+			readed, _ := buff.ReadBytes(0x00)
+			database := readString(readed, charSetUtf8)
+			v = append(v, dumper.DumpValue{
+				Key:   "database",
+				Value: database,
+			})
+		} else {
+			_, _ = buff.ReadBytes(0x00)
+		}
+		if buff.Len() == 0 {
+			values = append(values, v...)
+		}
 	}
 
 	return values
