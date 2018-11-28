@@ -206,13 +206,13 @@ build_deb:
 	rm -rf $(workdir)
 
 depsdev:
-	$(GO) get golang.org/x/tools/cmd/cover
-	$(GO) get github.com/mattn/goveralls
-	$(GO) get github.com/golang/lint/golint
-	$(GO) get github.com/motemen/gobump/cmd/gobump
-	$(GO) get github.com/tcnksm/ghr
-	$(GO) get github.com/hairyhenderson/gomplate/cmd/gomplate
-	$(GO) get github.com/Songmu/ghch
+	GO111MODULE=off go get golang.org/x/tools/cmd/cover
+	GO111MODULE=off go get golang.org/x/lint/golint
+	GO111MODULE=off go get github.com/mattn/goveralls
+	GO111MODULE=off go get github.com/motemen/gobump/cmd/gobump
+	GO111MODULE=off go get github.com/tcnksm/ghr
+	GO111MODULE=off go get github.com/hairyhenderson/gomplate/cmd/gomplate
+	GO111MODULE=off go get github.com/Songmu/ghch
 
 crossbuild: build_darwin
 	@for d in $(DISTS); do\

@@ -2,6 +2,8 @@ package mysql
 
 import (
 	"bytes"
+	"encoding/gob"
+	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -11,7 +13,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-var mysqlReadTests = []struct {
+type mysqlReadTest struct {
 	description   string
 	in            []byte
 	direction     dumper.Direction
@@ -19,7 +21,9 @@ var mysqlReadTests = []struct {
 	expected      []dumper.DumpValue
 	expectedQuery []dumper.DumpValue
 	logContain    string
-}{
+}
+
+var mysqlReadTests = []mysqlReadTest{
 	{
 		"Parse username/database from HandshakeResponse41 packet (https://dev.mysql.com/doc/internals/en/connection-phase-packets.html)",
 		// https://dev.mysql.com/doc/internals/en/connection-phase-packets.html
@@ -88,6 +92,59 @@ var mysqlReadTests = []struct {
 				Key:   "character_set",
 				Value: "utf8",
 			},
+			dumper.DumpValue{
+				Key:   "username",
+				Value: "root",
+			},
+			dumper.DumpValue{
+				Key:   "database",
+				Value: "testdb",
+			},
+		},
+		[]dumper.DumpValue{},
+		"",
+	},
+	{
+		"Parse username/database from HandshakeResponse320 packet (https://dev.mysql.com/doc/internals/en/connection-phase-packets.html#packet-Protocol::HandshakeResponse320)",
+		// https://dev.mysql.com/doc/internals/en/connection-phase-packets.html#packet-Protocol::HandshakeResponse320
+		[]byte{
+			0x11, 0x00, 0x00, 0x01, 0x85, 0x24, 0x00, 0x00, 0x00, 0x6f, 0x6c, 0x64, 0x00, 0x47, 0x44, 0x53,
+			0x43, 0x51, 0x59, 0x52, 0x5f,
+		},
+		dumper.SrcToDst,
+		dumper.ConnMetadata{
+			DumpValues: []dumper.DumpValue{},
+			Internal: connMetadataInternal{
+				stmtNumParams:      stmtNumParams{5: 2},
+				clientCapabilities: clientCapabilities{},
+				charSet:            charSetUnknown,
+			},
+		},
+		[]dumper.DumpValue{
+			dumper.DumpValue{
+				Key:   "username",
+				Value: "old",
+			},
+		},
+		[]dumper.DumpValue{},
+		"",
+	},
+	{
+		"Parse username/database from HandshakeResponse320 packet",
+		[]byte{
+			0x11, 0x00, 0x00, 0x01, 0x8d, 0x24, 0x00, 0x00, 0x00, 0x72, 0x6f, 0x6f, 0x74, 0x00, 0x00, 0x74,
+			0x65, 0x73, 0x74, 0x64, 0x62,
+		},
+		dumper.SrcToDst,
+		dumper.ConnMetadata{
+			DumpValues: []dumper.DumpValue{},
+			Internal: connMetadataInternal{
+				stmtNumParams:      stmtNumParams{},
+				clientCapabilities: clientCapabilities{},
+				charSet:            charSetUnknown,
+			},
+		},
+		[]dumper.DumpValue{
 			dumper.DumpValue{
 				Key:   "username",
 				Value: "root",
@@ -429,8 +486,11 @@ var mysqlReadTests = []struct {
 	},
 }
 
-func TestMysqlReadUsernameAndDatabaseHandshakeResponse41(t *testing.T) {
-	for _, tt := range mysqlReadTests {
+func TestMysqlReadHandshakeResponse(t *testing.T) {
+	tts := newMysqlReadTests()
+
+	for _, tt := range tts {
+		fmt.Printf("%#v\n", tt.connMetadata.Internal)
 		out := new(bytes.Buffer)
 		d := &Dumper{
 			logger: newTestLogger(out),
@@ -443,7 +503,7 @@ func TestMysqlReadUsernameAndDatabaseHandshakeResponse41(t *testing.T) {
 		expected := tt.expected
 
 		if len(actual) != len(expected) {
-			t.Errorf("actual %v\nwant %v", actual, expected)
+			t.Errorf("%v\nactual %v\nwant %v", tt.description, actual, expected)
 		}
 		for i := 0; i < len(actual); i++ {
 			v := actual[i].Value
@@ -465,7 +525,10 @@ func TestMysqlReadUsernameAndDatabaseHandshakeResponse41(t *testing.T) {
 }
 
 func TestMysqlRead(t *testing.T) {
-	for _, tt := range mysqlReadTests {
+	tts := newMysqlReadTests()
+
+	for _, tt := range tts {
+		fmt.Printf("%#v\n", tt.connMetadata.Internal)
 		out := new(bytes.Buffer)
 		d := &Dumper{
 			logger: newTestLogger(out),
@@ -500,7 +563,9 @@ func TestMysqlRead(t *testing.T) {
 }
 
 func TestMysqlDump(t *testing.T) {
-	for _, tt := range mysqlReadTests {
+	tts := newMysqlReadTests()
+
+	for _, tt := range tts {
 		out := new(bytes.Buffer)
 		d := &Dumper{
 			logger: newTestLogger(out),
@@ -520,7 +585,7 @@ func TestMysqlDump(t *testing.T) {
 
 		actual := connMetadata.DumpValues
 		if len(actual) != len(expected) {
-			t.Errorf("actual %v\nwant %v", actual, expected)
+			t.Errorf("%v\nactual %v\nwant %v", tt.description, actual, expected)
 		}
 		for i := 0; i < len(actual); i++ {
 			v := actual[i].Value
@@ -723,4 +788,12 @@ func newTestLogger(out io.Writer) *zap.Logger {
 	))
 
 	return logger
+}
+
+func newMysqlReadTests() []mysqlReadTest {
+	buf := bytes.NewBuffer(nil)
+	_ = gob.NewEncoder(buf).Encode(&mysqlReadTests)
+	tts := []mysqlReadTest{}
+	_ = gob.NewDecoder(buf).Decode(&tts)
+	return tts
 }
