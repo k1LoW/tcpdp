@@ -335,6 +335,21 @@ func (m *Dumper) readHandshakeResponse(in []byte, direction dumper.Direction, co
 	// parse Protocol::HandshakeResponse320
 	clientCapabilities = bytesToUint32(in[4:6]) // 2:capability flags, CLIENT_PROTOCOL_41 never set
 	if clientCapabilities&uint32(clientProtocol41) == 0 {
+		if clientCapabilities&uint32(clientSSL) > 0 {
+			// tcpdp mysql dumper not support SSL connection.
+			fields := []zapcore.Field{
+				zap.Error(errors.New("client is trying to connect using SSL. tcpdp mysql dumper not support SSL connection")),
+			}
+			for _, kv := range connMetadata.DumpValues {
+				fields = append(fields, zap.Any(kv.Key, kv.Value))
+			}
+			for _, kv := range values {
+				fields = append(fields, zap.Any(kv.Key, kv.Value))
+			}
+			m.logger.Warn("-", fields...)
+			return values
+		}
+
 		v := []dumper.DumpValue{}
 		internal := connMetadata.Internal.(connMetadataInternal)
 		connMetadata.Internal = internal
