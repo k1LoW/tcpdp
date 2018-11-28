@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.14.0](https://github.com/k1LoW/tcpdp/compare/v0.13.1...v0.14.0) (2018-11-28)
+
+* Add Unsupport SSL warning when Protocol::HandshakeResponse320 [#68](https://github.com/k1LoW/tcpdp/pull/68) ([k1LoW](https://github.com/k1LoW))
+* Analyze username and database name via Protocol::HandshakeResponse320 [#67](https://github.com/k1LoW/tcpdp/pull/67) ([k1LoW](https://github.com/k1LoW))
+* Check SSLRequest when parsing Handshake and write warning to dump.log [#66](https://github.com/k1LoW/tcpdp/pull/66) ([k1LoW](https://github.com/k1LoW))
+
 ## [v0.13.1](https://github.com/k1LoW/tcpdp/compare/v0.13.0...v0.13.1) (2018-10-23)
 
 * Write `mtu` `mss` to log [#65](https://github.com/k1LoW/tcpdp/pull/65) ([k1LoW](https://github.com/k1LoW))
