@@ -206,6 +206,17 @@ func (m *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 					},
 				}
 			}
+		} else if ok && numParamsNum == 0 {
+			dumps = []dumper.DumpValue{
+				dumper.DumpValue{
+					Key:   "stmt_id",
+					Value: stmtIDNum,
+				},
+				dumper.DumpValue{
+					Key:   "stmt_execute_values",
+					Value: []interface{}{},
+				},
+			}
 		} else {
 			values := readString(in[5:], cSet)
 			dumps = []dumper.DumpValue{
