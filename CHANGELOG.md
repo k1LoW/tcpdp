@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.14.1](https://github.com/k1LoW/tcpdp/compare/v0.14.0...v0.14.1) (2018-12-07)
+
+* Fix COM_STMT_EXECUTE with zero stmt_execute_values [#70](https://github.com/k1LoW/tcpdp/pull/70) ([k1LoW](https://github.com/k1LoW))
+* Fix break packets for parsing HandshakeResponse320 [#69](https://github.com/k1LoW/tcpdp/pull/69) ([k1LoW](https://github.com/k1LoW))
+
 ## [v0.14.0](https://github.com/k1LoW/tcpdp/compare/v0.13.1...v0.14.0) (2018-11-28)
 
 * Add Unsupport SSL warning when Protocol::HandshakeResponse320 [#68](https://github.com/k1LoW/tcpdp/pull/68) ([k1LoW](https://github.com/k1LoW))
