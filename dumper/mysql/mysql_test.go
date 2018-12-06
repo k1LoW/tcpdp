@@ -547,6 +547,110 @@ func newMysqlReadTests() []mysqlReadTest {
 			"\"stmt_execute_values\":[\"testdb\",\"comment_stars\"]",
 		},
 		{
+			"Parse values from COM_STMT_EXECUTE packet (0 values)",
+			[]byte{
+				0x0b, 0x00, 0x00, 0x00, 0x17, 0x01, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
+			},
+			dumper.ClientToRemote,
+			dumper.ConnMetadata{
+				DumpValues: []dumper.DumpValue{},
+				Internal: connMetadataInternal{
+					stmtNumParams:      stmtNumParams{1: 0},
+					clientCapabilities: clientCapabilities{},
+					charSet:            charSetUnknown,
+				},
+			},
+			[]dumper.DumpValue{},
+			[]dumper.DumpValue{
+				dumper.DumpValue{
+					Key:   "stmt_id",
+					Value: 1,
+				},
+				dumper.DumpValue{
+					Key:   "stmt_execute_values",
+					Value: []interface{}{},
+				},
+				dumper.DumpValue{
+					Key:   "seq_num",
+					Value: int64(0),
+				},
+				dumper.DumpValue{
+					Key:   "command_id",
+					Value: byte(23),
+				},
+			},
+			"\"stmt_execute_values\":[]",
+		},
+		{
+			"Parse values from COM_STMT_PREPARE packet (0 values)",
+			[]byte{
+				0x31, 0x00, 0x00, 0x00, 0x16, 0x53, 0x45, 0x4c, 0x45, 0x43, 0x54, 0x20, 0x2a, 0x20, 0x46,
+				0x52, 0x4f, 0x4d, 0x20, 0x69, 0x6e, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x69, 0x6f, 0x6e,
+				0x5f, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x74, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x20,
+				0x4c, 0x49, 0x4d, 0x49, 0x54, 0x20, 0x31, 0x3b,
+			},
+			dumper.ClientToRemote,
+			dumper.ConnMetadata{
+				DumpValues: []dumper.DumpValue{},
+				Internal: connMetadataInternal{
+					stmtNumParams:      stmtNumParams{},
+					clientCapabilities: clientCapabilities{},
+					charSet:            charSetUnknown,
+				},
+			},
+			[]dumper.DumpValue{},
+			[]dumper.DumpValue{
+				dumper.DumpValue{
+					Key:   "stmt_prepare_query",
+					Value: "SELECT * FROM information_schema.tables LIMIT 1;",
+				},
+				dumper.DumpValue{
+					Key:   "seq_num",
+					Value: int64(0),
+				},
+				dumper.DumpValue{
+					Key:   "command_id",
+					Value: byte(22),
+				},
+			},
+			"\"stmt_prepare_query\":\"SELECT * FROM information_schema.tables LIMIT 1;\"",
+		},
+		{
+			"Parse values from COM_STMT_EXECUTE packet (0 values)",
+			[]byte{
+				0x0b, 0x00, 0x00, 0x00, 0x17, 0x01, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
+			},
+			dumper.ClientToRemote,
+			dumper.ConnMetadata{
+				DumpValues: []dumper.DumpValue{},
+				Internal: connMetadataInternal{
+					stmtNumParams:      stmtNumParams{1: 0},
+					clientCapabilities: clientCapabilities{},
+					charSet:            charSetUnknown,
+				},
+			},
+			[]dumper.DumpValue{},
+			[]dumper.DumpValue{
+				dumper.DumpValue{
+					Key:   "stmt_id",
+					Value: 1,
+				},
+				dumper.DumpValue{
+					Key:   "stmt_execute_values",
+					Value: []interface{}{},
+				},
+				dumper.DumpValue{
+					Key:   "seq_num",
+					Value: int64(0),
+				},
+				dumper.DumpValue{
+					Key:   "command_id",
+					Value: byte(23),
+				},
+			},
+			"\"stmt_execute_values\":[]",
+		},
+		{
 			// https://dev.mysql.com/doc/internals/en/example-one-mysql-packet.html
 			"Parse values from Compressed COM_QUERY (Client Compress ON)",
 			[]byte{
