@@ -523,13 +523,17 @@ func readTime(buff *bytes.Buffer) string {
 }
 
 func bytesToUint32(b []byte) uint32 {
-	padding := make([]byte, 4-len(b))
-	return binary.LittleEndian.Uint32(append(b, padding...))
+	c := make([]byte, len(b))
+	copy(c, b)
+	padding := make([]byte, 4-len(c))
+	return binary.LittleEndian.Uint32(append(c, padding...))
 }
 
 func bytesToUint64(b []byte) uint64 {
-	padding := make([]byte, 8-len(b))
-	return binary.LittleEndian.Uint64(append(b, padding...))
+	c := make([]byte, len(b))
+	copy(c, b)
+	padding := make([]byte, 8-len(c))
+	return binary.LittleEndian.Uint64(append(c, padding...))
 }
 
 func readBytes(buff *bytes.Buffer, len int) []byte {
