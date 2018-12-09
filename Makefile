@@ -37,7 +37,7 @@ lint:
 	$(GO) fmt $(shell go list ./... | grep -v misc)
 
 test:
-	$(GO) test -cover -v $(shell go list ./... | grep -v misc)
+	$(GO) test -v $(shell go list ./... | grep -v misc) -coverprofile=coverage.txt -covermode=count
 
 proxy_integration: build
 	@sudo rm -f ./tcpdp.log* ./dump.log*
@@ -132,9 +132,6 @@ long_query_integration: build
 	@sudo rm -f ./tcpdp.log* ./dump.log*
 	@echo "long_query_integration OK"
 
-cover: depsdev
-	goveralls -service=travis-ci
-
 build:
 	$(GO) build -ldflags="$(BUILD_LDFLAGS)"
 
@@ -208,7 +205,6 @@ build_deb:
 depsdev:
 	GO111MODULE=off go get golang.org/x/tools/cmd/cover
 	GO111MODULE=off go get golang.org/x/lint/golint
-	GO111MODULE=off go get github.com/mattn/goveralls
 	GO111MODULE=off go get github.com/motemen/gobump/cmd/gobump
 	GO111MODULE=off go get github.com/tcnksm/ghr
 	GO111MODULE=off go get github.com/hairyhenderson/gomplate/cmd/gomplate
