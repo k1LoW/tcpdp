@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.15.0](https://github.com/k1LoW/tcpdp/compare/v0.14.1...v0.15.0) (2018-12-12)
+
+* Add `--stdout` option [#71](https://github.com/k1LoW/tcpdp/pull/71) ([k1LoW](https://github.com/k1LoW))
+
 ## [v0.14.1](https://github.com/k1LoW/tcpdp/compare/v0.14.0...v0.14.1) (2018-12-07)
 
 * Fix COM_STMT_EXECUTE with zero stmt_execute_values [#70](https://github.com/k1LoW/tcpdp/pull/70) ([k1LoW](https://github.com/k1LoW))
