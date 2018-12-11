@@ -54,6 +54,12 @@ var probeCmd = &cobra.Command{
 		if cfgFile == "" {
 			viper.Set("tcpdp.dumper", probeDumper) // because share with `server`
 		}
+		if logToStdout {
+			viper.Set("log.enable", true)
+			viper.Set("log.stdout", true)
+			viper.Set("dumpLog.enable", true)
+			viper.Set("dumpLog.stdout", true)
+		}
 
 		dumper := viper.GetString("tcpdp.dumper")
 		target := viper.GetString("probe.target")
@@ -115,6 +121,7 @@ func init() {
 	probeCmd.Flags().BoolP("immediate-mode", "", false, "immediate mode")
 	probeCmd.Flags().StringP("snapshot-length", "s", fmt.Sprintf("%dB", snaplenDefault), "snapshot length")
 	probeCmd.Flags().StringVarP(&probeDumper, "dumper", "d", "hex", "dumper")
+	probeCmd.Flags().BoolVarP(&logToStdout, "stdout", "", false, "output all log to STDOUT")
 
 	if err := viper.BindPFlag("probe.target", probeCmd.Flags().Lookup("target")); err != nil {
 		fmt.Println(err)

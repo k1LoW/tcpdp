@@ -31,8 +31,9 @@ import (
 )
 
 var (
-	cfgFile string
-	logger  *zap.Logger
+	cfgFile     string
+	logger      *zap.Logger
+	logToStdout bool
 )
 
 // rootCmd represents the base command when called without any subcommands
