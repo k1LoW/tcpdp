@@ -51,6 +51,12 @@ var proxyCmd = &cobra.Command{
 		if cfgFile == "" {
 			viper.Set("tcpdp.dumper", proxyDumper) // because share with `probe`
 		}
+		if logToStdout {
+			viper.Set("log.enable", true)
+			viper.Set("log.stdout", true)
+			viper.Set("dumpLog.enable", true)
+			viper.Set("dumpLog.stdout", true)
+		}
 
 		dumper := viper.GetString("tcpdp.dumper")
 		listenAddr := viper.GetString("proxy.listenAddr")
@@ -119,6 +125,7 @@ func init() {
 	proxyCmd.Flags().StringP("remote", "r", "localhost:80", "remote address")
 	proxyCmd.Flags().StringVarP(&proxyDumper, "dumper", "d", "hex", "dumper")
 	proxyCmd.Flags().BoolP("use-server-starter", "s", false, "use server_starter")
+	proxyCmd.Flags().BoolVarP(&logToStdout, "stdout", "", false, "output all log to STDOUT")
 
 	if err := viper.BindPFlag("proxy.listenAddr", proxyCmd.Flags().Lookup("listen")); err != nil {
 		fmt.Println(err)
