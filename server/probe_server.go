@@ -102,7 +102,7 @@ func (s *ProbeServer) Start() error {
 	}
 	internalBufferLength := viper.GetInt("probe.internalBufferLength")
 
-	host, port, err := reader.ParseTarget(target)
+	t, err := reader.ParseTarget(target)
 	if err != nil {
 		s.logger.WithOptions(zap.AddCaller()).Fatal("parse target error", zap.Error(err))
 		return err
@@ -165,7 +165,7 @@ func (s *ProbeServer) Start() error {
 		handle.Close()
 	}()
 
-	f := reader.NewBPFFilterString(host, port)
+	f := reader.NewBPFFilterString(t)
 
 	if err := handle.SetBPFFilter(f); err != nil {
 		fields := s.fieldsWithErrorAndValues(err, pValues)
@@ -184,7 +184,7 @@ func (s *ProbeServer) Start() error {
 		internalBufferLength,
 	)
 
-	if err := r.ReadAndDump(host, port); err != nil {
+	if err := r.ReadAndDump(t); err != nil {
 		fields := s.fieldsWithErrorAndValues(err, pValues)
 		s.logger.WithOptions(zap.AddCaller()).Fatal("ReadAndDump error", fields...)
 		return err

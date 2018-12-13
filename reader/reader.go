@@ -20,45 +20,74 @@ const anyIP = "0.0.0.0"
 
 var maxPacketLen = 0xFFFF // 65535
 
+// Target struct
+type Target struct {
+	TargetHosts []TargetHost
+}
+
+// TargetHost struct
+type TargetHost struct {
+	Host string
+	Port uint16
+}
+
 // ParseTarget parse target to host:port
-func ParseTarget(target string) (string, uint16, error) {
-	var port uint16
-	var host string
-	if target == "" {
-		host = ""
-		port = uint16(0)
-	} else if strings.Contains(target, ":") {
-		tAddr, err := net.ResolveTCPAddr("tcp", target)
-		if err != nil {
-			return "", uint16(0), nil
+func ParseTarget(t string) (Target, error) {
+	ts := strings.Split(strings.Replace(t, " ", "", -1), "||")
+	targets := []TargetHost{}
+	for _, t := range ts {
+		var port uint16
+		var host string
+		if t == "" {
+			host = ""
+			port = uint16(0)
+		} else if strings.Contains(t, ":") {
+			tAddr, err := net.ResolveTCPAddr("tcp", t)
+			if err != nil {
+				return Target{}, err
+			}
+			host = tAddr.IP.String()
+			port = uint16(tAddr.Port)
+		} else if strings.Contains(t, ".") {
+			host = t
+			port = uint16(0)
+		} else {
+			host = ""
+			port64, err := strconv.ParseUint(t, 10, 64)
+			if err != nil {
+				return Target{}, err
+			}
+			port = uint16(port64)
 		}
-		host = tAddr.IP.String()
-		port = uint16(tAddr.Port)
-	} else if strings.Contains(target, ".") {
-		host = target
-		port = uint16(0)
-	} else {
-		host = ""
-		port64, err := strconv.ParseUint(target, 10, 64)
-		if err != nil {
-			return "", uint16(0), nil
-		}
-		port = uint16(port64)
+		targets = append(targets, TargetHost{
+			Host: host,
+			Port: port,
+		})
 	}
-	return host, port, nil
+	return Target{
+		TargetHosts: targets,
+	}, nil
 }
 
 // NewBPFFilterString return string for BPF
-func NewBPFFilterString(host string, port uint16) string {
-	f := fmt.Sprintf("tcp and host %s and port %d", host, port)
-	if (host == "" || host == anyIP) && port > 0 {
-		f = fmt.Sprintf("tcp port %d", port)
-	} else if (host != "" && host != anyIP) && port == 0 {
-		f = fmt.Sprintf("tcp and host %s", host)
-	} else if (host == "" || host == anyIP) && port == 0 {
-		f = "tcp"
+func NewBPFFilterString(target Target) string {
+	targets := target.TargetHosts
+	fs := []string{}
+	for _, target := range targets {
+		host := target.Host
+		port := target.Port
+		f := fmt.Sprintf("(host %s and port %d)", host, port)
+		if (host == "" || host == anyIP) && port > 0 {
+			f = fmt.Sprintf("(port %d)", port)
+		} else if (host != "" && host != anyIP) && port == 0 {
+			f = fmt.Sprintf("(host %s)", host)
+		} else if (host == "" || host == anyIP) && port == 0 {
+			return "tcp"
+		}
+		fs = append(fs, f)
 	}
-	return f
+
+	return fmt.Sprintf("tcp and (%s)", strings.Join(fs, " or "))
 }
 
 // PacketReader struct
@@ -98,10 +127,10 @@ func NewPacketReader(
 }
 
 // ReadAndDump from gopacket.PacketSource
-func (r *PacketReader) ReadAndDump(host string, port uint16) error {
+func (r *PacketReader) ReadAndDump(target Target) error {
 	packetChan := r.packetSource.Packets()
 
-	go r.handlePacket(host, port)
+	go r.handlePacket(target)
 	go r.checkBufferdPacket(packetChan)
 
 	for {
@@ -114,7 +143,10 @@ func (r *PacketReader) ReadAndDump(host string, port uint16) error {
 	}
 }
 
-func (r *PacketReader) handlePacket(host string, port uint16) error {
+func (r *PacketReader) handlePacket(target Target) error {
+	host := target.TargetHosts[0].Host
+	port := target.TargetHosts[0].Port
+
 	mMap := map[string]*dumper.ConnMetadata{}        // metadata map per connection
 	mssMap := map[string]int{}                       // TCP MSS map per connection
 	bMap := map[string]map[dumper.Direction][]byte{} // long payload map per direction
