@@ -31,6 +31,16 @@ type TargetHost struct {
 	Port uint16
 }
 
+// Match return true if TargetHost match
+func (t Target) Match(host string, port uint16) bool {
+	for _, h := range t.TargetHosts {
+		if (h.Host == "" || h.Host == host) && h.Port == port {
+			return true
+		}
+	}
+	return false
+}
+
 // ParseTarget parse target to host:port
 func ParseTarget(t string) (Target, error) {
 	ts := strings.Split(strings.Replace(t, " ", "", -1), "||")
@@ -144,9 +154,6 @@ func (r *PacketReader) ReadAndDump(target Target) error {
 }
 
 func (r *PacketReader) handlePacket(target Target) error {
-	host := target.TargetHosts[0].Host
-	port := target.TargetHosts[0].Port
-
 	mMap := map[string]*dumper.ConnMetadata{}        // metadata map per connection
 	mssMap := map[string]int{}                       // TCP MSS map per connection
 	bMap := map[string]map[dumper.Direction][]byte{} // long payload map per direction
@@ -175,10 +182,10 @@ func (r *PacketReader) handlePacket(target Target) error {
 			var direction dumper.Direction
 			srcToDstKey := fmt.Sprintf("%s:%d->%s:%d", ip.SrcIP.String(), tcp.SrcPort, ip.DstIP.String(), tcp.DstPort)
 			dstToSrcKey := fmt.Sprintf("%s:%d->%s:%d", ip.DstIP.String(), tcp.DstPort, ip.SrcIP.String(), tcp.SrcPort)
-			if (host == "" || ip.DstIP.String() == host) && uint16(tcp.DstPort) == port {
+			if target.Match(ip.DstIP.String(), uint16(tcp.DstPort)) {
 				key = srcToDstKey
 				direction = dumper.SrcToDst
-			} else if (host == "" || ip.SrcIP.String() == host) && uint16(tcp.SrcPort) == port {
+			} else if target.Match(ip.SrcIP.String(), uint16(tcp.SrcPort)) {
 				key = dstToSrcKey
 				direction = dumper.DstToSrc
 			} else {
