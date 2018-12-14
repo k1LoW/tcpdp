@@ -123,13 +123,13 @@ var readCmd = &cobra.Command{
 			readIternalBufferLength,
 		)
 
-		host, port, err := reader.ParseTarget(readTarget)
+		t, err := reader.ParseTarget(readTarget)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
 
-		if err := r.ReadAndDump(host, port); err != nil {
+		if err := r.ReadAndDump(t); err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
