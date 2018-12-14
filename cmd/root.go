@@ -69,6 +69,7 @@ func initConfig() {
 	viper.SetDefault("probe.immediateMode", false)
 	viper.SetDefault("probe.internalBufferLength", 10000)
 	viper.SetDefault("probe.snapshotLength", fmt.Sprintf("%dB", snaplenDefault))
+	viper.SetDefault("probe.filter", "")
 
 	viper.SetDefault("log.dir", ".")
 	viper.SetDefault("log.enable", true)

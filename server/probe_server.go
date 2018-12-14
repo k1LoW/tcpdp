@@ -89,6 +89,7 @@ func (s *ProbeServer) Start() error {
 
 	device := viper.GetString("probe.interface")
 	target := viper.GetString("probe.target")
+	filter := viper.GetString("probe.filter")
 	pcapBufferSize, err := byteFormat(viper.GetString("probe.bufferSize"))
 	if err != nil {
 		s.logger.WithOptions(zap.AddCaller()).Fatal("parse buffer-size error", zap.Error(err))
@@ -108,6 +109,12 @@ func (s *ProbeServer) Start() error {
 		return err
 	}
 
+	if filter == "" {
+		filter = reader.NewBPFFilterString(t)
+	} else {
+		filter = fmt.Sprintf("tcp and (%s)", filter)
+	}
+
 	pValues := []dumper.DumpValue{
 		dumper.DumpValue{
 			Key:   "interface",
@@ -116,6 +123,10 @@ func (s *ProbeServer) Start() error {
 		dumper.DumpValue{
 			Key:   "probe_target_addr",
 			Value: target,
+		},
+		dumper.DumpValue{
+			Key:   "filter",
+			Value: filter,
 		},
 	}
 
@@ -165,11 +176,9 @@ func (s *ProbeServer) Start() error {
 		handle.Close()
 	}()
 
-	f := reader.NewBPFFilterString(t)
-
-	if err := handle.SetBPFFilter(f); err != nil {
+	if err := handle.SetBPFFilter(filter); err != nil {
 		fields := s.fieldsWithErrorAndValues(err, pValues)
-		s.logger.WithOptions(zap.AddCaller()).Fatal("BPF error", fields...)
+		s.logger.WithOptions(zap.AddCaller()).Fatal("Set BPF error", fields...)
 		return err
 	}
 
