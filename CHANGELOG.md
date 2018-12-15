@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.16.0](https://github.com/k1LoW/tcpdp/compare/v0.15.0...v0.16.0) (2018-12-16)
+
+* Add `--filter` option for override BPF [#73](https://github.com/k1LoW/tcpdp/pull/73) ([k1LoW](https://github.com/k1LoW))
+* Support multi target [#72](https://github.com/k1LoW/tcpdp/pull/72) ([k1LoW](https://github.com/k1LoW))
+
 ## [v0.15.0](https://github.com/k1LoW/tcpdp/compare/v0.14.1...v0.15.0) (2018-12-12)
 
 * Add `--stdout` option [#71](https://github.com/k1LoW/tcpdp/pull/71) ([k1LoW](https://github.com/k1LoW))
