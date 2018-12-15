@@ -122,6 +122,7 @@ func init() {
 	probeCmd.Flags().StringP("snapshot-length", "s", fmt.Sprintf("%dB", snaplenDefault), "snapshot length")
 	probeCmd.Flags().StringVarP(&probeDumper, "dumper", "d", "hex", "dumper")
 	probeCmd.Flags().BoolVarP(&logToStdout, "stdout", "", false, "output all log to STDOUT")
+	probeCmd.Flags().StringP("filter", "", "", "override Berkekey Packet Filter")
 
 	if err := viper.BindPFlag("probe.target", probeCmd.Flags().Lookup("target")); err != nil {
 		fmt.Println(err)
@@ -140,6 +141,10 @@ func init() {
 		os.Exit(1)
 	}
 	if err := viper.BindPFlag("probe.snapshotLength", probeCmd.Flags().Lookup("snapshot-length")); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	if err := viper.BindPFlag("probe.filter", probeCmd.Flags().Lookup("filter")); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
