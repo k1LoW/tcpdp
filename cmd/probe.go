@@ -64,8 +64,6 @@ var probeCmd = &cobra.Command{
 		dumper := viper.GetString("tcpdp.dumper")
 		target := viper.GetString("probe.target")
 		device := viper.GetString("probe.interface")
-		bufferSize := viper.GetString("probe.bufferSize")
-		immediateMode := viper.GetBool("probe.immediateMode")
 		snapshotLength := viper.GetString("probe.snapshotLength")
 		ifi, err := net.InterfaceByName(device)
 		if err != nil {
@@ -84,16 +82,22 @@ var probeCmd = &cobra.Command{
 		signal.Ignore()
 		signal.Notify(signalChan, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
 
-		s := server.NewProbeServer(context.Background(), logger)
+		s, err := server.NewProbeServer(context.Background(), logger)
+		if err != nil {
+			logger.Fatal("NewProbeServer error.", zap.Error(err))
+		}
+
+		pcapConfig := s.PcapConfig()
 
 		logger.Info("Starting probe.",
 			zap.String("dumper", dumper),
-			zap.String("interface", device),
+			zap.String("interface", pcapConfig.Device),
 			zap.String("mtu", fmt.Sprintf("%d", mtu)),
 			zap.String("probe_target_addr", target),
-			zap.String("buffer_size", bufferSize),
-			zap.Bool("immediate_mode", immediateMode),
-			zap.String("snapshot_length", snapshotLength),
+			zap.String("filter", pcapConfig.Filter),
+			zap.String("buffer_size", pcapConfig.BufferSize),
+			zap.Bool("immediate_mode", pcapConfig.ImmediateMode),
+			zap.String("snapshot_length", pcapConfig.SnapshotLength),
 			zap.Int("internal_buffer_length", internalBufferLength),
 		)
 

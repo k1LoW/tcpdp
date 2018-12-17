@@ -81,6 +81,7 @@ bufferSize = "2MB"
 immediateMode = false
 snapshotLength = "auto"
 internalBufferLength = 10000
+filter = ""
 
 [proxy]
 useServerStarter = false
@@ -192,6 +193,7 @@ $ go get github.com/k1LoW/tcpdp
 | mtu | interface MTU (Maximum Transmission Unit) | probe |
 | mss | TCP connection MSS (Max Segment Size) | probe |
 | probe_target_addr | probe target address | probe |
+| filter | BPF (Berkeley Packet Filter) | probe |
 | buffer_size | libpcap buffer_size | probe |
 | immediate_mode | libpcap immediate_mode | probe |
 | snapshot_length | libpcap snapshot length | probe |
