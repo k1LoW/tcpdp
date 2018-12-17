@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.16.1](https://github.com/k1LoW/tcpdp/compare/v0.16.0...v0.16.1) (2018-12-17)
+
+* Refactor NewProbeServer and logging info [#74](https://github.com/k1LoW/tcpdp/pull/74) ([k1LoW](https://github.com/k1LoW))
+
 ## [v0.16.0](https://github.com/k1LoW/tcpdp/compare/v0.15.0...v0.16.0) (2018-12-16)
 
 * Add `--filter` option for override BPF [#73](https://github.com/k1LoW/tcpdp/pull/73) ([k1LoW](https://github.com/k1LoW))
