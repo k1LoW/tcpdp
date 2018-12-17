@@ -30,6 +30,17 @@ var numberRegexp = regexp.MustCompile(`^\d+$`)
 const promiscuous = false
 const timeout = pcap.BlockForever
 
+// PcapConfig struct
+type PcapConfig struct {
+	Device         string
+	BufferSize     string
+	ImmediateMode  bool
+	SnapshotLength string
+	Promiscuous    bool
+	Timeout        time.Duration
+	Filter         string
+}
+
 // ProbeServer struct
 type ProbeServer struct {
 	pidfile    string
@@ -39,10 +50,12 @@ type ProbeServer struct {
 	ClosedChan chan struct{}
 	logger     *zap.Logger
 	dumper     dumper.Dumper
+	target     reader.Target
+	pcapConfig PcapConfig
 }
 
 // NewProbeServer returns a new Server
-func NewProbeServer(ctx context.Context, logger *zap.Logger) *ProbeServer {
+func NewProbeServer(ctx context.Context, logger *zap.Logger) (*ProbeServer, error) {
 	innerCtx, shutdown := context.WithCancel(ctx)
 	closedChan := make(chan struct{})
 
@@ -63,6 +76,33 @@ func NewProbeServer(ctx context.Context, logger *zap.Logger) *ProbeServer {
 	pidfile, err := filepath.Abs(viper.GetString("tcpdp.pidfile"))
 	if err != nil {
 		logger.WithOptions(zap.AddCaller()).Fatal("pidfile path error", zap.Error(err))
+		shutdown()
+		return nil, err
+	}
+
+	target := viper.GetString("probe.target")
+	t, err := reader.ParseTarget(target)
+	if err != nil {
+		logger.WithOptions(zap.AddCaller()).Fatal("parse target error", zap.Error(err))
+		shutdown()
+		return nil, err
+	}
+
+	filter := viper.GetString("probe.filter")
+	if filter == "" {
+		filter = reader.NewBPFFilterString(t)
+	} else {
+		filter = fmt.Sprintf("tcp and (%s)", filter)
+	}
+
+	pcapConfig := PcapConfig{
+		Device:         viper.GetString("probe.interface"),
+		BufferSize:     viper.GetString("probe.bufferSize"),
+		ImmediateMode:  viper.GetBool("probe.immediateMode"),
+		SnapshotLength: viper.GetString("probe.snapshotLength"),
+		Promiscuous:    promiscuous,
+		Timeout:        timeout,
+		Filter:         filter,
 	}
 
 	return &ProbeServer{
@@ -72,7 +112,9 @@ func NewProbeServer(ctx context.Context, logger *zap.Logger) *ProbeServer {
 		ClosedChan: closedChan,
 		logger:     logger,
 		dumper:     d,
-	}
+		target:     t,
+		pcapConfig: pcapConfig,
+	}, nil
 }
 
 // Start probe server.
@@ -87,50 +129,33 @@ func (s *ProbeServer) Start() error {
 		close(s.ClosedChan)
 	}()
 
-	device := viper.GetString("probe.interface")
-	target := viper.GetString("probe.target")
-	filter := viper.GetString("probe.filter")
-	pcapBufferSize, err := byteFormat(viper.GetString("probe.bufferSize"))
+	pcapBufferSize, err := byteFormat(s.pcapConfig.BufferSize)
 	if err != nil {
 		s.logger.WithOptions(zap.AddCaller()).Fatal("parse buffer-size error", zap.Error(err))
 		return err
 	}
-	immediateMode := viper.GetBool("probe.immediateMode")
-	snapshotLength, err := byteFormat(viper.GetString("probe.snapshotLength"))
+	immediateMode := s.pcapConfig.ImmediateMode
+	snapshotLength, err := byteFormat(s.pcapConfig.SnapshotLength)
 	if err != nil {
 		s.logger.WithOptions(zap.AddCaller()).Fatal("parse snapshot-length error", zap.Error(err))
 		return err
 	}
 	internalBufferLength := viper.GetInt("probe.internalBufferLength")
 
-	t, err := reader.ParseTarget(target)
-	if err != nil {
-		s.logger.WithOptions(zap.AddCaller()).Fatal("parse target error", zap.Error(err))
-		return err
-	}
-
-	if filter == "" {
-		filter = reader.NewBPFFilterString(t)
-	} else {
-		filter = fmt.Sprintf("tcp and (%s)", filter)
-	}
+	target := viper.GetString("probe.target")
 
 	pValues := []dumper.DumpValue{
 		dumper.DumpValue{
 			Key:   "interface",
-			Value: device,
+			Value: s.pcapConfig.Device,
 		},
 		dumper.DumpValue{
 			Key:   "probe_target_addr",
 			Value: target,
 		},
-		dumper.DumpValue{
-			Key:   "filter",
-			Value: filter,
-		},
 	}
 
-	inactiveHandle, err := pcap.NewInactiveHandle(device)
+	inactiveHandle, err := pcap.NewInactiveHandle(s.pcapConfig.Device)
 	if err != nil {
 		fields := s.fieldsWithErrorAndValues(err, pValues)
 		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap create error", fields...)
@@ -141,12 +166,12 @@ func (s *ProbeServer) Start() error {
 		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap create error (snaplen)", fields...)
 		return err
 	}
-	if err := inactiveHandle.SetPromisc(promiscuous); err != nil {
+	if err := inactiveHandle.SetPromisc(s.pcapConfig.Promiscuous); err != nil {
 		fields := s.fieldsWithErrorAndValues(err, pValues)
 		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap create error (promiscuous)", fields...)
 		return err
 	}
-	if err := inactiveHandle.SetTimeout(timeout); err != nil {
+	if err := inactiveHandle.SetTimeout(s.pcapConfig.Timeout); err != nil {
 		fields := s.fieldsWithErrorAndValues(err, pValues)
 		s.logger.WithOptions(zap.AddCaller()).Fatal("pcap create error (timeout)", fields...)
 		return err
@@ -176,7 +201,7 @@ func (s *ProbeServer) Start() error {
 		handle.Close()
 	}()
 
-	if err := handle.SetBPFFilter(filter); err != nil {
+	if err := handle.SetBPFFilter(s.pcapConfig.Filter); err != nil {
 		fields := s.fieldsWithErrorAndValues(err, pValues)
 		s.logger.WithOptions(zap.AddCaller()).Fatal("Set BPF error", fields...)
 		return err
@@ -193,7 +218,7 @@ func (s *ProbeServer) Start() error {
 		internalBufferLength,
 	)
 
-	if err := r.ReadAndDump(t); err != nil {
+	if err := r.ReadAndDump(s.target); err != nil {
 		fields := s.fieldsWithErrorAndValues(err, pValues)
 		s.logger.WithOptions(zap.AddCaller()).Fatal("ReadAndDump error", fields...)
 		return err
@@ -260,6 +285,11 @@ func (s *ProbeServer) fieldsWithErrorAndValues(err error, pValues []dumper.DumpV
 	}
 
 	return fields
+}
+
+// PcapConfig return ProbeServer.pcapConfig
+func (s *ProbeServer) PcapConfig() PcapConfig {
+	return s.pcapConfig
 }
 
 func byteFormat(s string) (int, error) {

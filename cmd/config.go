@@ -46,6 +46,7 @@ bufferSize = "{{ .probe.buffersize }}"
 immediateMode = {{ .probe.immediatemode }}
 snapshotLength = "{{ .probe.snapshotlength }}"
 internalBufferLength = {{ .probe.internalbufferlength }}
+filter = "{{ .probe.filter }}"
 
 [proxy]
 useServerStarter = {{ .proxy.useserverstarter }}
