@@ -8,6 +8,7 @@ import (
 
 	"github.com/k1LoW/tcpdp/dumper"
 	"github.com/rs/xid"
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -16,14 +17,15 @@ const maxPacketLen = 0xFFFF
 
 // Proxy struct
 type Proxy struct {
-	server       *Server
-	ctx          context.Context
-	Close        context.CancelFunc
-	connID       string
-	conn         *net.TCPConn
-	remoteConn   *net.TCPConn
-	connMetadata *dumper.ConnMetadata
-	seqNum       uint64
+	server        *Server
+	ctx           context.Context
+	Close         context.CancelFunc
+	connID        string
+	conn          *net.TCPConn
+	remoteConn    *net.TCPConn
+	connMetadata  *dumper.ConnMetadata
+	seqNum        uint64
+	proxyProtocol bool
 }
 
 // NewProxy returns a new Proxy
@@ -57,14 +59,15 @@ func NewProxy(s *Server, conn, remoteConn *net.TCPConn) *Proxy {
 	}
 
 	return &Proxy{
-		server:       s,
-		ctx:          innerCtx,
-		Close:        close,
-		connID:       connID,
-		conn:         conn,
-		remoteConn:   remoteConn,
-		connMetadata: connMetadata,
-		seqNum:       0,
+		server:        s,
+		ctx:           innerCtx,
+		Close:         close,
+		connID:        connID,
+		conn:          conn,
+		remoteConn:    remoteConn,
+		connMetadata:  connMetadata,
+		seqNum:        0,
+		proxyProtocol: viper.GetBool("tcpdp.proxyProtocol"),
 	}
 }
 

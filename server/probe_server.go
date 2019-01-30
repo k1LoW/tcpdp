@@ -43,15 +43,16 @@ type PcapConfig struct {
 
 // ProbeServer struct
 type ProbeServer struct {
-	pidfile    string
-	ctx        context.Context
-	shutdown   context.CancelFunc
-	Wg         *sync.WaitGroup
-	ClosedChan chan struct{}
-	logger     *zap.Logger
-	dumper     dumper.Dumper
-	target     reader.Target
-	pcapConfig PcapConfig
+	pidfile       string
+	ctx           context.Context
+	shutdown      context.CancelFunc
+	Wg            *sync.WaitGroup
+	ClosedChan    chan struct{}
+	logger        *zap.Logger
+	dumper        dumper.Dumper
+	target        reader.Target
+	pcapConfig    PcapConfig
+	proxyProtocol bool
 }
 
 // NewProbeServer returns a new Server
@@ -106,14 +107,15 @@ func NewProbeServer(ctx context.Context, logger *zap.Logger) (*ProbeServer, erro
 	}
 
 	return &ProbeServer{
-		pidfile:    pidfile,
-		ctx:        innerCtx,
-		shutdown:   shutdown,
-		ClosedChan: closedChan,
-		logger:     logger,
-		dumper:     d,
-		target:     t,
-		pcapConfig: pcapConfig,
+		pidfile:       pidfile,
+		ctx:           innerCtx,
+		shutdown:      shutdown,
+		ClosedChan:    closedChan,
+		logger:        logger,
+		dumper:        d,
+		target:        t,
+		pcapConfig:    pcapConfig,
+		proxyProtocol: viper.GetBool("tcpdp.proxyProtocol"),
 	}, nil
 }
 
@@ -207,6 +209,8 @@ func (s *ProbeServer) Start() error {
 		return err
 	}
 
+	proxyProtocol := viper.GetBool("tcpdp.proxyProtocol")
+
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 	r := reader.NewPacketReader(
 		s.ctx,
@@ -216,6 +220,7 @@ func (s *ProbeServer) Start() error {
 		pValues,
 		s.logger,
 		internalBufferLength,
+		proxyProtocol,
 	)
 
 	if err := r.ReadAndDump(s.target); err != nil {

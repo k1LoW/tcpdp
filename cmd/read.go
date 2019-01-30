@@ -113,6 +113,8 @@ var readCmd = &cobra.Command{
 
 		ctx, cancel := context.WithCancel(context.Background())
 
+		proxyProtocol := viper.GetBool("tcpdp.proxyProtocol")
+
 		r := reader.NewPacketReader(
 			ctx,
 			cancel,
@@ -121,6 +123,7 @@ var readCmd = &cobra.Command{
 			[]dumper.DumpValue{},
 			logger,
 			readIternalBufferLength,
+			proxyProtocol,
 		)
 
 		t, err := reader.ParseTarget(readTarget)
