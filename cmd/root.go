@@ -58,6 +58,7 @@ func init() {
 func initConfig() {
 	viper.SetDefault("tcpdp.pidfile", "./tcpdp.pid")
 	viper.SetDefault("tcpdp.dumper", "hex")
+	viper.SetDefault("tcpdp.proxyProtocol", false)
 
 	viper.SetDefault("proxy.useServerStarter", false)
 	viper.SetDefault("proxy.listenAddr", "localhost:8080")
