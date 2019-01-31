@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/k1LoW/tcpdp/dumper"
+	"github.com/k1LoW/tcpdp/reader"
 	"github.com/rs/xid"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -107,6 +108,15 @@ func (p *Proxy) dump(b []byte, direction dumper.Direction) error {
 		},
 	}
 
+	if p.proxyProtocol {
+		seek, ppValues, err := reader.ParseProxyProtocolHeader(b)
+		if err != nil {
+			p.Close()
+			return err
+		}
+		kvs = append(kvs, ppValues...)
+		return p.server.dumper.Dump(b[seek:], direction, p.connMetadata, kvs)
+	}
 	return p.server.dumper.Dump(b, direction, p.connMetadata, kvs)
 }
 

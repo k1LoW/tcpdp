@@ -326,7 +326,18 @@ func (r *PacketReader) handlePacket(target Target) error {
 				},
 			}
 
-			read := r.dumper.Read(in, direction, connMetadata)
+			var read []dumper.DumpValue
+			if r.proxyProtocol {
+				seek, ppValues, err := ParseProxyProtocolHeader(in)
+				if err != nil {
+					r.cancel()
+					return err
+				}
+				values = append(values, ppValues...)
+				read = r.dumper.Read(in[seek:], direction, connMetadata)
+			} else {
+				read = r.dumper.Read(in, direction, connMetadata)
+			}
 			mMap[key] = connMetadata
 			if len(read) == 0 {
 				continue
