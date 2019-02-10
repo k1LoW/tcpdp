@@ -35,7 +35,8 @@ import (
 )
 
 var (
-	proxyDumper string
+	proxyDumper        string
+	proxyProxyProtocol bool
 )
 
 // proxyCmd represents the proxy command
@@ -126,6 +127,7 @@ func init() {
 	proxyCmd.Flags().StringVarP(&proxyDumper, "dumper", "d", "hex", "dumper")
 	proxyCmd.Flags().BoolP("use-server-starter", "s", false, "use server_starter")
 	proxyCmd.Flags().BoolVarP(&logToStdout, "stdout", "", false, "output all log to STDOUT")
+	proxyCmd.Flags().BoolVarP(&proxyProxyProtocol, "proxy-protocol", "", false, "accept proxy protocol")
 
 	if err := viper.BindPFlag("proxy.listenAddr", proxyCmd.Flags().Lookup("listen")); err != nil {
 		fmt.Println(err)
@@ -140,6 +142,10 @@ func init() {
 		os.Exit(1)
 	}
 	if err := viper.BindPFlag("tcpdp.dumper", proxyCmd.Flags().Lookup("dumper")); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	if err := viper.BindPFlag("tcpdp.proxyProtocol", proxyCmd.Flags().Lookup("proxy-protocol")); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}

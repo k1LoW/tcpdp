@@ -16,7 +16,7 @@ var parseProxyProtocolHeaderTests = []struct {
 	{
 		// https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/enable-proxy-protocol.html
 		[]byte("PROXY TCP4 198.51.100.22 203.0.113.7 35646 80\r\n"),
-		57,
+		47,
 		[]dumper.DumpValue{
 			dumper.DumpValue{
 				Key:   "proxy_protocol_src_addr",

@@ -29,7 +29,7 @@ MYSQL_ROOT_PASSWORD=mypass
 DISTS=centos7 centos6 ubuntu16
 
 default: build
-ci: depsdev test proxy_integration probe_integration read_integration long_query_integration
+ci: depsdev test proxy_integration probe_integration read_integration long_query_integration proxy_protocol_integration
 
 lint:
 	golint $(shell go list ./... | grep -v misc)
@@ -133,7 +133,7 @@ long_query_integration: build
 
 proxy_protocol_integration: build
 	@sudo rm -f ./tcpdp.log* ./dump.log*
-	./tcpdp proxy -l localhost:33069 -r localhost:33070 -d mysql &
+	./tcpdp proxy -l localhost:33069 -r localhost:33070 -d mysql --proxy-protocol &
 	@sleep 1
 	mysqlslap --no-defaults --concurrency=100 --iterations=1 --auto-generate-sql --auto-generate-sql-add-autoincrement --auto-generate-sql-load-type=mixed --auto-generate-sql-write-number=100 --number-of-queries=1000 --host=127.0.0.1 --port=33068 --user=root --password=$(MYSQL_ROOT_PASSWORD) $(MYSQL_DISABLE_SSL) 2>&1 > ./result
 	@kill `cat ./tcpdp.pid`
@@ -141,8 +141,8 @@ proxy_protocol_integration: build
 	@cat ./result
 	@cat ./result | grep "Number of clients running queries: 100" || (echo "mysqlslap faild" && exit 1)
 	test `grep -c '' ./tcpdp.log` -eq 3 || (cat ./tcpdp.log && exit 1)
-	@rm -f ./tcpdp.log* ./dump.log*
 	test `grep -c '' ./dump.log` -gt 50 || (echo "dump proxy protocol faild" && exit 1)
+	@sudo rm -f ./tcpdp.log* ./dump.log*
 	@echo "proxy_protocol_integration OK"
 
 build:

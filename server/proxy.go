@@ -114,7 +114,7 @@ func (p *Proxy) dump(b []byte, direction dumper.Direction) error {
 			p.Close()
 			return err
 		}
-		kvs = append(kvs, ppValues...)
+		p.connMetadata.DumpValues = append(p.connMetadata.DumpValues, ppValues...)
 		return p.server.dumper.Dump(b[seek:], direction, p.connMetadata, kvs)
 	}
 	return p.server.dumper.Dump(b, direction, p.connMetadata, kvs)
