@@ -28,19 +28,17 @@ services:
       - "33069:33069"
     volumes:
       - ./testdata/nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./testdata/nginx/docker-entrypoint.sh:/usr/local/bin/docker-entrypoint.sh
-    command: /bin/bash /usr/local/bin/docker-entrypoint.sh
   proxy-protocol-proxy-linux:
     image: nginx
     restart: always
     network_mode: host
     volumes:
       - ./testdata/nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./testdata/nginx/docker-entrypoint.sh:/usr/local/bin/docker-entrypoint.sh
+    extra_hosts:
+      - "host.docker.internal:127.0.0.1"
     expose:
       - "33068"
       - "33069"
-    command: /bin/bash /usr/local/bin/docker-entrypoint.sh
   proxy-protocol-mariadb:
     image: mariadb:10.4
     restart: always
