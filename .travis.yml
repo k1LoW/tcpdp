@@ -14,7 +14,7 @@ addons:
 before_install:
   - sudo apt-get install libpcap-dev netcat
   - sudo pip install codecov
-  - docker-compose up -d postgres mysql57
+  - docker-compose up -d postgres mysql57 proxy-protocol-proxy proxy-protocol-mariadb
   - while ! nc -w 1 127.0.0.1 33066 > /dev/null 2>&1; do sleep 1; echo 'sleeping'; done;
   - while ! nc -w 1 127.0.0.1 54322 > /dev/null 2>&1; do sleep 1; echo 'sleeping'; done;
 script:

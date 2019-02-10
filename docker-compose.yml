@@ -20,6 +20,23 @@ services:
     environment:
       - MYSQL_DATABASE=testdb
       - MYSQL_ROOT_PASSWORD=mypass
+  proxy-protocol-proxy:
+    image: nginx
+    restart: always
+    ports:
+      - "33068:3308"
+    volumes:
+      - ./testdata/nginx/nginx.conf:/etc/nginx/nginx.conf
+  proxy-protocol-mariadb:
+    image: mariadb:10.4
+    restart: always
+    ports:
+      - "33070:3306"
+    volumes:
+      - ./testdata/mariadb.conf.d:/etc/mysql/conf.d
+    environment:
+      - MYSQL_DATABASE=testdb
+      - MYSQL_ROOT_PASSWORD=mypass
   centos7:
     build:
       context: .
