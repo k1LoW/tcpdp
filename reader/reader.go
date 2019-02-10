@@ -333,7 +333,7 @@ func (r *PacketReader) handlePacket(target Target) error {
 					r.cancel()
 					return err
 				}
-				values = append(values, ppValues...)
+				connMetadata.DumpValues = append(connMetadata.DumpValues, ppValues...)
 				read = r.dumper.Read(in[seek:], direction, connMetadata)
 			} else {
 				read = r.dumper.Read(in, direction, connMetadata)

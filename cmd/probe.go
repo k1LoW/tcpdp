@@ -35,7 +35,8 @@ import (
 )
 
 var (
-	probeDumper string
+	probeDumper        string
+	probeProxyProtocol bool
 )
 
 const snaplenAuto = "auto"
@@ -52,7 +53,8 @@ var probeCmd = &cobra.Command{
 			logger.Warn("Config file not found.", zap.Error(err))
 		}
 		if cfgFile == "" {
-			viper.Set("tcpdp.dumper", probeDumper) // because share with `server`
+			viper.Set("tcpdp.dumper", probeDumper)               // because share with `proxy`
+			viper.Set("tcpdp.proxyProtocol", probeProxyProtocol) // because share with `proxy`
 		}
 		if logToStdout {
 			viper.Set("log.enable", true)
@@ -127,6 +129,7 @@ func init() {
 	probeCmd.Flags().StringVarP(&probeDumper, "dumper", "d", "hex", "dumper")
 	probeCmd.Flags().BoolVarP(&logToStdout, "stdout", "", false, "output all log to STDOUT")
 	probeCmd.Flags().StringP("filter", "", "", "override Berkekey Packet Filter")
+	probeCmd.Flags().BoolVarP(&probeProxyProtocol, "proxy-protocol", "", false, "accept proxy protocol")
 
 	if err := viper.BindPFlag("probe.target", probeCmd.Flags().Lookup("target")); err != nil {
 		fmt.Println(err)
