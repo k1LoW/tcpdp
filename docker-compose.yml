@@ -27,6 +27,8 @@ services:
       - "33068:3308"
     volumes:
       - ./testdata/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./testdata/nginx/docker-entrypoint.sh:/usr/local/bin/docker-entrypoint.sh
+    command: /bin/bash /usr/local/bin/docker-entrypoint.sh
   proxy-protocol-mariadb:
     image: mariadb:10.4
     restart: always

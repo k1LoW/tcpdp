@@ -135,7 +135,7 @@ proxy_protocol_integration: build
 	@sudo rm -f ./tcpdp.log* ./dump.log*
 	./tcpdp proxy -l localhost:33069 -r localhost:33070 -d mysql --proxy-protocol &
 	@sleep 1
-	mysqlslap --no-defaults --concurrency=100 --iterations=1 --auto-generate-sql --auto-generate-sql-add-autoincrement --auto-generate-sql-load-type=mixed --auto-generate-sql-write-number=100 --number-of-queries=1000 --host=127.0.0.1 --port=33068 --user=root --password=$(MYSQL_ROOT_PASSWORD) $(MYSQL_DISABLE_SSL) 2>&1 > ./result
+	mysqlslap --no-defaults --concurrency=100 --iterations=1 --auto-generate-sql --auto-generate-sql-add-autoincrement --auto-generate-sql-load-type=mixed --auto-generate-sql-write-number=100 --number-of-queries=1000 --host=127.0.0.1 --port=33068 --user=root --password=$(MYSQL_ROOT_PASSWORD) $(MYSQL_DISABLE_SSL) 2>&1 > ./result || 	docker-compose logs
 	@kill `cat ./tcpdp.pid`
 	@sleep 1
 	@cat ./result
