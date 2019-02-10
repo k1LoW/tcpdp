@@ -108,7 +108,7 @@ func (p *Proxy) dump(b []byte, direction dumper.Direction) error {
 		},
 	}
 
-	if p.proxyProtocol {
+	if p.seqNum == 0 && p.proxyProtocol {
 		seek, ppValues, err := reader.ParseProxyProtocolHeader(b)
 		if err != nil {
 			p.Close()
