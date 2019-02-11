@@ -12,6 +12,37 @@ import (
 	"github.com/k1LoW/tcpdp/dumper"
 )
 
+// https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt
+// union {
+//     struct {
+//         char line[108];
+//     } v1;
+//     struct {
+//         uint8_t sig[12];
+//         uint8_t ver_cmd;
+//         uint8_t fam;
+//         uint16_t len;
+//         union {
+//             struct {  /* for TCP/UDP over IPv4, len = 12 */
+//                 uint32_t src_addr;
+//                 uint32_t dst_addr;
+//                 uint16_t src_port;
+//                 uint16_t dst_port;
+//             } ip4;
+//             struct {  /* for TCP/UDP over IPv6, len = 36 */
+//                  uint8_t  src_addr[16];
+//                  uint8_t  dst_addr[16];
+//                  uint16_t src_port;
+//                  uint16_t dst_port;
+//             } ip6;
+//             struct {  /* for AF_UNIX sockets, len = 216 */
+//                  uint8_t src_addr[108];
+//                  uint8_t dst_addr[108];
+//             } unx;
+//         } addr;
+//     } v2;
+// } hdr;
+
 var (
 	v1Prefix = []byte("PROXY")
 	v2Prefix = []byte{0x0d, 0x0a, 0x0d, 0x0a, 0x00, 0x0d, 0x0a, 0x51, 0x55, 0x49, 0x54, 0x0a}
@@ -123,8 +154,29 @@ func parseProxyProtocolV2Header(in []byte) (int, []dumper.DumpValue, error) {
 				Value: fmt.Sprintf("%s:%d", dstAddr.String(), dstPort),
 			},
 		}, nil
-	}
-	// AF_UNIX not support
+	} else if 0x30 == byte14&0xf0 {
+		// AF_UNIX: 216byte
+		var (
+			srcAddr []byte
+			dstAddr []byte
+		)
 
-	return idx + length, []dumper.DumpValue{}, errors.New("not supported values")
+		srcAddr = in[idx : idx+108]
+		idx = idx + 108
+
+		dstAddr = in[idx : idx+108]
+		idx = idx + 108
+		return idx, []dumper.DumpValue{
+			dumper.DumpValue{
+				Key:   "proxy_protocol_src_addr",
+				Value: string(bytes.TrimRight(srcAddr, "\x00")),
+			},
+			dumper.DumpValue{
+				Key:   "proxy_protocol_dst_addr",
+				Value: string(bytes.TrimRight(dstAddr, "\x00")),
+			},
+		}, nil
+	}
+
+	return idx + length, []dumper.DumpValue{}, errors.New("unsupported values")
 }

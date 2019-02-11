@@ -142,7 +142,7 @@ proxy_protocol_integration: build
 	@cat ./result
 	@cat ./result | grep "Number of clients running queries: 100" || (echo "mysqlslap faild" && exit 1)
 	test `grep -c '' ./tcpdp.log` -eq 3 || (cat ./tcpdp.log && exit 1)
-	test `grep -c '' ./dump.log` -gt 100 || (echo "dump proxy protocol faild" && exit 1)
+	test `grep -c 'proxy_protocol_src_addr' ./dump.log` -gt 100 || (echo "dump proxy protocol faild" && exit 1)
 	@echo "nginx[port:33069 upstream:33071] -> mariadb[port:33071]"
 	@sudo rm -f ./tcpdp.log* ./dump.log*
 	sudo ./tcpdp probe -i $(LO) -t 33071 -d mysql -B 64MB --proxy-protocol &
@@ -153,7 +153,7 @@ proxy_protocol_integration: build
 	@cat ./result
 	@cat ./result | grep "Number of clients running queries: 100" || (echo "mysqlslap faild" && exit 1)
 	test `grep -c '' ./tcpdp.log` -eq 4 || (cat ./tcpdp.log && exit 1)
-	test `grep -c '' ./dump.log` -gt 100 || (echo "dump proxy protocol faild" && exit 1)
+	test `grep -c 'proxy_protocol_src_addr' ./dump.log` -gt 100 || (echo "dump proxy protocol faild" && exit 1)
 	@sudo rm -f ./tcpdp.log* ./dump.log*
 	@echo "proxy_protocol_integration OK"
 
