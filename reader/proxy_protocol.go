@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -31,24 +32,16 @@ func parseProxyProtocolV1Header(in []byte) (int, []dumper.DumpValue, error) {
 	idx := bytes.Index(in, []byte("\r\n"))
 	values := strings.Split(string(in[0:idx]), " ")
 	if len(values) == 6 {
-		srcPort, _ := strconv.ParseInt(values[4], 10, 64)
-		dstPort, _ := strconv.ParseInt(values[5], 10, 64)
+		srcPort, _ := strconv.ParseUint(values[4], 10, 16)
+		dstPort, _ := strconv.ParseUint(values[5], 10, 16)
 		return idx + 2, []dumper.DumpValue{
 			dumper.DumpValue{
 				Key:   "proxy_protocol_src_addr",
-				Value: values[2],
+				Value: fmt.Sprintf("%s:%d", values[2], srcPort),
 			},
 			dumper.DumpValue{
 				Key:   "proxy_protocol_dst_addr",
-				Value: values[3],
-			},
-			dumper.DumpValue{
-				Key:   "proxy_protocol_src_port",
-				Value: srcPort,
-			},
-			dumper.DumpValue{
-				Key:   "proxy_protocol_dst_port",
-				Value: dstPort,
+				Value: fmt.Sprintf("%s:%d", values[3], dstPort),
 			},
 		}, nil
 	}
@@ -93,19 +86,11 @@ func parseProxyProtocolV2Header(in []byte) (int, []dumper.DumpValue, error) {
 		return idx, []dumper.DumpValue{
 			dumper.DumpValue{
 				Key:   "proxy_protocol_src_addr",
-				Value: srcAddr.String(),
+				Value: fmt.Sprintf("%s:%d", srcAddr.String(), srcPort),
 			},
 			dumper.DumpValue{
 				Key:   "proxy_protocol_dst_addr",
-				Value: dstAddr.String(),
-			},
-			dumper.DumpValue{
-				Key:   "proxy_protocol_src_port",
-				Value: srcPort,
-			},
-			dumper.DumpValue{
-				Key:   "proxy_protocol_dst_port",
-				Value: dstPort,
+				Value: fmt.Sprintf("%s:%d", dstAddr.String(), dstPort),
 			},
 		}, nil
 	} else if 0x20 == byte14&0xf0 {
@@ -131,19 +116,11 @@ func parseProxyProtocolV2Header(in []byte) (int, []dumper.DumpValue, error) {
 		return idx, []dumper.DumpValue{
 			dumper.DumpValue{
 				Key:   "proxy_protocol_src_addr",
-				Value: srcAddr.String(),
+				Value: fmt.Sprintf("%s:%d", srcAddr.String(), srcPort),
 			},
 			dumper.DumpValue{
 				Key:   "proxy_protocol_dst_addr",
-				Value: dstAddr.String(),
-			},
-			dumper.DumpValue{
-				Key:   "proxy_protocol_src_port",
-				Value: srcPort,
-			},
-			dumper.DumpValue{
-				Key:   "proxy_protocol_dst_port",
-				Value: dstPort,
+				Value: fmt.Sprintf("%s:%d", dstAddr.String(), dstPort),
 			},
 		}, nil
 	}

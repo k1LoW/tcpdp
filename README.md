@@ -223,8 +223,6 @@ MySQL query dumper
 | probe_target_addr | probe target address | probe |
 | proxy_protocol_src_addr | proxy protocol src address | probe / proxy /read |
 | proxy_protocol_dst_addr | proxy protocol dst address | probe / proxy /read |
-| proxy_protocol_src_port | proxy protocol src port | probe / proxy /read |
-| proxy_protocol_dst_port | proxy protocol dst port | probe / proxy /read |
 | query | SQL query | proxy / probe / read |
 | stmt_id | statement id | proxy / probe / read |
 | stmt_prepare_query | prepared statement query | proxy / probe / read |
@@ -257,8 +255,6 @@ PostgreSQL query dumper
 | probe_target_addr | probe target address | probe |
 | proxy_protocol_src_addr | proxy protocol src address | probe / proxy /read |
 | proxy_protocol_dst_addr | proxy protocol dst address | probe / proxy /read |
-| proxy_protocol_src_port | proxy protocol src port | probe / proxy /read |
-| proxy_protocol_dst_port | proxy protocol dst port | probe / proxy /read |
 | query | SQL query | proxy / probe / read |
 | portal_name | portal Name | proxy / probe / read |
 | stmt_name | prepared statement name | proxy / probe / read |
@@ -286,8 +282,6 @@ PostgreSQL query dumper
 | probe_target_addr | probe target address | probe |
 | proxy_protocol_src_addr | proxy protocol src address | probe / proxy /read |
 | proxy_protocol_dst_addr | proxy protocol dst address | probe / proxy /read |
-| proxy_protocol_src_port | proxy protocol src port | probe / proxy /read |
-| proxy_protocol_dst_port | proxy protocol dst port | probe / proxy /read |
 | bytes | bytes string by hex.Dump | proxy / probe / read |
 | ascii | ascii string by hex.Dump | proxy / probe / read |
 

@@ -20,19 +20,35 @@ var parseProxyProtocolHeaderTests = []struct {
 		[]dumper.DumpValue{
 			dumper.DumpValue{
 				Key:   "proxy_protocol_src_addr",
-				Value: "198.51.100.22",
+				Value: "198.51.100.22:35646",
 			},
 			dumper.DumpValue{
 				Key:   "proxy_protocol_dst_addr",
-				Value: "203.0.113.7",
+				Value: "203.0.113.7:80",
+			},
+		},
+		nil,
+	},
+	{
+		[]byte{
+			0x0d, 0x0a, 0x0d, 0x0a, 0x00, 0x0d, 0x0a, 0x51, 0x55, 0x49, 0x54, 0x0a,
+			0x21,
+			0x11,
+			0x00, 0x0c,
+			0x7d, 0x19, 0x0a, 0x01,
+			0x0a, 0x04, 0x05, 0x08,
+			0x1f, 0x90,
+			0x10, 0x68,
+		},
+		28,
+		[]dumper.DumpValue{
+			dumper.DumpValue{
+				Key:   "proxy_protocol_src_addr",
+				Value: "125.25.10.1:8080",
 			},
 			dumper.DumpValue{
-				Key:   "proxy_protocol_src_port",
-				Value: int64(35646),
-			},
-			dumper.DumpValue{
-				Key:   "proxy_protocol_dst_port",
-				Value: int64(80),
+				Key:   "proxy_protocol_dst_addr",
+				Value: "10.4.5.8:4200",
 			},
 		},
 		nil,
@@ -49,7 +65,7 @@ func TestParseProxyProtocolHeaderTest(t *testing.T) {
 		}
 
 		if !reflect.DeepEqual(dumpValues, tt.wantDumpValues) {
-			t.Errorf("got %v\nwant %v", dumpValues, tt.wantDumpValues)
+			t.Errorf("\ngot  %#v\nwant %#v", dumpValues, tt.wantDumpValues)
 		}
 
 		if err != tt.wantError {
