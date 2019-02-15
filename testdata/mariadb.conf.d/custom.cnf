@@ -1,0 +1,2 @@
+[mysqld]
+proxy-protocol-networks=::1, 0.0.0.0/0 ,localhost

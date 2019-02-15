@@ -38,6 +38,7 @@ var configCmd = &cobra.Command{
 		const cfgTemplate = `[tcpdp]
 pidfile = "{{ .tcpdp.pidfile }}"
 dumper = "{{ .tcpdp.dumper }}"
+proxyProtocol = {{ .tcpdp.proxyProtocol }}
 
 [probe]
 interface = "{{ .probe.interface }}"

@@ -35,7 +35,8 @@ import (
 )
 
 var (
-	proxyDumper string
+	proxyDumper        string
+	proxyProxyProtocol bool
 )
 
 // proxyCmd represents the proxy command
@@ -49,7 +50,8 @@ var proxyCmd = &cobra.Command{
 			logger.Warn("Config file not found.", zap.Error(err))
 		}
 		if cfgFile == "" {
-			viper.Set("tcpdp.dumper", proxyDumper) // because share with `probe`
+			viper.Set("tcpdp.dumper", proxyDumper)               // because share with `probe`
+			viper.Set("tcpdp.proxyProtocol", proxyProxyProtocol) // because share with `probe`
 		}
 		if logToStdout {
 			viper.Set("log.enable", true)
@@ -126,6 +128,7 @@ func init() {
 	proxyCmd.Flags().StringVarP(&proxyDumper, "dumper", "d", "hex", "dumper")
 	proxyCmd.Flags().BoolP("use-server-starter", "s", false, "use server_starter")
 	proxyCmd.Flags().BoolVarP(&logToStdout, "stdout", "", false, "output all log to STDOUT")
+	proxyCmd.Flags().BoolVarP(&proxyProxyProtocol, "proxy-protocol", "", false, "accept proxy protocol")
 
 	if err := viper.BindPFlag("proxy.listenAddr", proxyCmd.Flags().Lookup("listen")); err != nil {
 		fmt.Println(err)
@@ -136,10 +139,6 @@ func init() {
 		os.Exit(1)
 	}
 	if err := viper.BindPFlag("proxy.useServerStarter", proxyCmd.Flags().Lookup("use-server-starter")); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	if err := viper.BindPFlag("tcpdp.dumper", proxyCmd.Flags().Lookup("dumper")); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}

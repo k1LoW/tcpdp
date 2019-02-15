@@ -29,7 +29,7 @@ MYSQL_ROOT_PASSWORD=mypass
 DISTS=centos7 centos6 ubuntu16
 
 default: build
-ci: depsdev test proxy_integration probe_integration read_integration long_query_integration
+ci: depsdev test proxy_integration probe_integration read_integration long_query_integration proxy_protocol_integration
 
 lint:
 	golint $(shell go list ./... | grep -v misc)
@@ -87,7 +87,6 @@ probe_integration: build
 	@sudo rm -f ./tcpdp.log* ./dump.log*
 	@echo "probe_integration OK"
 
-
 read_integration: build
 	./tcpdp read -t $(POSTGRES_PORT) -d pg testdata/pcap/pg_prepare.pcap > ./result
 	test `grep -c '' ./result` -eq 20 || (cat ./result && exit 1)
@@ -131,6 +130,56 @@ long_query_integration: build
 	test `grep -c 'query_last' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
 	@sudo rm -f ./tcpdp.log* ./dump.log*
 	@echo "long_query_integration OK"
+
+proxy_protocol_integration: build
+	@echo "haproxy[port:33068 send-proxy upstream:33080] -> tcpdp proxy -> mariadb[port:33081]"
+	@sudo rm -f ./tcpdp.log* ./dump.log*
+	./tcpdp proxy -l localhost:33080 -r localhost:33081 -d mysql --proxy-protocol &
+	@sleep 1
+	mysqlslap --no-defaults --concurrency=100 --iterations=1 --auto-generate-sql --auto-generate-sql-add-autoincrement --auto-generate-sql-load-type=mixed --auto-generate-sql-write-number=100 --number-of-queries=1000 --host=127.0.0.1 --port=33068 --user=root --password=$(MYSQL_ROOT_PASSWORD) $(MYSQL_DISABLE_SSL) 2>&1 > ./result || 	docker-compose logs
+	@kill `cat ./tcpdp.pid`
+	@sleep 1
+	@cat ./result
+	@cat ./result | grep "Number of clients running queries: 100" || (echo "mysqlslap faild" && exit 1)
+	test `grep -c '' ./tcpdp.log` -eq 3 || (cat ./tcpdp.log && exit 1)
+	test `grep -c 'proxy_protocol_src_addr' ./dump.log` -gt 100 || (echo "dump proxy protocol faild" && exit 1)
+	@echo "haproxy[port:33069 send-proxy upstream:33081] -> mariadb[port:33081]"
+	@sudo rm -f ./tcpdp.log* ./dump.log*
+	sudo ./tcpdp probe -i $(LO) -t 33081 -d mysql -B 64MB --proxy-protocol &
+	@sleep 1
+	mysqlslap --no-defaults --concurrency=100 --iterations=1 --auto-generate-sql --auto-generate-sql-add-autoincrement --auto-generate-sql-load-type=mixed --auto-generate-sql-write-number=100 --number-of-queries=1000 --host=127.0.0.1 --port=33069 --user=root --password=$(MYSQL_ROOT_PASSWORD) $(MYSQL_DISABLE_SSL) 2>&1 > ./result || 	docker-compose logs
+	@sudo kill `cat ./tcpdp.pid`
+	@sleep 1
+	@cat ./result
+	@cat ./result | grep "Number of clients running queries: 100" || (echo "mysqlslap faild" && exit 1)
+	test `grep -c '' ./tcpdp.log` -eq 4 || (cat ./tcpdp.log && exit 1)
+	test `grep -c 'proxy_protocol_src_addr' ./dump.log` -gt 100 || (echo "dump proxy protocol faild" && exit 1)
+
+	@echo "haproxy[port:33070 send-proxy-v2 upstream:33080] -> tcpdp proxy -> mariadb[port:33081]"
+	@sudo rm -f ./tcpdp.log* ./dump.log*
+	./tcpdp proxy -l localhost:33080 -r localhost:33081 -d mysql --proxy-protocol &
+	@sleep 1
+	mysqlslap --no-defaults --concurrency=100 --iterations=1 --auto-generate-sql --auto-generate-sql-add-autoincrement --auto-generate-sql-load-type=mixed --auto-generate-sql-write-number=100 --number-of-queries=1000 --host=127.0.0.1 --port=33068 --user=root --password=$(MYSQL_ROOT_PASSWORD) $(MYSQL_DISABLE_SSL) 2>&1 > ./result || 	docker-compose logs
+	@kill `cat ./tcpdp.pid`
+	@sleep 1
+	@cat ./result
+	@cat ./result | grep "Number of clients running queries: 100" || (echo "mysqlslap faild" && exit 1)
+	test `grep -c '' ./tcpdp.log` -eq 3 || (cat ./tcpdp.log && exit 1)
+	test `grep -c 'proxy_protocol_src_addr' ./dump.log` -gt 100 || (echo "dump proxy protocol faild" && exit 1)
+	@echo "haproxy[port:33071 send-proxy-v2 upstream:33081] -> mariadb[port:33081]"
+	@sudo rm -f ./tcpdp.log* ./dump.log*
+	sudo ./tcpdp probe -i $(LO) -t 33081 -d mysql -B 64MB --proxy-protocol &
+	@sleep 1
+	mysqlslap --no-defaults --concurrency=100 --iterations=1 --auto-generate-sql --auto-generate-sql-add-autoincrement --auto-generate-sql-load-type=mixed --auto-generate-sql-write-number=100 --number-of-queries=1000 --host=127.0.0.1 --port=33069 --user=root --password=$(MYSQL_ROOT_PASSWORD) $(MYSQL_DISABLE_SSL) 2>&1 > ./result || 	docker-compose logs
+	@sudo kill `cat ./tcpdp.pid`
+	@sleep 1
+	@cat ./result
+	@cat ./result | grep "Number of clients running queries: 100" || (echo "mysqlslap faild" && exit 1)
+	test `grep -c '' ./tcpdp.log` -eq 4 || (cat ./tcpdp.log && exit 1)
+	test `grep -c 'proxy_protocol_src_addr' ./dump.log` -gt 100 || (echo "dump proxy protocol faild" && exit 1)
+
+	@sudo rm -f ./tcpdp.log* ./dump.log*
+	@echo "proxy_protocol_integration OK"
 
 build:
 	$(GO) build -ldflags="$(BUILD_LDFLAGS)"
@@ -227,4 +276,4 @@ docker:
 	docker build -t tcpdp_develop -f dockerfiles/Dockerfile.golang .
 	docker run --cap-add=SYS_PTRACE --security-opt="seccomp=unconfined" -v $(GOPATH):/go/ -v $(GOPATH)/pkg/mod/cache:/go/pkg/mod/cache -w /go/src/github.com/k1LoW/tcpdp -it tcpdp_develop /bin/bash
 
-.PHONY: default test cover
+.PHONY: default test

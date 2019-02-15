@@ -102,13 +102,14 @@ func NewBPFFilterString(target Target) string {
 
 // PacketReader struct
 type PacketReader struct {
-	ctx          context.Context
-	cancel       context.CancelFunc
-	packetSource *gopacket.PacketSource
-	dumper       dumper.Dumper
-	pValues      []dumper.DumpValue
-	logger       *zap.Logger
-	packetBuffer chan gopacket.Packet
+	ctx           context.Context
+	cancel        context.CancelFunc
+	packetSource  *gopacket.PacketSource
+	dumper        dumper.Dumper
+	pValues       []dumper.DumpValue
+	logger        *zap.Logger
+	packetBuffer  chan gopacket.Packet
+	proxyProtocol bool
 }
 
 // NewPacketReader return PacketReader
@@ -120,17 +121,19 @@ func NewPacketReader(
 	pValues []dumper.DumpValue,
 	logger *zap.Logger,
 	internalBufferLength int,
+	proxyProtocol bool,
 ) PacketReader {
 	internalPacketBuffer := make(chan gopacket.Packet, internalBufferLength)
 
 	reader := PacketReader{
-		ctx:          ctx,
-		cancel:       cancel,
-		packetSource: packetSource,
-		dumper:       dumper,
-		pValues:      pValues,
-		logger:       logger,
-		packetBuffer: internalPacketBuffer,
+		ctx:           ctx,
+		cancel:        cancel,
+		packetSource:  packetSource,
+		dumper:        dumper,
+		pValues:       pValues,
+		logger:        logger,
+		packetBuffer:  internalPacketBuffer,
+		proxyProtocol: proxyProtocol,
 	}
 
 	return reader
@@ -323,7 +326,18 @@ func (r *PacketReader) handlePacket(target Target) error {
 				},
 			}
 
-			read := r.dumper.Read(in, direction, connMetadata)
+			var read []dumper.DumpValue
+			if r.proxyProtocol {
+				seek, ppValues, err := ParseProxyProtocolHeader(in)
+				if err != nil {
+					r.cancel()
+					return err
+				}
+				connMetadata.DumpValues = append(connMetadata.DumpValues, ppValues...)
+				read = r.dumper.Read(in[seek:], direction, connMetadata)
+			} else {
+				read = r.dumper.Read(in, direction, connMetadata)
+			}
 			mMap[key] = connMetadata
 			if len(read) == 0 {
 				continue
