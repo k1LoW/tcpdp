@@ -132,9 +132,9 @@ long_query_integration: build
 	@echo "long_query_integration OK"
 
 proxy_protocol_integration: build
-	@echo "nginx[port:33068 upstream:33070] -> tcpdp proxy -> mariadb[port:33071]"
+	@echo "haproxy[port:33068 send-proxy upstream:33080] -> tcpdp proxy -> mariadb[port:33081]"
 	@sudo rm -f ./tcpdp.log* ./dump.log*
-	./tcpdp proxy -l localhost:33070 -r localhost:33071 -d mysql --proxy-protocol &
+	./tcpdp proxy -l localhost:33080 -r localhost:33081 -d mysql --proxy-protocol &
 	@sleep 1
 	mysqlslap --no-defaults --concurrency=100 --iterations=1 --auto-generate-sql --auto-generate-sql-add-autoincrement --auto-generate-sql-load-type=mixed --auto-generate-sql-write-number=100 --number-of-queries=1000 --host=127.0.0.1 --port=33068 --user=root --password=$(MYSQL_ROOT_PASSWORD) $(MYSQL_DISABLE_SSL) 2>&1 > ./result || 	docker-compose logs
 	@kill `cat ./tcpdp.pid`
@@ -143,9 +143,9 @@ proxy_protocol_integration: build
 	@cat ./result | grep "Number of clients running queries: 100" || (echo "mysqlslap faild" && exit 1)
 	test `grep -c '' ./tcpdp.log` -eq 3 || (cat ./tcpdp.log && exit 1)
 	test `grep -c 'proxy_protocol_src_addr' ./dump.log` -gt 100 || (echo "dump proxy protocol faild" && exit 1)
-	@echo "nginx[port:33069 upstream:33071] -> mariadb[port:33071]"
+	@echo "haproxy[port:33069 send-proxy upstream:33081] -> mariadb[port:33081]"
 	@sudo rm -f ./tcpdp.log* ./dump.log*
-	sudo ./tcpdp probe -i $(LO) -t 33071 -d mysql -B 64MB --proxy-protocol &
+	sudo ./tcpdp probe -i $(LO) -t 33081 -d mysql -B 64MB --proxy-protocol &
 	@sleep 1
 	mysqlslap --no-defaults --concurrency=100 --iterations=1 --auto-generate-sql --auto-generate-sql-add-autoincrement --auto-generate-sql-load-type=mixed --auto-generate-sql-write-number=100 --number-of-queries=1000 --host=127.0.0.1 --port=33069 --user=root --password=$(MYSQL_ROOT_PASSWORD) $(MYSQL_DISABLE_SSL) 2>&1 > ./result || 	docker-compose logs
 	@sudo kill `cat ./tcpdp.pid`
@@ -154,6 +154,30 @@ proxy_protocol_integration: build
 	@cat ./result | grep "Number of clients running queries: 100" || (echo "mysqlslap faild" && exit 1)
 	test `grep -c '' ./tcpdp.log` -eq 4 || (cat ./tcpdp.log && exit 1)
 	test `grep -c 'proxy_protocol_src_addr' ./dump.log` -gt 100 || (echo "dump proxy protocol faild" && exit 1)
+
+	@echo "haproxy[port:33070 send-proxy-v2 upstream:33080] -> tcpdp proxy -> mariadb[port:33081]"
+	@sudo rm -f ./tcpdp.log* ./dump.log*
+	./tcpdp proxy -l localhost:33080 -r localhost:33081 -d mysql --proxy-protocol &
+	@sleep 1
+	mysqlslap --no-defaults --concurrency=100 --iterations=1 --auto-generate-sql --auto-generate-sql-add-autoincrement --auto-generate-sql-load-type=mixed --auto-generate-sql-write-number=100 --number-of-queries=1000 --host=127.0.0.1 --port=33068 --user=root --password=$(MYSQL_ROOT_PASSWORD) $(MYSQL_DISABLE_SSL) 2>&1 > ./result || 	docker-compose logs
+	@kill `cat ./tcpdp.pid`
+	@sleep 1
+	@cat ./result
+	@cat ./result | grep "Number of clients running queries: 100" || (echo "mysqlslap faild" && exit 1)
+	test `grep -c '' ./tcpdp.log` -eq 3 || (cat ./tcpdp.log && exit 1)
+	test `grep -c 'proxy_protocol_src_addr' ./dump.log` -gt 100 || (echo "dump proxy protocol faild" && exit 1)
+	@echo "haproxy[port:33071 send-proxy-v2 upstream:33081] -> mariadb[port:33081]"
+	@sudo rm -f ./tcpdp.log* ./dump.log*
+	sudo ./tcpdp probe -i $(LO) -t 33081 -d mysql -B 64MB --proxy-protocol &
+	@sleep 1
+	mysqlslap --no-defaults --concurrency=100 --iterations=1 --auto-generate-sql --auto-generate-sql-add-autoincrement --auto-generate-sql-load-type=mixed --auto-generate-sql-write-number=100 --number-of-queries=1000 --host=127.0.0.1 --port=33069 --user=root --password=$(MYSQL_ROOT_PASSWORD) $(MYSQL_DISABLE_SSL) 2>&1 > ./result || 	docker-compose logs
+	@sudo kill `cat ./tcpdp.pid`
+	@sleep 1
+	@cat ./result
+	@cat ./result | grep "Number of clients running queries: 100" || (echo "mysqlslap faild" && exit 1)
+	test `grep -c '' ./tcpdp.log` -eq 4 || (cat ./tcpdp.log && exit 1)
+	test `grep -c 'proxy_protocol_src_addr' ./dump.log` -gt 100 || (echo "dump proxy protocol faild" && exit 1)
+
 	@sudo rm -f ./tcpdp.log* ./dump.log*
 	@echo "proxy_protocol_integration OK"
 

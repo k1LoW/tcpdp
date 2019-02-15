@@ -21,29 +21,33 @@ services:
       - MYSQL_DATABASE=testdb
       - MYSQL_ROOT_PASSWORD=mypass
   proxy-protocol-proxy-mac:
-    image: nginx
+    image: mminks/haproxy-docker-logging
     restart: always
     ports:
       - "33068:33068"
       - "33069:33069"
+      - "33070:33070"
+      - "33071:33071"
     volumes:
-      - ./testdata/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./testdata/haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
   proxy-protocol-proxy-linux:
-    image: nginx
+    image: mminks/haproxy-docker-logging
     restart: always
     network_mode: host
     volumes:
-      - ./testdata/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./testdata/haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
     extra_hosts:
       - "host.docker.internal:127.0.0.1"
     expose:
       - "33068"
       - "33069"
+      - "33070"
+      - "33071"
   proxy-protocol-mariadb:
     image: mariadb:10.4
     restart: always
     ports:
-      - "33071:3306"
+      - "33081:3306"
     volumes:
       - ./testdata/mariadb.conf.d:/etc/mysql/conf.d
     environment:
