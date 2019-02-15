@@ -22,6 +22,7 @@ before_install:
   - docker-compose up -d postgres mysql57 proxy-protocol-proxy-linux proxy-protocol-mariadb
   - while ! nc -w 1 127.0.0.1 33066 > /dev/null 2>&1; do sleep 1; echo 'sleeping'; done;
   - while ! nc -w 1 127.0.0.1 54322 > /dev/null 2>&1; do sleep 1; echo 'sleeping'; done;
+  - while ! nc -w 1 127.0.0.1 33081 > /dev/null 2>&1; do sleep 1; echo 'sleeping'; done;
 script:
   - make ci
 after_script:
