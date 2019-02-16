@@ -2,11 +2,11 @@ PKG = github.com/k1LoW/tcpdp
 COMMIT = $$(git describe --tags --always)
 OSNAME=${shell uname -s}
 ifeq ($(OSNAME),Darwin)
-	LO = "lo0"
-	MYSQL_DISABLE_SSL = --ssl-mode=DISABLED
+	export LO = lo0
+	export MYSQL_DISABLE_SSL_ = --ssl-mode=DISABLED
 else
-	LO = "lo"
-	MYSQL_DISABLE_SSL = --skip-ssl
+	export LO = lo
+	export MYSQL_DISABLE_SSL_ = --skip-ssl
 endif
 
 GO ?= GO111MODULE=on go
@@ -17,19 +17,19 @@ RELEASE_BUILD_LDFLAGS = -s -w $(BUILD_LDFLAGS)
 BINDIR=/usr/local/bin
 SOURCES=Makefile CHANGELOG.md README.md LICENSE go.mod go.sum dumper logger reader server cmd version main.go
 
-POSTGRES_PORT=54322
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=pgpass
-POSTGRES_DB=testdb
+export POSTGRES_PORT=54322
+export POSTGRES_USER=postgres
+export POSTGRES_PASSWORD=pgpass
+export POSTGRES_DB=testdb
 
-MYSQL_PORT=33066
-MYSQL_DATABASE=testdb
-MYSQL_ROOT_PASSWORD=mypass
+export MYSQL_PORT=33066
+export MYSQL_DATABASE=testdb
+export MYSQL_ROOT_PASSWORD=mypass
 
 DISTS=centos7 centos6 ubuntu16
 
 default: build
-ci: depsdev test proxy_integration probe_integration read_integration long_query_integration proxy_protocol_integration
+ci: depsdev test_with_integration proxy_integration probe_integration read_integration long_query_integration
 
 lint:
 	golint $(shell go list ./... | grep -v misc)
@@ -38,6 +38,9 @@ lint:
 
 test:
 	$(GO) test -v $(shell go list ./... | grep -v misc) -coverprofile=coverage.txt -covermode=count
+
+test_with_integration: build
+	$(GO) test -v $(shell go list ./... | grep -v misc) -tags integration -coverprofile=coverage.txt -covermode=count
 
 proxy_integration: build
 	@sudo rm -f ./tcpdp.log* ./dump.log*
@@ -130,56 +133,6 @@ long_query_integration: build
 	test `grep -c 'query_last' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
 	@sudo rm -f ./tcpdp.log* ./dump.log*
 	@echo "long_query_integration OK"
-
-proxy_protocol_integration: build
-	@echo "haproxy[port:33068 send-proxy upstream:33080] -> tcpdp proxy -> mariadb[port:33081]"
-	@sudo rm -f ./tcpdp.log* ./dump.log*
-	./tcpdp proxy -l localhost:33080 -r localhost:33081 -d mysql --proxy-protocol &
-	@sleep 1
-	mysqlslap --no-defaults --concurrency=100 --iterations=1 --auto-generate-sql --auto-generate-sql-add-autoincrement --auto-generate-sql-load-type=mixed --auto-generate-sql-write-number=100 --number-of-queries=1000 --host=127.0.0.1 --port=33068 --user=root --password=$(MYSQL_ROOT_PASSWORD) $(MYSQL_DISABLE_SSL) 2>&1 > ./result || 	docker-compose logs
-	@kill `cat ./tcpdp.pid`
-	@sleep 1
-	@cat ./result
-	@cat ./result | grep "Number of clients running queries: 100" || (echo "mysqlslap faild" && exit 1)
-	test `grep -c '' ./tcpdp.log` -eq 3 || (cat ./tcpdp.log && exit 1)
-	test `grep -c 'proxy_protocol_src_addr' ./dump.log` -gt 100 || (echo "dump proxy protocol faild" && exit 1)
-	@echo "haproxy[port:33069 send-proxy upstream:33081] -> mariadb[port:33081]"
-	@sudo rm -f ./tcpdp.log* ./dump.log*
-	sudo ./tcpdp probe -i $(LO) -t 33081 -d mysql -B 64MB --proxy-protocol &
-	@sleep 1
-	mysqlslap --no-defaults --concurrency=100 --iterations=1 --auto-generate-sql --auto-generate-sql-add-autoincrement --auto-generate-sql-load-type=mixed --auto-generate-sql-write-number=100 --number-of-queries=1000 --host=127.0.0.1 --port=33069 --user=root --password=$(MYSQL_ROOT_PASSWORD) $(MYSQL_DISABLE_SSL) 2>&1 > ./result || 	docker-compose logs
-	@sudo kill `cat ./tcpdp.pid`
-	@sleep 1
-	@cat ./result
-	@cat ./result | grep "Number of clients running queries: 100" || (echo "mysqlslap faild" && exit 1)
-	test `grep -c '' ./tcpdp.log` -eq 4 || (cat ./tcpdp.log && exit 1)
-	test `grep -c 'proxy_protocol_src_addr' ./dump.log` -gt 100 || (echo "dump proxy protocol faild" && exit 1)
-
-	@echo "haproxy[port:33070 send-proxy-v2 upstream:33080] -> tcpdp proxy -> mariadb[port:33081]"
-	@sudo rm -f ./tcpdp.log* ./dump.log*
-	./tcpdp proxy -l localhost:33080 -r localhost:33081 -d mysql --proxy-protocol &
-	@sleep 1
-	mysqlslap --no-defaults --concurrency=100 --iterations=1 --auto-generate-sql --auto-generate-sql-add-autoincrement --auto-generate-sql-load-type=mixed --auto-generate-sql-write-number=100 --number-of-queries=1000 --host=127.0.0.1 --port=33068 --user=root --password=$(MYSQL_ROOT_PASSWORD) $(MYSQL_DISABLE_SSL) 2>&1 > ./result || 	docker-compose logs
-	@kill `cat ./tcpdp.pid`
-	@sleep 1
-	@cat ./result
-	@cat ./result | grep "Number of clients running queries: 100" || (echo "mysqlslap faild" && exit 1)
-	test `grep -c '' ./tcpdp.log` -eq 3 || (cat ./tcpdp.log && exit 1)
-	test `grep -c 'proxy_protocol_src_addr' ./dump.log` -gt 100 || (echo "dump proxy protocol faild" && exit 1)
-	@echo "haproxy[port:33071 send-proxy-v2 upstream:33081] -> mariadb[port:33081]"
-	@sudo rm -f ./tcpdp.log* ./dump.log*
-	sudo ./tcpdp probe -i $(LO) -t 33081 -d mysql -B 64MB --proxy-protocol &
-	@sleep 1
-	mysqlslap --no-defaults --concurrency=100 --iterations=1 --auto-generate-sql --auto-generate-sql-add-autoincrement --auto-generate-sql-load-type=mixed --auto-generate-sql-write-number=100 --number-of-queries=1000 --host=127.0.0.1 --port=33069 --user=root --password=$(MYSQL_ROOT_PASSWORD) $(MYSQL_DISABLE_SSL) 2>&1 > ./result || 	docker-compose logs
-	@sudo kill `cat ./tcpdp.pid`
-	@sleep 1
-	@cat ./result
-	@cat ./result | grep "Number of clients running queries: 100" || (echo "mysqlslap faild" && exit 1)
-	test `grep -c '' ./tcpdp.log` -eq 4 || (cat ./tcpdp.log && exit 1)
-	test `grep -c 'proxy_protocol_src_addr' ./dump.log` -gt 100 || (echo "dump proxy protocol faild" && exit 1)
-
-	@sudo rm -f ./tcpdp.log* ./dump.log*
-	@echo "proxy_protocol_integration OK"
 
 build:
 	$(GO) build -ldflags="$(BUILD_LDFLAGS)"
