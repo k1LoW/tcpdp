@@ -29,7 +29,7 @@ export MYSQL_ROOT_PASSWORD=mypass
 DISTS=centos7 centos6 ubuntu16
 
 default: build
-ci: depsdev test_with_integration proxy_integration probe_integration read_integration long_query_integration
+ci: depsdev test_with_integration probe_integration read_integration long_query_integration
 
 lint:
 	golint $(shell go list ./... | grep -v misc)
@@ -41,30 +41,6 @@ test:
 
 test_with_integration: build
 	$(GO) test -v $(shell go list ./... | grep -v misc) -tags integration -coverprofile=coverage.txt -covermode=count
-
-proxy_integration: build
-	@sudo rm -f ./tcpdp.log* ./dump.log*
-	./tcpdp proxy -l localhost:54321 -r localhost:$(POSTGRES_PORT) -d pg &
-	@sleep 1
-	PGPASSWORD=$(POSTGRES_PASSWORD) pgbench -h 127.0.0.1 -p 54321 -U$(POSTGRES_USER) -i $(POSTGRES_DB)
-	PGPASSWORD=$(POSTGRES_PASSWORD) pgbench -h 127.0.0.1 -p 54321 -U$(POSTGRES_USER) -c 100 -t 10 $(POSTGRES_DB) 2>&1 > ./result
-	@kill `cat ./tcpdp.pid`
-	@sleep 1
-	@cat ./result
-	@cat ./result | grep "number of transactions actually processed: 1000/1000" || (echo "pgbench faild" && exit 1)
-	test `grep -c '' ./tcpdp.log` -eq 3 || (cat ./tcpdp.log && exit 1)
-	@rm ./result
-	@rm -f ./tcpdp.log* ./dump.log*
-	./tcpdp proxy -l localhost:33065 -r localhost:$(MYSQL_PORT) -d mysql &
-	@sleep 1
-	mysqlslap --no-defaults --concurrency=100 --iterations=1 --auto-generate-sql --auto-generate-sql-add-autoincrement --auto-generate-sql-load-type=mixed --auto-generate-sql-write-number=100 --number-of-queries=1000 --host=127.0.0.1 --port=33065 --user=root --password=$(MYSQL_ROOT_PASSWORD) $(MYSQL_DISABLE_SSL) 2>&1 > ./result
-	@kill `cat ./tcpdp.pid`
-	@sleep 1
-	@cat ./result
-	@cat ./result | grep "Number of clients running queries: 100" || (echo "mysqlslap faild" && exit 1)
-	test `grep -c '' ./tcpdp.log` -eq 3 || (cat ./tcpdp.log && exit 1)
-	@rm -f ./tcpdp.log* ./dump.log*
-	@echo "proxy_integration OK"
 
 probe_integration: build
 	@sudo rm -f ./tcpdp.log* ./dump.log*
