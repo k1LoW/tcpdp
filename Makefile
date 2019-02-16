@@ -3,10 +3,10 @@ COMMIT = $$(git describe --tags --always)
 OSNAME=${shell uname -s}
 ifeq ($(OSNAME),Darwin)
 	export LO = lo0
-	export MYSQL_DISABLE_SSL_ = --ssl-mode=DISABLED
+	export MYSQL_DISABLE_SSL = --ssl-mode=DISABLED
 else
 	export LO = lo
-	export MYSQL_DISABLE_SSL_ = --skip-ssl
+	export MYSQL_DISABLE_SSL = --skip-ssl
 endif
 
 GO ?= GO111MODULE=on go
@@ -29,7 +29,7 @@ export MYSQL_ROOT_PASSWORD=mypass
 DISTS=centos7 centos6 ubuntu16
 
 default: build
-ci: depsdev test_with_integration probe_integration read_integration long_query_integration
+ci: depsdev test_with_integration read_integration long_query_integration
 
 lint:
 	golint $(shell go list ./... | grep -v misc)
@@ -41,30 +41,6 @@ test:
 
 test_with_integration: build
 	$(GO) test -v $(shell go list ./... | grep -v misc) -tags integration -coverprofile=coverage.txt -covermode=count
-
-probe_integration: build
-	@sudo rm -f ./tcpdp.log* ./dump.log*
-	sudo ./tcpdp probe -i $(LO) -t $(POSTGRES_PORT) -d pg -B 64MB &
-	@sleep 1
-	PGPASSWORD=$(POSTGRES_PASSWORD) pgbench -h 127.0.0.1 -p $(POSTGRES_PORT) -U$(POSTGRES_USER) -i $(POSTGRES_DB)
-	PGPASSWORD=$(POSTGRES_PASSWORD) pgbench -h 127.0.0.1 -p $(POSTGRES_PORT) -U$(POSTGRES_USER) -c 100 -t 10 $(POSTGRES_DB) 2>&1 > ./result
-	@sudo kill `cat ./tcpdp.pid`
-	@sleep 1
-	@cat ./result
-	@cat ./result | grep "number of transactions actually processed: 1000/1000" || (echo "pgbench faild" && exit 1)
-	test `grep -c '' ./tcpdp.log` -eq 4 || (cat ./tcpdp.log && exit 1)
-	@rm ./result
-	@sudo rm -f ./tcpdp.log* ./dump.log*
-	sudo ./tcpdp probe -i $(LO) -t $(MYSQL_PORT) -d mysql -B 64MB &
-	@sleep 1
-	mysqlslap --no-defaults --concurrency=100 --iterations=1 --auto-generate-sql --auto-generate-sql-add-autoincrement --auto-generate-sql-load-type=mixed --auto-generate-sql-write-number=100 --number-of-queries=1000 --host=127.0.0.1 --port=$(MYSQL_PORT) --user=root --password=$(MYSQL_ROOT_PASSWORD) $(MYSQL_DISABLE_SSL) 2>&1 > ./result
-	@sudo kill `cat ./tcpdp.pid`
-	@sleep 1
-	@cat ./result
-	@cat ./result | grep "Number of clients running queries: 100" || (echo "mysqlslap faild" && exit 1)
-	test `grep -c '' ./tcpdp.log` -eq 4 || (cat ./tcpdp.log && exit 1)
-	@sudo rm -f ./tcpdp.log* ./dump.log*
-	@echo "probe_integration OK"
 
 read_integration: build
 	./tcpdp read -t $(POSTGRES_PORT) -d pg testdata/pcap/pg_prepare.pcap > ./result
