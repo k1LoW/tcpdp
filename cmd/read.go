@@ -35,7 +35,6 @@ import (
 	"github.com/k1LoW/tcpdp/reader"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"golang.org/x/crypto/ssh/terminal"
 )
 
 var (
@@ -51,7 +50,8 @@ var readCmd = &cobra.Command{
 	Short: "Read pcap file mode",
 	Long:  "Read pcap format file and dump.",
 	Args: func(cmd *cobra.Command, args []string) error {
-		if terminal.IsTerminal(0) {
+		fi, _ := os.Stdin.Stat()
+		if (fi.Mode() & os.ModeCharDevice) != 0 {
 			if len(args) != 1 {
 				return fmt.Errorf("Error: %s", "requires pcap file path")
 			}
@@ -68,7 +68,10 @@ var readCmd = &cobra.Command{
 		defer logger.Sync()
 
 		var pcapFile string
-		if terminal.IsTerminal(0) {
+
+		fi, _ := os.Stdin.Stat()
+
+		if (fi.Mode() & os.ModeCharDevice) != 0 {
 			pcapFile = args[0]
 		} else {
 			pcap, _ := ioutil.ReadAll(os.Stdin)
