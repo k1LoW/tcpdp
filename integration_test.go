@@ -155,6 +155,64 @@ func TestRead(t *testing.T) {
 	}
 }
 
+var longQueryTests = []struct {
+	description string
+	tcpdpCmd    string
+	benchCmd    string
+}{
+	{
+		"tcpdp proxy mysql long query",
+		"./tcpdp proxy -l localhost:33065 -r localhost:$MYSQL_PORT -d mysql --stdout",
+		"mysql --host=127.0.0.1 --port=33065 --user=root --password=$MYSQL_ROOT_PASSWORD testdb $MYSQL_DISABLE_SSL < ./testdata/query/long.sql 2>&1 > /dev/null",
+	},
+	{
+		"tcpdp probe mysql long query",
+		"sudo ./tcpdp probe -i $LO -t $MYSQL_PORT -d mysql -B 64MB --stdout",
+		"mysql --host=127.0.0.1 --port=$MYSQL_PORT --user=root --password=$MYSQL_ROOT_PASSWORD testdb $MYSQL_DISABLE_SSL < ./testdata/query/long.sql 2>&1 > /dev/null",
+	},
+	{
+		"tcpdp proxy postgresql long query",
+		"./tcpdp proxy -l localhost:54321 -r localhost:$POSTGRES_PORT -d pg --stdout",
+		"PGPASSWORD=$POSTGRES_PASSWORD psql -h 127.0.0.1 -p 54321 -U$POSTGRES_USER $POSTGRES_DB < ./testdata/query/long.sql 2>&1 > /dev/null",
+	},
+	{
+		"tcpdp probe postgresql long query",
+		"sudo ./tcpdp probe -i $LO -t $POSTGRES_PORT -d pg -B 64MB --stdout",
+		"PGPASSWORD=$POSTGRES_PASSWORD psql -h 127.0.0.1 -p $POSTGRES_PORT -U$POSTGRES_USER $POSTGRES_DB < ./testdata/query/long.sql 2>&1 > /dev/null",
+	},
+}
+
+func TestLongQuery(t *testing.T) {
+	for _, tt := range longQueryTests {
+		t.Run(tt.description, func(t *testing.T) {
+			clean()
+			ctx, cancel := context.WithCancel(context.Background())
+			cmd := exec.CommandContext(ctx, "bash", "-c", tt.tcpdpCmd)
+			stdout := new(bytes.Buffer)
+			cmd.Stdout = stdout
+			err := cmd.Start()
+			if err != nil {
+				cancel()
+				t.Errorf("%v", err)
+			}
+			time.Sleep(1 * time.Second)
+			err = exec.CommandContext(ctx, "bash", "-c", tt.benchCmd).Run()
+			if err != nil {
+				cancel()
+				t.Errorf("%v", err)
+			}
+			time.Sleep(1 * time.Second)
+			if !regexp.MustCompile(`(?m)query_start`).MatchString(stdout.String()) {
+				t.Errorf("%s:%s", "parse long query failed", stdout.String())
+			}
+			if !regexp.MustCompile(`(?m)query_last`).MatchString(stdout.String()) {
+				t.Errorf("%s:%s", "parse long query failed", stdout.String())
+			}
+			cancel()
+		})
+	}
+}
+
 var proxyProtocolTests = []struct {
 	description      string
 	tcpdpCmd         string

@@ -29,7 +29,7 @@ export MYSQL_ROOT_PASSWORD=mypass
 DISTS=centos7 centos6 ubuntu16
 
 default: build
-ci: depsdev test_with_integration long_query_integration
+ci: depsdev test_with_integration
 
 lint:
 	golint $(shell go list ./... | grep -v misc)
@@ -41,43 +41,6 @@ test:
 
 test_with_integration: build
 	$(GO) test -v $(shell go list ./... | grep -v misc) -tags integration -coverprofile=coverage.txt -covermode=count
-
-long_query_integration: build
-	@sudo rm -f ./tcpdp.log* ./dump.log*
-	./tcpdp proxy -l localhost:33065 -r localhost:$(MYSQL_PORT) -d mysql &
-	@sleep 1
-	mysql --host=127.0.0.1 --port=33065 --user=root --password=$(MYSQL_ROOT_PASSWORD) testdb $(MYSQL_DISABLE_SSL) < ./testdata/query/long.sql 2>&1 > /dev/null
-	@sudo kill `cat ./tcpdp.pid`
-	@sleep 1
-	test `grep -c 'query_start' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
-	test `grep -c 'query_last' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
-	@sudo rm -f ./tcpdp.log* ./dump.log*
-	@sudo rm -f ./tcpdp.log* ./dump.log*
-	sudo ./tcpdp probe -i $(LO) -t $(MYSQL_PORT) -d mysql -B 64MB &
-	@sleep 1
-	mysql --host=127.0.0.1 --port=$(MYSQL_PORT) --user=root --password=$(MYSQL_ROOT_PASSWORD) testdb $(MYSQL_DISABLE_SSL) < ./testdata/query/long.sql 2>&1 > /dev/null
-	@sudo kill `cat ./tcpdp.pid`
-	@sleep 1
-	test `grep -c 'query_start' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
-	test `grep -c 'query_last' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
-	@sudo rm -f ./tcpdp.log* ./dump.log*
-	./tcpdp proxy -l localhost:54321 -r localhost:$(POSTGRES_PORT) -d pg &
-	@sleep 1
-	PGPASSWORD=$(POSTGRES_PASSWORD) psql -h 127.0.0.1 -p 54321 -U$(POSTGRES_USER) $(POSTGRES_DB) < ./testdata/query/long.sql 2>&1 > /dev/null
-	@sudo kill `cat ./tcpdp.pid`
-	@sleep 1
-	test `grep -c 'query_start' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
-	test `grep -c 'query_last' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
-	@sudo rm -f ./tcpdp.log* ./dump.log*
-	sudo ./tcpdp probe -i $(LO) -t $(POSTGRES_PORT) -d pg -B 64MB &
-	@sleep 1
-	PGPASSWORD=$(POSTGRES_PASSWORD) psql -h 127.0.0.1 -p $(POSTGRES_PORT) -U$(POSTGRES_USER) $(POSTGRES_DB) < ./testdata/query/long.sql 2>&1 > /dev/null
-	@sudo kill `cat ./tcpdp.pid`
-	@sleep 1
-	test `grep -c 'query_start' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
-	test `grep -c 'query_last' ./dump.log` -eq 1 || (cat ./dump.log && exit 1)
-	@sudo rm -f ./tcpdp.log* ./dump.log*
-	@echo "long_query_integration OK"
 
 build:
 	$(GO) build -ldflags="$(BUILD_LDFLAGS)"
