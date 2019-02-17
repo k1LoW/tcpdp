@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.17.0](https://github.com/k1LoW/tcpdp/compare/v0.16.1...v0.17.0) (2019-02-17)
+
+* Gonize integration test [#76](https://github.com/k1LoW/tcpdp/pull/76) ([k1LoW](https://github.com/k1LoW))
+* Support proxy protocol [#75](https://github.com/k1LoW/tcpdp/pull/75) ([k1LoW](https://github.com/k1LoW))
+
 ## [v0.16.1](https://github.com/k1LoW/tcpdp/compare/v0.16.0...v0.16.1) (2018-12-17)
 
 * Refactor NewProbeServer and logging info [#74](https://github.com/k1LoW/tcpdp/pull/74) ([k1LoW](https://github.com/k1LoW))
