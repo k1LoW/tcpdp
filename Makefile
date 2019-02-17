@@ -29,7 +29,7 @@ export MYSQL_ROOT_PASSWORD=mypass
 DISTS=centos7 centos6 ubuntu16
 
 default: build
-ci: depsdev test_with_integration read_integration long_query_integration
+ci: depsdev test_with_integration long_query_integration
 
 lint:
 	golint $(shell go list ./... | grep -v misc)
@@ -41,13 +41,6 @@ test:
 
 test_with_integration: build
 	$(GO) test -v $(shell go list ./... | grep -v misc) -tags integration -coverprofile=coverage.txt -covermode=count
-
-read_integration: build
-	./tcpdp read -t $(POSTGRES_PORT) -d pg testdata/pcap/pg_prepare.pcap > ./result
-	test `grep -c '' ./result` -eq 20 || (cat ./result && exit 1)
-	./tcpdp read -t $(MYSQL_PORT) -d mysql testdata/pcap/mysql_prepare.pcap > ./result
-	test `grep -c '' ./result` -eq 20 || (cat ./result && exit 1)
-	@echo "read_integration OK"
 
 long_query_integration: build
 	@sudo rm -f ./tcpdp.log* ./dump.log*

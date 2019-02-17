@@ -123,6 +123,38 @@ func TestProbe(t *testing.T) {
 	}
 }
 
+var readTests = []struct {
+	description string
+	tcpdpCmd    string
+}{
+	{
+		"tcpdp read pg_prepare.pcap",
+		"./tcpdp read -t $POSTGRES_PORT -d pg ./testdata/pcap/pg_prepare.pcap",
+	},
+	{
+		"tcpdp read mysql_prepare.pcap",
+		"./tcpdp read -t $MYSQL_PORT -d mysql ./testdata/pcap/mysql_prepare.pcap",
+	},
+}
+
+func TestRead(t *testing.T) {
+	for _, tt := range readTests {
+		t.Run(tt.description, func(t *testing.T) {
+			clean()
+			cmd := exec.Command("bash", "-c", tt.tcpdpCmd)
+			cmd.Env = os.Environ()
+			out, err := cmd.CombinedOutput()
+			if err != nil {
+				t.Errorf("%v", err)
+			}
+			results := regexp.MustCompile(`(?m)query`).FindAllStringSubmatch(string(out), -1)
+			if len(results) < 10 {
+				t.Errorf("%s:%s", "parse protocol failed", string(out))
+			}
+		})
+	}
+}
+
 var proxyProtocolTests = []struct {
 	description      string
 	tcpdpCmd         string
