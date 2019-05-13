@@ -26,6 +26,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 
 	"github.com/k1LoW/tcpdp/server"
@@ -68,7 +69,7 @@ var probeCmd = &cobra.Command{
 		device := viper.GetString("probe.interface")
 		snapshotLength := viper.GetString("probe.snapshotLength")
 		ifi, err := net.InterfaceByName(device)
-		if err != nil {
+		if err != nil && !(device == "any" && runtime.GOOS == "linux") {
 			logger.Fatal("interface error.", zap.Error(err))
 		}
 		mtu := ifi.MTU
