@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"runtime"
 	"testing"
 	"time"
 )
@@ -77,23 +78,44 @@ var probeTests = []struct {
 	tcpdpCmd         string
 	benchCmd         string
 	benchMatchString string
+	linuxOnly        bool
 }{
 	{
-		"tcpdp probe -> postgresql",
+		"tcpdp probe - lo -> postgresql",
 		"sudo ./tcpdp probe -i $LO -t $POSTGRES_PORT -d pg -B 64MB --stdout",
 		"PGPASSWORD=$POSTGRES_PASSWORD pgbench -h 127.0.0.1 -p $POSTGRES_PORT -U$POSTGRES_USER -i $POSTGRES_DB && PGPASSWORD=$POSTGRES_PASSWORD pgbench -h 127.0.0.1 -p $POSTGRES_PORT -U$POSTGRES_USER -c 100 -t 10 $POSTGRES_DB",
 		"number of transactions actually processed: 1000/1000",
+		false,
 	},
 	{
-		"tcpdp probe -> mysql",
+		"tcpdp probe - lo -> mysql",
 		"sudo ./tcpdp probe -i $LO -t $MYSQL_PORT -d mysql -B 64MB --stdout",
 		"mysqlslap --no-defaults --concurrency=100 --iterations=1 --auto-generate-sql --auto-generate-sql-add-autoincrement --auto-generate-sql-load-type=mixed --auto-generate-sql-write-number=100 --number-of-queries=1000 --host=127.0.0.1 --port=$MYSQL_PORT --user=root --password=$MYSQL_ROOT_PASSWORD $MYSQL_DISABLE_SSL",
 		"Number of clients running queries: 100",
+		false,
+	},
+	{
+		"tcpdp probe - any -> postgresql",
+		"sudo ./tcpdp probe -i any -t $POSTGRES_PORT -d pg -B 64MB --stdout",
+		"PGPASSWORD=$POSTGRES_PASSWORD pgbench -h 127.0.0.1 -p $POSTGRES_PORT -U$POSTGRES_USER -i $POSTGRES_DB && PGPASSWORD=$POSTGRES_PASSWORD pgbench -h 127.0.0.1 -p $POSTGRES_PORT -U$POSTGRES_USER -c 100 -t 10 $POSTGRES_DB",
+		"number of transactions actually processed: 1000/1000",
+		true,
+	},
+	{
+		"tcpdp probe - any -> mysql",
+		"sudo ./tcpdp probe -i any -t $MYSQL_PORT -d mysql -B 64MB --stdout",
+		"mysqlslap --no-defaults --concurrency=100 --iterations=1 --auto-generate-sql --auto-generate-sql-add-autoincrement --auto-generate-sql-load-type=mixed --auto-generate-sql-write-number=100 --number-of-queries=1000 --host=127.0.0.1 --port=$MYSQL_PORT --user=root --password=$MYSQL_ROOT_PASSWORD $MYSQL_DISABLE_SSL",
+		"Number of clients running queries: 100",
+		true,
 	},
 }
 
 func TestProbe(t *testing.T) {
 	for _, tt := range probeTests {
+		if tt.linuxOnly && runtime.GOOS != "linux" {
+			t.Skip()
+		}
+
 		t.Run(tt.description, func(t *testing.T) {
 			clean()
 			ctx, cancel := context.WithCancel(context.Background())
