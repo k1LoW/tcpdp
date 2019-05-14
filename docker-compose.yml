@@ -58,10 +58,10 @@ services:
       context: .
       dockerfile: dockerfiles/Dockerfile.centos7
       args:
-        GO_VERSION: 1.11
+        GO_VERSION: 1.12
         LIBPCAP_VERSION: 1.9.0
     volumes:
-      - $GOPATH:/go
+      - .:/go/src/github.com/k1LoW/tcpdp
     environment:
       DIST: el7
     command: make depsdev build_in_docker build_static_in_docker build_rpm
@@ -70,10 +70,10 @@ services:
       context: .
       dockerfile: dockerfiles/Dockerfile.centos6
       args:
-        GO_VERSION: 1.11
+        GO_VERSION: 1.12
         LIBPCAP_VERSION: 1.9.0
     volumes:
-      - $GOPATH:/go
+      - .:/go/src/github.com/k1LoW/tcpdp
     environment:
       DIST: el6
     command: make depsdev build_in_docker build_static_in_docker build_rpm
@@ -82,10 +82,10 @@ services:
       context: .
       dockerfile: dockerfiles/Dockerfile.ubuntu16
       args:
-        GO_VERSION: 1.11
+        GO_VERSION: 1.12
         LIBPCAP_VERSION: 1.9.0
     volumes:
-      - $GOPATH:/go
+      - .:/go/src/github.com/k1LoW/tcpdp
     environment:
       DIST: xenial
     command: make depsdev build_in_docker build_static_in_docker build_deb
