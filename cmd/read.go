@@ -29,6 +29,7 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/pcap"
 	"github.com/k1LoW/tcpdp/dumper"
+	"github.com/k1LoW/tcpdp/dumper/conn"
 	"github.com/k1LoW/tcpdp/dumper/hex"
 	"github.com/k1LoW/tcpdp/dumper/mysql"
 	"github.com/k1LoW/tcpdp/dumper/pg"
@@ -108,6 +109,8 @@ var readCmd = &cobra.Command{
 			d = pg.NewDumper()
 		case "mysql":
 			d = mysql.NewDumper()
+		case "conn":
+			d = conn.NewDumper()
 		default:
 			d = hex.NewDumper()
 		}

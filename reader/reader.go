@@ -143,7 +143,11 @@ func NewPacketReader(
 func (r *PacketReader) ReadAndDump(target Target) error {
 	packetChan := r.packetSource.Packets()
 
-	go r.handlePacket(target)
+	if r.dumper.Name() == "conn" {
+		go r.handleConn(target)
+	} else {
+		go r.handlePacket(target)
+	}
 	go r.checkBufferdPacket(packetChan)
 
 	for {
@@ -344,6 +348,73 @@ func (r *PacketReader) handlePacket(target Target) error {
 			}
 
 			values = append(values, read...)
+			values = append(values, r.pValues...)
+			values = append(values, connMetadata.DumpValues...)
+
+			r.dumper.Log(values)
+		}
+	}
+}
+
+func (r *PacketReader) handleConn(target Target) error {
+	for {
+		select {
+		case <-r.ctx.Done():
+			return nil
+		case packet := <-r.packetBuffer:
+			if packet == nil {
+				r.cancel()
+				return nil
+			}
+			ipLayer := packet.Layer(layers.LayerTypeIPv4)
+			if ipLayer == nil {
+				continue
+			}
+			tcpLayer := packet.Layer(layers.LayerTypeTCP)
+			if tcpLayer == nil {
+				continue
+			}
+			ip, _ := ipLayer.(*layers.IPv4)
+			tcp, _ := tcpLayer.(*layers.TCP)
+
+			if !(tcp.SYN && !tcp.ACK) {
+				continue
+			}
+
+			// TCP connection start ( hex, mysql, pg )
+			connID := xid.New().String()
+			connMetadata := r.dumper.NewConnMetadata()
+			connMetadata.DumpValues = []dumper.DumpValue{
+				dumper.DumpValue{
+					Key:   "conn_id",
+					Value: connID,
+				},
+			}
+			in := tcpLayer.LayerPayload()
+			ts := packet.Metadata().CaptureInfo.Timestamp
+			values := []dumper.DumpValue{
+				dumper.DumpValue{
+					Key:   "ts",
+					Value: ts,
+				},
+				dumper.DumpValue{
+					Key:   "src_addr",
+					Value: fmt.Sprintf("%s:%d", ip.SrcIP.String(), tcp.SrcPort),
+				},
+				dumper.DumpValue{
+					Key:   "dst_addr",
+					Value: fmt.Sprintf("%s:%d", ip.DstIP.String(), tcp.DstPort),
+				},
+			}
+
+			if r.proxyProtocol {
+				_, ppValues, err := ParseProxyProtocolHeader(in)
+				if err != nil {
+					r.cancel()
+					return err
+				}
+				connMetadata.DumpValues = append(connMetadata.DumpValues, ppValues...)
+			}
 			values = append(values, r.pValues...)
 			values = append(values, connMetadata.DumpValues...)
 

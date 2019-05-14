@@ -13,6 +13,7 @@ import (
 	"syscall"
 
 	"github.com/k1LoW/tcpdp/dumper"
+	"github.com/k1LoW/tcpdp/dumper/conn"
 	"github.com/k1LoW/tcpdp/dumper/hex"
 	"github.com/k1LoW/tcpdp/dumper/mysql"
 	"github.com/k1LoW/tcpdp/dumper/pg"
@@ -52,6 +53,8 @@ func NewServer(ctx context.Context, lAddr, rAddr *net.TCPAddr, logger *zap.Logge
 		d = pg.NewDumper()
 	case "mysql":
 		d = mysql.NewDumper()
+	case "conn":
+		d = conn.NewDumper()
 	default:
 		d = hex.NewDumper()
 	}

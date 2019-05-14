@@ -298,6 +298,51 @@ func TestProxyProtocol(t *testing.T) {
 	}
 }
 
+var connTests = []struct {
+	description      string
+	tcpdpCmd         string
+	benchCmd         string
+	benchMatchString string
+}{
+	{
+		"tcpdp probe - lo -> postgresql",
+		"sudo ./tcpdp probe -i $LO -t $POSTGRES_PORT -d conn -B 64MB --stdout",
+		"PGPASSWORD=$POSTGRES_PASSWORD pgbench -h 127.0.0.1 -p $POSTGRES_PORT -U$POSTGRES_USER -i $POSTGRES_DB && PGPASSWORD=$POSTGRES_PASSWORD pgbench -h 127.0.0.1 -p $POSTGRES_PORT -U$POSTGRES_USER -c 100 -t 10 $POSTGRES_DB",
+		"number of transactions actually processed: 1000/1000",
+	},
+}
+
+func TestConn(t *testing.T) {
+	for _, tt := range connTests {
+		t.Run(tt.description, func(t *testing.T) {
+			clean()
+			ctx, cancel := context.WithCancel(context.Background())
+			cmd := exec.CommandContext(ctx, "bash", "-c", tt.tcpdpCmd)
+			stdout := new(bytes.Buffer)
+			cmd.Stdout = stdout
+			err := cmd.Start()
+			if err != nil {
+				cancel()
+				t.Errorf("%v", err)
+			}
+			time.Sleep(1 * time.Second)
+			out, err := exec.CommandContext(ctx, "bash", "-c", tt.benchCmd).CombinedOutput()
+			if err != nil {
+				cancel()
+				t.Errorf("%v", err)
+			}
+			if !regexp.MustCompile(fmt.Sprintf("%s%s", `(?m)`, tt.benchMatchString)).Match(out) {
+				t.Errorf("%s", "bench command failed")
+			}
+			results := regexp.MustCompile(`(?m)conn_id`).FindAllStringSubmatch(stdout.String(), -1)
+			if len(results) < 100 {
+				t.Errorf("%s:%s", "track connection failed", stdout.String())
+			}
+			cancel()
+		})
+	}
+}
+
 func clean() {
 	cmd := exec.Command("sudo", "rm", "-f", "tcpdp.log*", "dump.log*", "tcpdp.pid")
 	cmd.Env = os.Environ()
