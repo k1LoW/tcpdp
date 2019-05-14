@@ -16,6 +16,7 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/pcap"
 	"github.com/k1LoW/tcpdp/dumper"
+	"github.com/k1LoW/tcpdp/dumper/conn"
 	"github.com/k1LoW/tcpdp/dumper/hex"
 	"github.com/k1LoW/tcpdp/dumper/mysql"
 	"github.com/k1LoW/tcpdp/dumper/pg"
@@ -70,6 +71,8 @@ func NewProbeServer(ctx context.Context, logger *zap.Logger) (*ProbeServer, erro
 		d = pg.NewDumper()
 	case "mysql":
 		d = mysql.NewDumper()
+	case "conn":
+		d = conn.NewDumper()
 	default:
 		d = hex.NewDumper()
 	}
