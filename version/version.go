@@ -4,4 +4,4 @@ package version
 const Name string = "tcpdp"
 
 // Version for this
-const Version string = "0.18.0"
+const Version string = "0.19.0"
