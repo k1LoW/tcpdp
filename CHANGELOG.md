@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.18.0](https://github.com/k1LoW/tcpdp/compare/v0.17.0...v0.18.0) (2019-05-14)
+
+* Build using Go 1.12.x [#78](https://github.com/k1LoW/tcpdp/pull/78) ([k1LoW](https://github.com/k1LoW))
+* Support `-i any` (Linux only) [#77](https://github.com/k1LoW/tcpdp/pull/77) ([k1LoW](https://github.com/k1LoW))
+
 ## [v0.17.0](https://github.com/k1LoW/tcpdp/compare/v0.16.1...v0.17.0) (2019-02-17)
 
 * Gonize integration test [#76](https://github.com/k1LoW/tcpdp/pull/76) ([k1LoW](https://github.com/k1LoW))
