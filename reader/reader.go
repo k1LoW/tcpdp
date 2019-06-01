@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -102,14 +103,15 @@ func NewBPFFilterString(target Target) string {
 
 // PacketReader struct
 type PacketReader struct {
-	ctx           context.Context
-	cancel        context.CancelFunc
-	packetSource  *gopacket.PacketSource
-	dumper        dumper.Dumper
-	pValues       []dumper.DumpValue
-	logger        *zap.Logger
-	packetBuffer  chan gopacket.Packet
-	proxyProtocol bool
+	ctx            context.Context
+	cancel         context.CancelFunc
+	packetSource   *gopacket.PacketSource
+	dumper         dumper.Dumper
+	pValues        []dumper.DumpValue
+	logger         *zap.Logger
+	packetBuffer   chan gopacket.Packet
+	proxyProtocol  bool
+	enableInternal bool
 }
 
 // NewPacketReader return PacketReader
@@ -122,18 +124,20 @@ func NewPacketReader(
 	logger *zap.Logger,
 	internalBufferLength int,
 	proxyProtocol bool,
+	enableInternal bool,
 ) PacketReader {
 	internalPacketBuffer := make(chan gopacket.Packet, internalBufferLength)
 
 	reader := PacketReader{
-		ctx:           ctx,
-		cancel:        cancel,
-		packetSource:  packetSource,
-		dumper:        dumper,
-		pValues:       pValues,
-		logger:        logger,
-		packetBuffer:  internalPacketBuffer,
-		proxyProtocol: proxyProtocol,
+		ctx:            ctx,
+		cancel:         cancel,
+		packetSource:   packetSource,
+		dumper:         dumper,
+		pValues:        pValues,
+		logger:         logger,
+		packetBuffer:   internalPacketBuffer,
+		proxyProtocol:  proxyProtocol,
+		enableInternal: enableInternal,
 	}
 
 	return reader
@@ -164,6 +168,9 @@ func (r *PacketReader) handlePacket(target Target) error {
 	mMap := map[string]*dumper.ConnMetadata{}        // metadata map per connection
 	mssMap := map[string]int{}                       // TCP MSS map per connection
 	bMap := map[string]map[dumper.Direction][]byte{} // long payload map per direction
+	var mem runtime.MemStats
+
+	t := time.NewTicker(1 * time.Minute)
 
 	for {
 		select {
@@ -352,6 +359,23 @@ func (r *PacketReader) handlePacket(target Target) error {
 			values = append(values, connMetadata.DumpValues...)
 
 			r.dumper.Log(values)
+		case <-t.C:
+			if !r.enableInternal {
+				continue
+			}
+			runtime.ReadMemStats(&mem)
+			r.logger.Info("probe handler internal Stats",
+				zap.Uint64("tcpdp Alloc", mem.Alloc),
+				zap.Uint64("tcpdp TotalAlloc", mem.TotalAlloc),
+				zap.Uint64("tcpdp Sys", mem.Sys),
+				zap.Uint64("tcpdp Lookups", mem.Lookups),
+				zap.Uint64("tcpdp Frees", mem.Frees),
+				zap.Uint64("tcpdp HeapAlloc", mem.HeapAlloc),
+				zap.Uint64("tcpdp HeapSys", mem.HeapSys),
+				zap.Int("metadata cache (mMap) length", len(mMap)),
+				zap.Int("metadata cache (mMap) length", len(mMap)),
+				zap.Int("TCP MSS cache (mssMap) length", len(mssMap)),
+				zap.Int("buffer cache (bMap) length", len(bMap)))
 		}
 	}
 }

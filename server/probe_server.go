@@ -213,6 +213,7 @@ func (s *ProbeServer) Start() error {
 	}
 
 	proxyProtocol := viper.GetBool("tcpdp.proxyProtocol")
+	enableInternal := viper.GetBool("log.enableInternal")
 
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 	r := reader.NewPacketReader(
@@ -224,6 +225,7 @@ func (s *ProbeServer) Start() error {
 		s.logger,
 		internalBufferLength,
 		proxyProtocol,
+		enableInternal,
 	)
 
 	if err := r.ReadAndDump(s.target); err != nil {
