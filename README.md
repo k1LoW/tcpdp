@@ -91,6 +91,7 @@ remoteAddr = "db.example.com:3306"
 [log]
 dir = "/var/log/tcpdp"
 enable = true
+enableInternal = true
 stdout = true
 format = "ltsv"
 rotateEnable = true
