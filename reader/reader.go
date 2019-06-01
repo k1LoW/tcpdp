@@ -372,6 +372,8 @@ func (r *PacketReader) handlePacket(target Target) error {
 				zap.Uint64("tcpdp Frees", mem.Frees),
 				zap.Uint64("tcpdp HeapAlloc", mem.HeapAlloc),
 				zap.Uint64("tcpdp HeapSys", mem.HeapSys),
+				zap.Uint64("tcpdp HeapIdle", mem.HeapIdle),
+				zap.Uint64("tcpdp HeapInuse", mem.HeapInuse),
 				zap.Int("metadata cache (mMap) length", len(mMap)),
 				zap.Int("metadata cache (mMap) length", len(mMap)),
 				zap.Int("TCP MSS cache (mssMap) length", len(mssMap)),
