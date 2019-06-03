@@ -38,7 +38,7 @@ var configCmd = &cobra.Command{
 		const cfgTemplate = `[tcpdp]
 pidfile = "{{ .tcpdp.pidfile }}"
 dumper = "{{ .tcpdp.dumper }}"
-proxyProtocol = {{ .tcpdp.proxyProtocol }}
+proxyProtocol = {{ .tcpdp.proxyprotocol }}
 
 [probe]
 interface = "{{ .probe.interface }}"
@@ -57,6 +57,7 @@ remoteAddr = "{{ .proxy.remoteaddr }}"
 [log]
 dir = "{{ .log.dir }}"
 enable = {{ .log.enable }}
+enableInternal = {{ .log.enableinternal }}
 stdout = {{ .log.stdout }}
 format = "{{ .log.format }}"
 rotateEnable = {{ .log.rotateenable }}
