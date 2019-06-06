@@ -21,6 +21,48 @@ const anyIP = "0.0.0.0"
 
 var maxPacketLen = 0xFFFF // 65535
 
+type PacketBuffer struct {
+	srcToDst []byte
+	dstToSrc []byte
+	unknown  []byte
+}
+
+func (p *PacketBuffer) Get(direction dumper.Direction) []byte {
+	switch direction {
+	case dumper.SrcToDst:
+		return p.srcToDst
+	case dumper.DstToSrc:
+		return p.srcToDst
+	case dumper.Unknown:
+		return p.unknown
+	}
+	return nil
+}
+
+func (p *PacketBuffer) Append(direction dumper.Direction, in []byte) error {
+	switch direction {
+	case dumper.SrcToDst:
+		p.srcToDst = append(p.srcToDst, in...)
+	case dumper.DstToSrc:
+		p.dstToSrc = append(p.dstToSrc, in...)
+	case dumper.Unknown:
+		p.unknown = append(p.unknown, in...)
+	}
+	return nil
+}
+
+func (p *PacketBuffer) Purge(direction dumper.Direction) error {
+	switch direction {
+	case dumper.SrcToDst:
+		p.srcToDst = nil
+	case dumper.DstToSrc:
+		p.dstToSrc = nil
+	case dumper.Unknown:
+		p.unknown = nil
+	}
+	return nil
+}
+
 // Target struct
 type Target struct {
 	TargetHosts []TargetHost
@@ -165,9 +207,9 @@ func (r *PacketReader) ReadAndDump(target Target) error {
 }
 
 func (r *PacketReader) handlePacket(target Target) error {
-	mMap := map[string]*dumper.ConnMetadata{}        // metadata map per connection
-	mssMap := map[string]int{}                       // TCP MSS map per connection
-	bMap := map[string]map[dumper.Direction][]byte{} // long payload map per direction
+	mMap := map[string]*dumper.ConnMetadata{} // metadata map per connection
+	mssMap := map[string]int{}                // TCP MSS map per connection
+	bMap := map[string]*PacketBuffer{}        // long payload map per direction
 	var mem runtime.MemStats
 
 	t := time.NewTicker(1 * time.Minute)
@@ -230,7 +272,7 @@ func (r *PacketReader) handlePacket(target Target) error {
 				}
 				mMap[key] = connMetadata
 				mssMap[key] = mss
-				bMap[key] = newByteMap()
+				bMap[key] = new(PacketBuffer)
 			} else if tcp.SYN && tcp.ACK {
 				if direction == dumper.Unknown {
 					key = dstToSrcKey
@@ -283,14 +325,14 @@ func (r *PacketReader) handlePacket(target Target) error {
 				}
 			}
 
-			_, ok := bMap[key]
-			if !ok {
-				bMap[key] = newByteMap()
-			}
-
 			in := tcpLayer.LayerPayload()
 			if len(in) == 0 {
 				continue
+			}
+
+			_, ok := bMap[key]
+			if !ok {
+				bMap[key] = new(PacketBuffer)
 			}
 
 			mss, ok := mssMap[key]
@@ -298,13 +340,13 @@ func (r *PacketReader) handlePacket(target Target) error {
 				maxPacketLen = mss - (len(tcp.LayerContents()) - 20)
 			}
 			if len(in) == maxPacketLen {
-				bMap[key][direction] = append(bMap[key][direction], in...)
+				bMap[key].Append(direction, in)
 				continue
 			}
-			bb, ok := bMap[key][direction]
-			if ok {
+			bb := bMap[key].Get(direction)
+			if len(bb) > 0 {
 				in = append(bb, in...)
-				bMap[key][direction] = nil
+				bMap[key].Purge(direction)
 			}
 			if direction == dumper.Unknown {
 				for _, k := range []string{srcToDstKey, dstToSrcKey} {
@@ -364,7 +406,7 @@ func (r *PacketReader) handlePacket(target Target) error {
 				continue
 			}
 			runtime.ReadMemStats(&mem)
-			r.logger.Info("probe handler internal Stats",
+			r.logger.Info("tcpdp internal stats",
 				zap.Uint64("tcpdp Alloc", mem.Alloc),
 				zap.Uint64("tcpdp TotalAlloc", mem.TotalAlloc),
 				zap.Uint64("tcpdp Sys", mem.Sys),
@@ -374,10 +416,10 @@ func (r *PacketReader) handlePacket(target Target) error {
 				zap.Uint64("tcpdp HeapSys", mem.HeapSys),
 				zap.Uint64("tcpdp HeapIdle", mem.HeapIdle),
 				zap.Uint64("tcpdp HeapInuse", mem.HeapInuse),
-				zap.Int("metadata cache (mMap) length", len(mMap)),
-				zap.Int("metadata cache (mMap) length", len(mMap)),
-				zap.Int("TCP MSS cache (mssMap) length", len(mssMap)),
-				zap.Int("buffer cache (bMap) length", len(bMap)))
+				zap.Int("packet handler metadata cache (mMap) length", len(mMap)),
+				zap.Int("packet handler metadata cache (mMap) length", len(mMap)),
+				zap.Int("packet handler TCP MSS cache (mssMap) length", len(mssMap)),
+				zap.Int("packet handler buffer cache (bMap) length", len(bMap)))
 		}
 	}
 }
@@ -467,7 +509,7 @@ L:
 	t.Stop()
 }
 
-func newByteMap() map[dumper.Direction][]byte {
+func newBufferMap() map[dumper.Direction][]byte {
 	return map[dumper.Direction][]byte{
 		dumper.SrcToDst: []byte{},
 		dumper.DstToSrc: []byte{},
