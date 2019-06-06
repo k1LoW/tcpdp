@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.20.0](https://github.com/k1LoW/tcpdp/compare/v0.19.0...v0.20.0) (2019-06-04)
+
+* Add `log.enableInternal` to log tcpdp internal stats [#80](https://github.com/k1LoW/tcpdp/pull/80) ([k1LoW](https://github.com/k1LoW))
+
 ## [v0.19.0](https://github.com/k1LoW/tcpdp/compare/v0.18.0...v0.19.0) (2019-05-15)
 
 * Add dumper `conn` for tracking only connection [#79](https://github.com/k1LoW/tcpdp/pull/79) ([k1LoW](https://github.com/k1LoW))
