@@ -410,9 +410,9 @@ func (r *PacketReader) handlePacket(target Target) error {
 				continue
 			}
 			runtime.ReadMemStats(&mem)
-			bufferSize := 0
+			bSize := 0
 			for _, b := range bMap {
-				bufferSize = bufferSize + b.Size()
+				bSize = bSize + b.Size()
 			}
 
 			r.logger.Info("tcpdp internal stats",
@@ -429,7 +429,7 @@ func (r *PacketReader) handlePacket(target Target) error {
 				zap.Int("packet handler metadata cache (mMap) length", len(mMap)),
 				zap.Int("packet handler TCP MSS cache (mssMap) length", len(mssMap)),
 				zap.Int("packet handler buffer cache (bMap) length", len(bMap)),
-				zap.Int("packet handler buffer cache (bMap) size", bufferSize))
+				zap.Int("packet handler buffer cache (bMap) size", bSize))
 		}
 	}
 }
