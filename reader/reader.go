@@ -63,6 +63,10 @@ func (p *PacketBuffer) Purge(direction dumper.Direction) error {
 	return nil
 }
 
+func (p *PacketBuffer) Size() int {
+	return len(p.srcToDst) + len(p.dstToSrc) + len(p.unknown)
+}
+
 // Target struct
 type Target struct {
 	TargetHosts []TargetHost
@@ -406,6 +410,11 @@ func (r *PacketReader) handlePacket(target Target) error {
 				continue
 			}
 			runtime.ReadMemStats(&mem)
+			bufferSize := 0
+			for _, b := range bMap {
+				bufferSize = bufferSize + b.Size()
+			}
+
 			r.logger.Info("tcpdp internal stats",
 				zap.Uint64("tcpdp Alloc", mem.Alloc),
 				zap.Uint64("tcpdp TotalAlloc", mem.TotalAlloc),
@@ -419,7 +428,8 @@ func (r *PacketReader) handlePacket(target Target) error {
 				zap.Int("packet handler metadata cache (mMap) length", len(mMap)),
 				zap.Int("packet handler metadata cache (mMap) length", len(mMap)),
 				zap.Int("packet handler TCP MSS cache (mssMap) length", len(mssMap)),
-				zap.Int("packet handler buffer cache (bMap) length", len(bMap)))
+				zap.Int("packet handler buffer cache (bMap) length", len(bMap)),
+				zap.Int("packet handler buffer cache (bMap) size", bufferSize))
 		}
 	}
 }
