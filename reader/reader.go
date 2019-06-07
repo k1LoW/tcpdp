@@ -426,9 +426,10 @@ func (r *PacketReader) handlePacket(target Target) error {
 
 			r.dumper.Log(values)
 		case <-purgeTicker.C:
-			// purge expired buffer cache
+			// purge expired packet buffer cache
 			for key, b := range bMap {
 				if b.Expired() {
+					r.logger.Info("purge expired packet buffer cache", zap.String("key", key), zap.Int("packet handler buffer cache (bMap) size", b.Size()))
 					delete(bMap, key)
 				}
 			}
