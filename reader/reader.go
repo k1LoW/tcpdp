@@ -435,6 +435,10 @@ func (r *PacketReader) handlePacket(target Target) error {
 }
 
 func (r *PacketReader) handleConn(target Target) error {
+	var mem runtime.MemStats
+
+	t := time.NewTicker(1 * time.Minute)
+
 	for {
 		select {
 		case <-r.ctx.Done():
@@ -497,6 +501,22 @@ func (r *PacketReader) handleConn(target Target) error {
 			values = append(values, connMetadata.DumpValues...)
 
 			r.dumper.Log(values)
+		case <-t.C:
+			if !r.enableInternal {
+				continue
+			}
+			runtime.ReadMemStats(&mem)
+
+			r.logger.Info("tcpdp internal stats",
+				zap.Uint64("tcpdp Alloc", mem.Alloc),
+				zap.Uint64("tcpdp TotalAlloc", mem.TotalAlloc),
+				zap.Uint64("tcpdp Sys", mem.Sys),
+				zap.Uint64("tcpdp Lookups", mem.Lookups),
+				zap.Uint64("tcpdp Frees", mem.Frees),
+				zap.Uint64("tcpdp HeapAlloc", mem.HeapAlloc),
+				zap.Uint64("tcpdp HeapSys", mem.HeapSys),
+				zap.Uint64("tcpdp HeapIdle", mem.HeapIdle),
+				zap.Uint64("tcpdp HeapInuse", mem.HeapInuse))
 		}
 	}
 }
