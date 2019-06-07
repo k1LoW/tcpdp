@@ -27,10 +27,11 @@ type PacketBuffer struct {
 	dstToSrc []byte
 	unknown  []byte
 	expires  time.Time
+	created  time.Time
 }
 
 func newPacketBuffer() *PacketBuffer {
-	p := PacketBuffer{}
+	p := PacketBuffer{created: time.Now()}
 	p.updateExpires()
 	return &p
 }
@@ -65,19 +66,6 @@ func (p *PacketBuffer) Append(direction dumper.Direction, in []byte) error {
 		p.dstToSrc = append(p.dstToSrc, in...)
 	case dumper.Unknown:
 		p.unknown = append(p.unknown, in...)
-	}
-	return nil
-}
-
-func (p *PacketBuffer) Clear(direction dumper.Direction) error {
-	p.updateExpires()
-	switch direction {
-	case dumper.SrcToDst:
-		p.srcToDst = nil
-	case dumper.DstToSrc:
-		p.dstToSrc = nil
-	case dumper.Unknown:
-		p.unknown = nil
 	}
 	return nil
 }
@@ -279,9 +267,14 @@ func (r *PacketReader) handlePacket(target Target) error {
 				}
 
 				// TCP connection start
-				_, ok := mMap[key]
-				if ok {
+				if _, ok := mMap[key]; ok {
 					delete(mMap, key)
+				}
+				if _, ok := mssMap[key]; ok {
+					delete(mssMap, key)
+				}
+				if _, ok := bMap[key]; ok {
+					delete(bMap, key)
 				}
 
 				// TCP connection start ( hex, mysql, pg )
@@ -296,14 +289,13 @@ func (r *PacketReader) handlePacket(target Target) error {
 				}
 				mMap[key] = connMetadata
 				mssMap[key] = mss
-				bMap[key] = new(PacketBuffer)
+				bMap[key] = newPacketBuffer()
 			} else if tcp.SYN && tcp.ACK {
 				if direction == dumper.Unknown {
 					key = dstToSrcKey
 				}
 
-				_, ok := mMap[key]
-				if !ok {
+				if _, ok := mMap[key]; !ok {
 					// TCP connection start ( hex, mysql, pg )
 					connID := xid.New().String()
 					connMetadata := r.dumper.NewConnMetadata()
@@ -327,22 +319,18 @@ func (r *PacketReader) handlePacket(target Target) error {
 				})
 			} else if tcp.FIN {
 				// TCP connection end
-				_, ok := mMap[key]
-				if ok {
+				if _, ok := mMap[key]; ok {
 					delete(mMap, key)
 				}
-				_, ok = mssMap[key]
-				if ok {
+				if _, ok := mssMap[key]; ok {
 					delete(mssMap, key)
 				}
-				_, ok = bMap[key]
-				if ok {
+				if _, ok := bMap[key]; ok {
 					delete(bMap, key)
 				}
 				if direction == dumper.Unknown {
 					for _, key := range []string{srcToDstKey, dstToSrcKey} {
-						_, ok := mMap[key]
-						if ok {
+						if _, ok := mMap[key]; ok {
 							delete(mMap, key)
 						}
 					}
@@ -354,9 +342,8 @@ func (r *PacketReader) handlePacket(target Target) error {
 				continue
 			}
 
-			_, ok := bMap[key]
-			if !ok {
-				bMap[key] = new(PacketBuffer)
+			if _, ok := bMap[key]; !ok {
+				bMap[key] = newPacketBuffer()
 			}
 
 			mss, ok := mssMap[key]
@@ -370,8 +357,9 @@ func (r *PacketReader) handlePacket(target Target) error {
 			bb := bMap[key].Get(direction)
 			if len(bb) > 0 {
 				in = append(bb, in...)
-				bMap[key].Clear(direction)
 			}
+			delete(bMap, key)
+
 			if direction == dumper.Unknown {
 				for _, k := range []string{srcToDstKey, dstToSrcKey} {
 					_, ok := mMap[k]
@@ -428,8 +416,9 @@ func (r *PacketReader) handlePacket(target Target) error {
 		case <-purgeTicker.C:
 			// purge expired packet buffer cache
 			for key, b := range bMap {
+				r.logger.Info("DEBUG", zap.String("key", key), zap.Time("expires", b.expires), zap.Time("created", b.created))
 				if b.Expired() {
-					r.logger.Info("purge expired packet buffer cache", zap.String("key", key), zap.Int("packet handler buffer cache (bMap) size", b.Size()))
+					r.logger.Info("DEBUG purge expired packet buffer cache", zap.String("key", key), zap.Int("packet handler buffer cache (bMap) size", b.Size()))
 					delete(bMap, key)
 				}
 			}
