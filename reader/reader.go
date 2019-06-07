@@ -19,15 +19,32 @@ import (
 
 const anyIP = "0.0.0.0"
 
+var packetTTL = 60 * 60   // 3600 second
 var maxPacketLen = 0xFFFF // 65535
 
 type PacketBuffer struct {
 	srcToDst []byte
 	dstToSrc []byte
 	unknown  []byte
+	expires  time.Time
+}
+
+func newPacketBuffer() *PacketBuffer {
+	p := PacketBuffer{}
+	p.updateExpires()
+	return &p
+}
+
+func (p *PacketBuffer) updateExpires() {
+	p.expires = time.Now().Add(time.Duration(packetTTL) * time.Second)
+}
+
+func (p *PacketBuffer) Expired() bool {
+	return p.expires.Before(time.Now())
 }
 
 func (p *PacketBuffer) Get(direction dumper.Direction) []byte {
+	p.updateExpires()
 	switch direction {
 	case dumper.SrcToDst:
 		return p.srcToDst
@@ -40,6 +57,7 @@ func (p *PacketBuffer) Get(direction dumper.Direction) []byte {
 }
 
 func (p *PacketBuffer) Append(direction dumper.Direction, in []byte) error {
+	p.updateExpires()
 	switch direction {
 	case dumper.SrcToDst:
 		p.srcToDst = append(p.srcToDst, in...)
@@ -51,7 +69,8 @@ func (p *PacketBuffer) Append(direction dumper.Direction, in []byte) error {
 	return nil
 }
 
-func (p *PacketBuffer) Purge(direction dumper.Direction) error {
+func (p *PacketBuffer) Clear(direction dumper.Direction) error {
+	p.updateExpires()
 	switch direction {
 	case dumper.SrcToDst:
 		p.srcToDst = nil
@@ -216,7 +235,8 @@ func (r *PacketReader) handlePacket(target Target) error {
 	bMap := map[string]*PacketBuffer{}        // long payload map per direction
 	var mem runtime.MemStats
 
-	t := time.NewTicker(1 * time.Minute)
+	purgeTicker := time.NewTicker(time.Duration(packetTTL/10) * time.Second)
+	statsTicker := time.NewTicker(1 * time.Minute)
 
 	for {
 		select {
@@ -350,7 +370,7 @@ func (r *PacketReader) handlePacket(target Target) error {
 			bb := bMap[key].Get(direction)
 			if len(bb) > 0 {
 				in = append(bb, in...)
-				bMap[key].Purge(direction)
+				bMap[key].Clear(direction)
 			}
 			if direction == dumper.Unknown {
 				for _, k := range []string{srcToDstKey, dstToSrcKey} {
@@ -405,7 +425,14 @@ func (r *PacketReader) handlePacket(target Target) error {
 			values = append(values, connMetadata.DumpValues...)
 
 			r.dumper.Log(values)
-		case <-t.C:
+		case <-purgeTicker.C:
+			// purge expired buffer cache
+			for key, b := range bMap {
+				if b.Expired() {
+					delete(bMap, key)
+				}
+			}
+		case <-statsTicker.C:
 			if !r.enableInternal {
 				continue
 			}
@@ -437,7 +464,7 @@ func (r *PacketReader) handlePacket(target Target) error {
 func (r *PacketReader) handleConn(target Target) error {
 	var mem runtime.MemStats
 
-	t := time.NewTicker(1 * time.Minute)
+	statsTicker := time.NewTicker(1 * time.Minute)
 
 	for {
 		select {
@@ -501,7 +528,7 @@ func (r *PacketReader) handleConn(target Target) error {
 			values = append(values, connMetadata.DumpValues...)
 
 			r.dumper.Log(values)
-		case <-t.C:
+		case <-statsTicker.C:
 			if !r.enableInternal {
 				continue
 			}
