@@ -27,11 +27,13 @@ type PacketBuffer struct {
 	dstToSrc []byte
 	unknown  []byte
 	expires  time.Time
-	created  time.Time
+	// created  time.Time
 }
 
 func newPacketBuffer() *PacketBuffer {
-	p := PacketBuffer{created: time.Now()}
+	p := PacketBuffer{
+		// created: time.Now()
+	}
 	p.updateExpires()
 	return &p
 }
