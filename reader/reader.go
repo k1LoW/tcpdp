@@ -580,11 +580,3 @@ L:
 	}
 	t.Stop()
 }
-
-func newBufferMap() map[dumper.Direction][]byte {
-	return map[dumper.Direction][]byte{
-		dumper.SrcToDst: []byte{},
-		dumper.DstToSrc: []byte{},
-		dumper.Unknown:  []byte{},
-	}
-}
