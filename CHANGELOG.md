@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.20.2](https://github.com/k1LoW/tcpdp/compare/v0.20.1...v0.20.2) (2019-06-09)
+
+* Fix payload buffer leak [#81](https://github.com/k1LoW/tcpdp/pull/81) ([k1LoW](https://github.com/k1LoW))
+
 ## [v0.20.1](https://github.com/k1LoW/tcpdp/compare/v0.20.0...v0.20.1) (2019-06-06)
 
 * Fix output `tcpdp version`
