@@ -74,7 +74,7 @@ func initConfig() {
 
 	viper.SetDefault("log.dir", ".")
 	viper.SetDefault("log.enable", true)
-	viper.SetDefault("log.enableInternal", true)
+	viper.SetDefault("log.enableInternal", false)
 	viper.SetDefault("log.stdout", true)
 	viper.SetDefault("log.format", "json")
 	viper.SetDefault("log.rotateEnable", true)
