@@ -45,14 +45,35 @@ func (p *PacketBuffer) Expired() bool {
 }
 
 func (p *PacketBuffer) Get(direction dumper.Direction) []byte {
+	switch direction {
+	case dumper.SrcToDst:
+		if len(p.srcToDst) > 0 {
+			p.updateExpires()
+		}
+		return p.srcToDst
+	case dumper.DstToSrc:
+		if len(p.dstToSrc) > 0 {
+			p.updateExpires()
+		}
+		return p.dstToSrc
+	case dumper.Unknown:
+		if len(p.unknown) > 0 {
+			p.updateExpires()
+		}
+		return p.unknown
+	}
+	return nil
+}
+
+func (p *PacketBuffer) Delete(direction dumper.Direction) error {
 	p.updateExpires()
 	switch direction {
 	case dumper.SrcToDst:
-		return p.srcToDst
+		p.srcToDst = nil
 	case dumper.DstToSrc:
-		return p.srcToDst
+		p.dstToSrc = nil
 	case dumper.Unknown:
-		return p.unknown
+		p.unknown = nil
 	}
 	return nil
 }
@@ -358,7 +379,7 @@ func (r *PacketReader) handlePacket(target Target) error {
 			if len(bb) > 0 {
 				in = append(bb, in...)
 			}
-			delete(bMap, key)
+			bMap[key].Delete(direction)
 
 			if direction == dumper.Unknown {
 				for _, k := range []string{srcToDstKey, dstToSrcKey} {
@@ -415,12 +436,15 @@ func (r *PacketReader) handlePacket(target Target) error {
 			r.dumper.Log(values)
 		case <-purgeTicker.C:
 			// purge expired packet buffer cache
+			purgedSize := 0
 			for key, b := range bMap {
-				r.logger.Info("DEBUG", zap.String("key", key), zap.Time("expires", b.expires), zap.Time("created", b.created))
-				if b.Expired() {
-					r.logger.Info("DEBUG purge expired packet buffer cache", zap.String("key", key), zap.Int("packet handler buffer cache (bMap) size", b.Size()))
+				if b.Expired() || b.Size() == 0 {
+					purgedSize = purgedSize + b.Size()
 					delete(bMap, key)
 				}
+			}
+			if purgedSize > 0 {
+				r.logger.Info("purge expired packet buffer cache", zap.Int("purged_size", purgedSize))
 			}
 		case <-statsTicker.C:
 			if !r.enableInternal {
@@ -442,7 +466,6 @@ func (r *PacketReader) handlePacket(target Target) error {
 				zap.Uint64("tcpdp HeapSys", mem.HeapSys),
 				zap.Uint64("tcpdp HeapIdle", mem.HeapIdle),
 				zap.Uint64("tcpdp HeapInuse", mem.HeapInuse),
-				zap.Int("packet handler metadata cache (mMap) length", len(mMap)),
 				zap.Int("packet handler metadata cache (mMap) length", len(mMap)),
 				zap.Int("packet handler TCP MSS cache (mssMap) length", len(mssMap)),
 				zap.Int("packet handler buffer cache (bMap) length", len(bMap)),
