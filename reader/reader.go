@@ -19,83 +19,8 @@ import (
 
 const anyIP = "0.0.0.0"
 
-var packetTTL = 60 * 60   // 3600 second
+var packetTTL = 600       // second
 var maxPacketLen = 0xFFFF // 65535
-
-type PacketBuffer struct {
-	srcToDst []byte
-	dstToSrc []byte
-	unknown  []byte
-	expires  time.Time
-	// created  time.Time
-}
-
-func newPacketBuffer() *PacketBuffer {
-	p := PacketBuffer{
-		// created: time.Now()
-	}
-	p.updateExpires()
-	return &p
-}
-
-func (p *PacketBuffer) updateExpires() {
-	p.expires = time.Now().Add(time.Duration(packetTTL) * time.Second)
-}
-
-func (p *PacketBuffer) Expired() bool {
-	return p.expires.Before(time.Now())
-}
-
-func (p *PacketBuffer) Get(direction dumper.Direction) []byte {
-	switch direction {
-	case dumper.SrcToDst:
-		if len(p.srcToDst) > 0 {
-			p.updateExpires()
-		}
-		return p.srcToDst
-	case dumper.DstToSrc:
-		if len(p.dstToSrc) > 0 {
-			p.updateExpires()
-		}
-		return p.dstToSrc
-	case dumper.Unknown:
-		if len(p.unknown) > 0 {
-			p.updateExpires()
-		}
-		return p.unknown
-	}
-	return nil
-}
-
-func (p *PacketBuffer) Delete(direction dumper.Direction) error {
-	p.updateExpires()
-	switch direction {
-	case dumper.SrcToDst:
-		p.srcToDst = nil
-	case dumper.DstToSrc:
-		p.dstToSrc = nil
-	case dumper.Unknown:
-		p.unknown = nil
-	}
-	return nil
-}
-
-func (p *PacketBuffer) Append(direction dumper.Direction, in []byte) error {
-	p.updateExpires()
-	switch direction {
-	case dumper.SrcToDst:
-		p.srcToDst = append(p.srcToDst, in...)
-	case dumper.DstToSrc:
-		p.dstToSrc = append(p.dstToSrc, in...)
-	case dumper.Unknown:
-		p.unknown = append(p.unknown, in...)
-	}
-	return nil
-}
-
-func (p *PacketBuffer) Size() int {
-	return len(p.srcToDst) + len(p.dstToSrc) + len(p.unknown)
-}
 
 // Target struct
 type Target struct {
@@ -241,13 +166,47 @@ func (r *PacketReader) ReadAndDump(target Target) error {
 }
 
 func (r *PacketReader) handlePacket(target Target) error {
+	innerCtx, cancel := context.WithCancel(r.ctx)
+	defer cancel()
 	mMap := map[string]*dumper.ConnMetadata{} // metadata map per connection
 	mssMap := map[string]int{}                // TCP MSS map per connection
-	bMap := map[string]*PacketBuffer{}        // long payload map per direction
+	pMap := payloadBufferManager{}            // long payload map per direction
 	var mem runtime.MemStats
 
-	purgeTicker := time.NewTicker(time.Duration(packetTTL/10) * time.Second)
-	statsTicker := time.NewTicker(1 * time.Minute)
+	go pMap.startPurgeTicker(innerCtx, r.logger)
+
+	if r.enableInternal {
+		go func() {
+			t := time.NewTicker(1 * time.Minute)
+			for {
+				select {
+				case <-innerCtx.Done():
+					return
+				case <-t.C:
+					runtime.ReadMemStats(&mem)
+					bSize := 0
+					for _, b := range pMap {
+						bSize = bSize + b.Size()
+					}
+
+					r.logger.Info("tcpdp internal stats",
+						zap.Uint64("tcpdp Alloc", mem.Alloc),
+						zap.Uint64("tcpdp TotalAlloc", mem.TotalAlloc),
+						zap.Uint64("tcpdp Sys", mem.Sys),
+						zap.Uint64("tcpdp Lookups", mem.Lookups),
+						zap.Uint64("tcpdp Frees", mem.Frees),
+						zap.Uint64("tcpdp HeapAlloc", mem.HeapAlloc),
+						zap.Uint64("tcpdp HeapSys", mem.HeapSys),
+						zap.Uint64("tcpdp HeapIdle", mem.HeapIdle),
+						zap.Uint64("tcpdp HeapInuse", mem.HeapInuse),
+						zap.Int("packet handler metadata cache (mMap) length", len(mMap)),
+						zap.Int("packet handler TCP MSS cache (mssMap) length", len(mssMap)),
+						zap.Int("packet handler payload buffer cache (pMap) length", len(pMap)),
+						zap.Int("packet handler payload buffer cache (pMap) size", bSize))
+				}
+			}
+		}()
+	}
 
 	for {
 		select {
@@ -296,8 +255,8 @@ func (r *PacketReader) handlePacket(target Target) error {
 				if _, ok := mssMap[key]; ok {
 					delete(mssMap, key)
 				}
-				if _, ok := bMap[key]; ok {
-					delete(bMap, key)
+				if _, ok := pMap[key]; ok {
+					delete(pMap, key)
 				}
 
 				// TCP connection start ( hex, mysql, pg )
@@ -312,7 +271,7 @@ func (r *PacketReader) handlePacket(target Target) error {
 				}
 				mMap[key] = connMetadata
 				mssMap[key] = mss
-				bMap[key] = newPacketBuffer()
+				pMap[key] = newPayloadBuffer()
 			} else if tcp.SYN && tcp.ACK {
 				if direction == dumper.Unknown {
 					key = dstToSrcKey
@@ -348,8 +307,8 @@ func (r *PacketReader) handlePacket(target Target) error {
 				if _, ok := mssMap[key]; ok {
 					delete(mssMap, key)
 				}
-				if _, ok := bMap[key]; ok {
-					delete(bMap, key)
+				if _, ok := pMap[key]; ok {
+					delete(pMap, key)
 				}
 				if direction == dumper.Unknown {
 					for _, key := range []string{srcToDstKey, dstToSrcKey} {
@@ -365,8 +324,8 @@ func (r *PacketReader) handlePacket(target Target) error {
 				continue
 			}
 
-			if _, ok := bMap[key]; !ok {
-				bMap[key] = newPacketBuffer()
+			if _, ok := pMap[key]; !ok {
+				pMap[key] = newPayloadBuffer()
 			}
 
 			mss, ok := mssMap[key]
@@ -374,14 +333,14 @@ func (r *PacketReader) handlePacket(target Target) error {
 				maxPacketLen = mss - (len(tcp.LayerContents()) - 20)
 			}
 			if len(in) == maxPacketLen {
-				bMap[key].Append(direction, in)
+				pMap[key].Append(direction, in)
 				continue
 			}
-			bb := bMap[key].Get(direction)
+			bb := pMap[key].Get(direction)
 			if len(bb) > 0 {
 				in = append(bb, in...)
 			}
-			bMap[key].Delete(direction)
+			pMap[key].Delete(direction)
 
 			if direction == dumper.Unknown {
 				for _, k := range []string{srcToDstKey, dstToSrcKey} {
@@ -436,50 +395,39 @@ func (r *PacketReader) handlePacket(target Target) error {
 			values = append(values, connMetadata.DumpValues...)
 
 			r.dumper.Log(values)
-		case <-purgeTicker.C:
-			// purge expired packet buffer cache
-			purgedSize := 0
-			for key, b := range bMap {
-				if b.Expired() || b.Size() == 0 {
-					purgedSize = purgedSize + b.Size()
-					delete(bMap, key)
-				}
-			}
-			if purgedSize > 0 {
-				r.logger.Info("purge expired packet buffer cache", zap.Int("purged_size", purgedSize))
-			}
-		case <-statsTicker.C:
-			if !r.enableInternal {
-				continue
-			}
-			runtime.ReadMemStats(&mem)
-			bSize := 0
-			for _, b := range bMap {
-				bSize = bSize + b.Size()
-			}
-
-			r.logger.Info("tcpdp internal stats",
-				zap.Uint64("tcpdp Alloc", mem.Alloc),
-				zap.Uint64("tcpdp TotalAlloc", mem.TotalAlloc),
-				zap.Uint64("tcpdp Sys", mem.Sys),
-				zap.Uint64("tcpdp Lookups", mem.Lookups),
-				zap.Uint64("tcpdp Frees", mem.Frees),
-				zap.Uint64("tcpdp HeapAlloc", mem.HeapAlloc),
-				zap.Uint64("tcpdp HeapSys", mem.HeapSys),
-				zap.Uint64("tcpdp HeapIdle", mem.HeapIdle),
-				zap.Uint64("tcpdp HeapInuse", mem.HeapInuse),
-				zap.Int("packet handler metadata cache (mMap) length", len(mMap)),
-				zap.Int("packet handler TCP MSS cache (mssMap) length", len(mssMap)),
-				zap.Int("packet handler buffer cache (bMap) length", len(bMap)),
-				zap.Int("packet handler buffer cache (bMap) size", bSize))
 		}
 	}
 }
 
 func (r *PacketReader) handleConn(target Target) error {
+	innerCtx, cancel := context.WithCancel(r.ctx)
+	defer cancel()
 	var mem runtime.MemStats
 
-	statsTicker := time.NewTicker(1 * time.Minute)
+	if r.enableInternal {
+		go func() {
+			t := time.NewTicker(1 * time.Minute)
+			for {
+				select {
+				case <-innerCtx.Done():
+					return
+				case <-t.C:
+					runtime.ReadMemStats(&mem)
+					r.logger.Info("tcpdp internal stats",
+						zap.Uint64("tcpdp Alloc", mem.Alloc),
+						zap.Uint64("tcpdp TotalAlloc", mem.TotalAlloc),
+						zap.Uint64("tcpdp Sys", mem.Sys),
+						zap.Uint64("tcpdp Lookups", mem.Lookups),
+						zap.Uint64("tcpdp Frees", mem.Frees),
+						zap.Uint64("tcpdp HeapAlloc", mem.HeapAlloc),
+						zap.Uint64("tcpdp HeapSys", mem.HeapSys),
+						zap.Uint64("tcpdp HeapIdle", mem.HeapIdle),
+						zap.Uint64("tcpdp HeapInuse", mem.HeapInuse),
+					)
+				}
+			}
+		}()
+	}
 
 	for {
 		select {
@@ -543,22 +491,6 @@ func (r *PacketReader) handleConn(target Target) error {
 			values = append(values, connMetadata.DumpValues...)
 
 			r.dumper.Log(values)
-		case <-statsTicker.C:
-			if !r.enableInternal {
-				continue
-			}
-			runtime.ReadMemStats(&mem)
-
-			r.logger.Info("tcpdp internal stats",
-				zap.Uint64("tcpdp Alloc", mem.Alloc),
-				zap.Uint64("tcpdp TotalAlloc", mem.TotalAlloc),
-				zap.Uint64("tcpdp Sys", mem.Sys),
-				zap.Uint64("tcpdp Lookups", mem.Lookups),
-				zap.Uint64("tcpdp Frees", mem.Frees),
-				zap.Uint64("tcpdp HeapAlloc", mem.HeapAlloc),
-				zap.Uint64("tcpdp HeapSys", mem.HeapSys),
-				zap.Uint64("tcpdp HeapIdle", mem.HeapIdle),
-				zap.Uint64("tcpdp HeapInuse", mem.HeapInuse))
 		}
 	}
 }
@@ -571,10 +503,10 @@ L:
 		case <-r.ctx.Done():
 			break L
 		case <-t.C:
-			gopacketBuffered := len(packetChan)
+			packetBuffered := len(packetChan)
 			internalPacketBuffered := len(r.packetBuffer)
-			if internalPacketBuffered > (cap(r.packetBuffer)/10) || gopacketBuffered > (cap(packetChan)/10) {
-				r.logger.Info("buffered packet stats", zap.Int("internal_buffered", internalPacketBuffered), zap.Int("gopacket_buffered", gopacketBuffered))
+			if internalPacketBuffered > (cap(r.packetBuffer)/10) || packetBuffered > (cap(packetChan)/10) {
+				r.logger.Info("buffered packet stats", zap.Int("internal_buffered", internalPacketBuffered), zap.Int("packet_buffered", packetBuffered))
 			}
 		}
 	}
