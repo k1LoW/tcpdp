@@ -43,7 +43,7 @@ type ConnMetadata struct {
 type Dumper interface {
 	Name() string
 	Dump(in []byte, direction Direction, connMetadata *ConnMetadata, additional []DumpValue) error
-	Read(in []byte, direction Direction, connMetadata *ConnMetadata) []DumpValue
+	Read(in []byte, direction Direction, connMetadata *ConnMetadata) ([]DumpValue, error)
 	Log(values []DumpValue)
 	NewConnMetadata() *ConnMetadata
 }

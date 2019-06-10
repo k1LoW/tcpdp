@@ -215,6 +215,7 @@ func (r *PacketReader) handlePacket(target Target) error {
 		case packet := <-r.packetBuffer:
 			if packet == nil {
 				r.cancel()
+				r.logger.WithOptions(zap.AddCaller()).Fatal("null packet")
 				return nil
 			}
 			ipLayer := packet.Layer(layers.LayerTypeIPv4)
@@ -374,16 +375,44 @@ func (r *PacketReader) handlePacket(target Target) error {
 			}
 
 			var read []dumper.DumpValue
+			var err error
 			if r.proxyProtocol {
 				seek, ppValues, err := ParseProxyProtocolHeader(in)
 				if err != nil {
 					r.cancel()
+					r.logger.WithOptions(zap.AddCaller()).Fatal("error", zap.Error(err))
 					return err
 				}
 				connMetadata.DumpValues = append(connMetadata.DumpValues, ppValues...)
-				read = r.dumper.Read(in[seek:], direction, connMetadata)
+				read, err = r.dumper.Read(in[seek:], direction, connMetadata)
+				if err != nil {
+					r.logger.WithOptions(zap.AddCaller()).Warn("-", zap.Error(err))
+					if _, ok := mMap[key]; ok {
+						delete(mMap, key)
+					}
+					if _, ok := mssMap[key]; ok {
+						delete(mssMap, key)
+					}
+					if _, ok := pMap[key]; ok {
+						delete(pMap, key)
+					}
+					continue
+				}
 			} else {
-				read = r.dumper.Read(in, direction, connMetadata)
+				read, err = r.dumper.Read(in, direction, connMetadata)
+				if err != nil {
+					r.logger.WithOptions(zap.AddCaller()).Warn("-", zap.Error(err))
+					if _, ok := mMap[key]; ok {
+						delete(mMap, key)
+					}
+					if _, ok := mssMap[key]; ok {
+						delete(mssMap, key)
+					}
+					if _, ok := pMap[key]; ok {
+						delete(pMap, key)
+					}
+					continue
+				}
 			}
 			mMap[key] = connMetadata
 			if len(read) == 0 {
@@ -436,6 +465,7 @@ func (r *PacketReader) handleConn(target Target) error {
 		case packet := <-r.packetBuffer:
 			if packet == nil {
 				r.cancel()
+				r.logger.WithOptions(zap.AddCaller()).Fatal("null packet")
 				return nil
 			}
 			ipLayer := packet.Layer(layers.LayerTypeIPv4)
@@ -483,6 +513,7 @@ func (r *PacketReader) handleConn(target Target) error {
 				_, ppValues, err := ParseProxyProtocolHeader(in)
 				if err != nil {
 					r.cancel()
+					r.logger.WithOptions(zap.AddCaller()).Fatal("error", zap.Error(err))
 					return err
 				}
 				connMetadata.DumpValues = append(connMetadata.DumpValues, ppValues...)

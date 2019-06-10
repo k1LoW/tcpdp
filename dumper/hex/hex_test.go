@@ -69,7 +69,11 @@ func TestHexRead(t *testing.T) {
 		direction := tt.direction
 		connMetadata := dumper.NewConnMetadata()
 
-		actual := dumper.Read(in, direction, connMetadata)
+		actual, err := dumper.Read(in, direction, connMetadata)
+		if err != nil {
+			t.Errorf("%v", err)
+		}
+
 		expected := tt.expected
 
 		if len(actual) != len(expected) {

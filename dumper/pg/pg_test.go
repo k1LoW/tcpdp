@@ -161,55 +161,65 @@ var pgValueTests = []struct {
 
 func TestPgReadHandshakeStartupMessage(t *testing.T) {
 	for _, tt := range pgValueTests {
-		out := new(bytes.Buffer)
-		dumper := &Dumper{
-			logger: newTestLogger(out),
-		}
-		in := tt.in
-		direction := tt.direction
-		connMetadata := &tt.connMetadata
+		t.Run(tt.description, func(t *testing.T) {
+			out := new(bytes.Buffer)
+			dumper := &Dumper{
+				logger: newTestLogger(out),
+			}
+			in := tt.in
+			direction := tt.direction
+			connMetadata := &tt.connMetadata
 
-		actual := dumper.readHandshake(in, direction, connMetadata)
-		expected := tt.expected
+			actual, err := dumper.readHandshake(in, direction, connMetadata)
+			if err != nil {
+				t.Errorf("%v", err)
+			}
+			expected := tt.expected
 
-		if len(actual) != len(expected) {
-			t.Errorf("actual %v\nwant %v", actual, expected)
-		}
-		if len(actual) == 2 {
-			if actual[0] != expected[0] {
+			if len(actual) != len(expected) {
 				t.Errorf("actual %v\nwant %v", actual, expected)
 			}
-			if actual[1] != expected[1] {
-				t.Errorf("actual %v\nwant %v", actual, expected)
+			if len(actual) == 2 {
+				if actual[0] != expected[0] {
+					t.Errorf("actual %v\nwant %v", actual, expected)
+				}
+				if actual[1] != expected[1] {
+					t.Errorf("actual %v\nwant %v", actual, expected)
+				}
 			}
-		}
+		})
 	}
 }
 
 func TestPgRead(t *testing.T) {
 	for _, tt := range pgValueTests {
-		out := new(bytes.Buffer)
-		dumper := &Dumper{
-			logger: newTestLogger(out),
-		}
-		in := tt.in
-		direction := tt.direction
-		connMetadata := &tt.connMetadata
-
-		actual := dumper.Read(in, direction, connMetadata)
-		expected := tt.expectedQuery
-
-		if len(actual) != len(expected) {
-			t.Errorf("actual %v\nwant %v", actual, expected)
-		}
-		if len(actual) == 2 {
-			if actual[0] != expected[0] {
-				t.Errorf("actual %#v\nwant %#v", actual[0], expected[0])
+		t.Run(tt.description, func(t *testing.T) {
+			out := new(bytes.Buffer)
+			dumper := &Dumper{
+				logger: newTestLogger(out),
 			}
-			if actual[1] != expected[1] {
-				t.Errorf("actual %#v\nwant %#v", actual[1], expected[1])
+			in := tt.in
+			direction := tt.direction
+			connMetadata := &tt.connMetadata
+
+			actual, err := dumper.Read(in, direction, connMetadata)
+			if err != nil {
+				t.Errorf("%v", err)
 			}
-		}
+			expected := tt.expectedQuery
+
+			if len(actual) != len(expected) {
+				t.Errorf("actual %v\nwant %v", actual, expected)
+			}
+			if len(actual) == 2 {
+				if actual[0] != expected[0] {
+					t.Errorf("actual %#v\nwant %#v", actual[0], expected[0])
+				}
+				if actual[1] != expected[1] {
+					t.Errorf("actual %#v\nwant %#v", actual[1], expected[1])
+				}
+			}
+		})
 	}
 }
 

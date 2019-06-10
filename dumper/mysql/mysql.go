@@ -50,7 +50,10 @@ func (m *Dumper) Name() string {
 
 // Dump query of MySQL
 func (m *Dumper) Dump(in []byte, direction dumper.Direction, connMetadata *dumper.ConnMetadata, additional []dumper.DumpValue) error {
-	read := m.Read(in, direction, connMetadata)
+	read, err := m.Read(in, direction, connMetadata)
+	if err != nil {
+		return err
+	}
 	if len(read) == 0 {
 		return nil
 	}
@@ -65,8 +68,11 @@ func (m *Dumper) Dump(in []byte, direction dumper.Direction, connMetadata *dumpe
 }
 
 // Read return byte to analyzed string
-func (m *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumper.ConnMetadata) []dumper.DumpValue {
-	values := m.readHandshakeResponse(in, direction, connMetadata)
+func (m *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumper.ConnMetadata) ([]dumper.DumpValue, error) {
+	values, err := m.readHandshakeResponse(in, direction, connMetadata)
+	if err != nil {
+		return values, err
+	}
 	connMetadata.DumpValues = append(connMetadata.DumpValues, values...)
 	cSet := connMetadata.Internal.(connMetadataInternal).charSet
 
@@ -113,11 +119,11 @@ func (m *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 			numParamsNum := int(bytesToUint64(numParams))
 			connMetadata.Internal.(connMetadataInternal).stmtNumParams[stmtIDNum] = numParamsNum
 		}
-		return []dumper.DumpValue{}
+		return []dumper.DumpValue{}, nil
 	}
 
 	if len(in) < 6 {
-		return []dumper.DumpValue{}
+		return []dumper.DumpValue{}, nil
 	}
 
 	var payloadLength uint32
@@ -133,7 +139,7 @@ func (m *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 		internal.payloadLength = payloadLength
 		internal.longPacketCache = append(internal.longPacketCache, in...)
 		connMetadata.Internal = internal
-		return []dumper.DumpValue{}
+		return []dumper.DumpValue{}, nil
 	}
 	internal.payloadLength = uint32(0)
 	connMetadata.Internal = internal
@@ -231,7 +237,7 @@ func (m *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 			}
 		}
 	default:
-		return []dumper.DumpValue{}
+		return []dumper.DumpValue{}, nil
 	}
 
 	return append(dumps, []dumper.DumpValue{
@@ -243,7 +249,7 @@ func (m *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 			Key:   "command_id",
 			Value: commandID,
 		},
-	}...)
+	}...), nil
 }
 
 // Log values
@@ -268,18 +274,18 @@ func (m *Dumper) NewConnMetadata() *dumper.ConnMetadata {
 	}
 }
 
-func (m *Dumper) readHandshakeResponse(in []byte, direction dumper.Direction, connMetadata *dumper.ConnMetadata) []dumper.DumpValue {
+func (m *Dumper) readHandshakeResponse(in []byte, direction dumper.Direction, connMetadata *dumper.ConnMetadata) ([]dumper.DumpValue, error) {
 	values := []dumper.DumpValue{}
 	if direction == dumper.RemoteToClient || direction == dumper.DstToSrc {
-		return values
+		return values, nil
 	}
 
 	if len(connMetadata.Internal.(connMetadataInternal).clientCapabilities) > 0 {
-		return values
+		return values, nil
 	}
 
 	if len(in) < 9 {
-		return values
+		return values, nil
 	}
 
 	clientCapabilities := binary.LittleEndian.Uint32(in[4:8])
@@ -299,8 +305,9 @@ func (m *Dumper) readHandshakeResponse(in []byte, direction dumper.Direction, co
 
 		if clientCapabilities&uint32(clientSSL) > 0 {
 			// tcpdp mysql dumper not support SSL connection.
+			err := errors.New("client is trying to connect using SSL. tcpdp mysql dumper not support SSL connection")
 			fields := []zapcore.Field{
-				zap.Error(errors.New("client is trying to connect using SSL. tcpdp mysql dumper not support SSL connection")),
+				zap.Error(err),
 			}
 			for _, kv := range connMetadata.DumpValues {
 				fields = append(fields, zap.Any(kv.Key, kv.Value))
@@ -309,7 +316,7 @@ func (m *Dumper) readHandshakeResponse(in []byte, direction dumper.Direction, co
 				fields = append(fields, zap.Any(kv.Key, kv.Value))
 			}
 			m.logger.Warn("-", fields...)
-			return values
+			return values, err
 		}
 
 		buff := bytes.NewBuffer(in[36:])
@@ -340,7 +347,7 @@ func (m *Dumper) readHandshakeResponse(in []byte, direction dumper.Direction, co
 			})
 		}
 		connMetadata.Internal.(connMetadataInternal).clientCapabilities[clientCompress] = (clientCapabilities&uint32(clientCompress) > 0)
-		return values
+		return values, nil
 	}
 
 	// parse Protocol::HandshakeResponse320
@@ -348,8 +355,9 @@ func (m *Dumper) readHandshakeResponse(in []byte, direction dumper.Direction, co
 	if clientCapabilities&uint32(clientProtocol41) == 0 {
 		if clientCapabilities&uint32(clientSSL) > 0 {
 			// tcpdp mysql dumper not support SSL connection.
+			err := errors.New("client is trying to connect using SSL. tcpdp mysql dumper not support SSL connection")
 			fields := []zapcore.Field{
-				zap.Error(errors.New("client is trying to connect using SSL. tcpdp mysql dumper not support SSL connection")),
+				zap.Error(err),
 			}
 			for _, kv := range connMetadata.DumpValues {
 				fields = append(fields, zap.Any(kv.Key, kv.Value))
@@ -358,7 +366,7 @@ func (m *Dumper) readHandshakeResponse(in []byte, direction dumper.Direction, co
 				fields = append(fields, zap.Any(kv.Key, kv.Value))
 			}
 			m.logger.Warn("-", fields...)
-			return values
+			return values, err
 		}
 
 		v := []dumper.DumpValue{}
@@ -388,7 +396,7 @@ func (m *Dumper) readHandshakeResponse(in []byte, direction dumper.Direction, co
 		}
 	}
 
-	return values
+	return values, nil
 }
 
 func readMysqlType(buff *bytes.Buffer) dataType {

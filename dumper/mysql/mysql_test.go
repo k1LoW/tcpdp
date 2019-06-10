@@ -13,6 +13,7 @@ import (
 
 type mysqlReadTest struct {
 	description   string
+	wantErr       bool
 	in            []byte
 	direction     dumper.Direction
 	connMetadata  dumper.ConnMetadata
@@ -25,36 +26,44 @@ func TestMysqlReadHandshakeResponse(t *testing.T) {
 	tts := newMysqlReadTests()
 
 	for _, tt := range tts {
-		out := new(bytes.Buffer)
-		d := &Dumper{
-			logger: newTestLogger(out),
-		}
-		in := tt.in
-		direction := tt.direction
-		connMetadata := &tt.connMetadata
+		t.Run(tt.description, func(t *testing.T) {
+			out := new(bytes.Buffer)
+			d := &Dumper{
+				logger: newTestLogger(out),
+			}
+			in := tt.in
+			direction := tt.direction
+			connMetadata := &tt.connMetadata
 
-		actual := d.readHandshakeResponse(in, direction, connMetadata)
-		expected := tt.expected
+			actual, err := d.readHandshakeResponse(in, direction, connMetadata)
+			if err != nil && tt.wantErr {
+				return
+			}
+			if err != nil {
+				t.Errorf("%v", err)
+			}
+			expected := tt.expected
 
-		if len(actual) != len(expected) {
-			t.Errorf("%v\nactual %v\nwant %v", tt.description, actual, expected)
-		}
-		for i := 0; i < len(actual); i++ {
-			v := actual[i].Value
-			ev := expected[i].Value
-			switch v.(type) {
-			case []interface{}:
-				for j := 0; j < len(v.([]interface{})); j++ {
-					if v.([]interface{})[j] != ev.([]interface{})[j] {
-						t.Errorf("actual %#v\nwant %#v", v.([]interface{})[j], ev.([]interface{})[j])
+			if len(actual) != len(expected) {
+				t.Errorf("%v\nactual %v\nwant %v", tt.description, actual, expected)
+			}
+			for i := 0; i < len(actual); i++ {
+				v := actual[i].Value
+				ev := expected[i].Value
+				switch v.(type) {
+				case []interface{}:
+					for j := 0; j < len(v.([]interface{})); j++ {
+						if v.([]interface{})[j] != ev.([]interface{})[j] {
+							t.Errorf("actual %#v\nwant %#v", v.([]interface{})[j], ev.([]interface{})[j])
+						}
+					}
+				default:
+					if actual[i] != expected[i] {
+						t.Errorf("actual %#v\nwant %#v", actual[i], expected[i])
 					}
 				}
-			default:
-				if actual[i] != expected[i] {
-					t.Errorf("actual %#v\nwant %#v", actual[i], expected[i])
-				}
 			}
-		}
+		})
 	}
 }
 
@@ -62,36 +71,44 @@ func TestMysqlRead(t *testing.T) {
 	tts := newMysqlReadTests()
 
 	for _, tt := range tts {
-		out := new(bytes.Buffer)
-		d := &Dumper{
-			logger: newTestLogger(out),
-		}
-		in := tt.in
-		direction := tt.direction
-		connMetadata := &tt.connMetadata
+		t.Run(tt.description, func(t *testing.T) {
+			out := new(bytes.Buffer)
+			d := &Dumper{
+				logger: newTestLogger(out),
+			}
+			in := tt.in
+			direction := tt.direction
+			connMetadata := &tt.connMetadata
 
-		actual := d.Read(in, direction, connMetadata)
-		expected := tt.expectedQuery
+			actual, err := d.Read(in, direction, connMetadata)
+			if err != nil && tt.wantErr {
+				return
+			}
+			if err != nil {
+				t.Errorf("%v", err)
+			}
+			expected := tt.expectedQuery
 
-		if len(actual) != len(expected) {
-			t.Errorf("actual %v\nwant %v", actual, expected)
-		}
-		for i := 0; i < len(actual); i++ {
-			v := actual[i].Value
-			ev := expected[i].Value
-			switch v.(type) {
-			case []interface{}:
-				for j := 0; j < len(v.([]interface{})); j++ {
-					if v.([]interface{})[j] != ev.([]interface{})[j] {
-						t.Errorf("actual %#v\nwant %#v", v.([]interface{})[j], ev.([]interface{})[j])
+			if len(actual) != len(expected) {
+				t.Errorf("actual %v\nwant %v", actual, expected)
+			}
+			for i := 0; i < len(actual); i++ {
+				v := actual[i].Value
+				ev := expected[i].Value
+				switch v.(type) {
+				case []interface{}:
+					for j := 0; j < len(v.([]interface{})); j++ {
+						if v.([]interface{})[j] != ev.([]interface{})[j] {
+							t.Errorf("actual %#v\nwant %#v", v.([]interface{})[j], ev.([]interface{})[j])
+						}
+					}
+				default:
+					if actual[i] != expected[i] {
+						t.Errorf("actual %#v\nwant %#v", actual[i], expected[i])
 					}
 				}
-			default:
-				if actual[i] != expected[i] {
-					t.Errorf("actual %#v\nwant %#v", actual[i], expected[i])
-				}
 			}
-		}
+		})
 	}
 }
 
@@ -99,55 +116,60 @@ func TestMysqlDump(t *testing.T) {
 	tts := newMysqlReadTests()
 
 	for _, tt := range tts {
-		out := new(bytes.Buffer)
-		d := &Dumper{
-			logger: newTestLogger(out),
-		}
-		in := tt.in
-		direction := tt.direction
-		connMetadata := &tt.connMetadata
+		t.Run(tt.description, func(t *testing.T) {
+			out := new(bytes.Buffer)
+			d := &Dumper{
+				logger: newTestLogger(out),
+			}
+			in := tt.in
+			direction := tt.direction
+			connMetadata := &tt.connMetadata
 
-		additional := []dumper.DumpValue{}
+			additional := []dumper.DumpValue{}
 
-		err := d.Dump(in, direction, connMetadata, additional)
-		if err != nil {
-			t.Errorf("%v", err)
-		}
+			err := d.Dump(in, direction, connMetadata, additional)
+			if err != nil && tt.wantErr {
+				return
+			}
+			if err != nil {
+				t.Errorf("%v", err)
+			}
 
-		expected := tt.expected
+			expected := tt.expected
 
-		actual := connMetadata.DumpValues
-		if len(actual) != len(expected) {
-			t.Errorf("%v\nactual %v\nwant %v", tt.description, actual, expected)
-		}
-		for i := 0; i < len(actual); i++ {
-			v := actual[i].Value
-			ev := expected[i].Value
-			switch v.(type) {
-			case []interface{}:
-				for j := 0; j < len(v.([]interface{})); j++ {
-					if v.([]interface{})[j] != ev.([]interface{})[j] {
-						t.Errorf("actual %#v\nwant %#v", v.([]interface{})[j], ev.([]interface{})[j])
+			actual := connMetadata.DumpValues
+			if len(actual) != len(expected) {
+				t.Errorf("%v\nactual %v\nwant %v", tt.description, actual, expected)
+			}
+			for i := 0; i < len(actual); i++ {
+				v := actual[i].Value
+				ev := expected[i].Value
+				switch v.(type) {
+				case []interface{}:
+					for j := 0; j < len(v.([]interface{})); j++ {
+						if v.([]interface{})[j] != ev.([]interface{})[j] {
+							t.Errorf("actual %#v\nwant %#v", v.([]interface{})[j], ev.([]interface{})[j])
+						}
+					}
+				default:
+					if actual[i] != expected[i] {
+						t.Errorf("actual %#v\nwant %#v", actual[i], expected[i])
 					}
 				}
-			default:
-				if actual[i] != expected[i] {
-					t.Errorf("actual %#v\nwant %#v", actual[i], expected[i])
+			}
+
+			log := out.String()
+
+			if tt.logContain == "" {
+				if log != tt.logContain {
+					t.Errorf("%v not be %v", log, tt.logContain)
+				}
+			} else {
+				if !strings.Contains(log, tt.logContain) {
+					t.Errorf("%v not be %v", log, tt.logContain)
 				}
 			}
-		}
-
-		log := out.String()
-
-		if tt.logContain == "" {
-			if log != tt.logContain {
-				t.Errorf("%v not be %v", log, tt.logContain)
-			}
-		} else {
-			if !strings.Contains(log, tt.logContain) {
-				t.Errorf("%v not be %v", log, tt.logContain)
-			}
-		}
+		})
 	}
 }
 
@@ -327,6 +349,7 @@ func newMysqlReadTests() []mysqlReadTest {
 	var mysqlReadTests = []mysqlReadTest{
 		{
 			"Parse username/database from HandshakeResponse41 packet (https://dev.mysql.com/doc/internals/en/connection-phase-packets.html)",
+			false,
 			// https://dev.mysql.com/doc/internals/en/connection-phase-packets.html
 			[]byte{
 				0x54, 0x00, 0x00, 0x01, 0x8d, 0xa6, 0x0f, 0x00, 0x00, 0x00, 0x00, 0x01, 0x08, 0x00, 0x00, 0x00,
@@ -364,6 +387,7 @@ func newMysqlReadTests() []mysqlReadTest {
 		},
 		{
 			"Parse username/database from HandshakeResponse41 packet",
+			false,
 			[]byte{
 				0xc1, 0x00, 0x00, 0x01, 0x0d, 0xa6, 0xff, 0x01, 0x00, 0x00, 0x00, 0x01, 0x21, 0x00, 0x00, 0x00,
 				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -407,6 +431,7 @@ func newMysqlReadTests() []mysqlReadTest {
 		},
 		{
 			"Parse username/database from HandshakeResponse320 packet (https://dev.mysql.com/doc/internals/en/connection-phase-packets.html#packet-Protocol::HandshakeResponse320)",
+			false,
 			// https://dev.mysql.com/doc/internals/en/connection-phase-packets.html#packet-Protocol::HandshakeResponse320
 			[]byte{
 				0x11, 0x00, 0x00, 0x01, 0x85, 0x24, 0x00, 0x00, 0x00, 0x6f, 0x6c, 0x64, 0x00, 0x47, 0x44, 0x53,
@@ -432,6 +457,7 @@ func newMysqlReadTests() []mysqlReadTest {
 		},
 		{
 			"Parse username/database from HandshakeResponse320 packet",
+			false,
 			[]byte{
 				0x11, 0x00, 0x00, 0x01, 0x8d, 0x24, 0x00, 0x00, 0x00, 0x72, 0x6f, 0x6f, 0x74, 0x00, 0x00, 0x74,
 				0x65, 0x73, 0x74, 0x64, 0x62,
@@ -460,6 +486,7 @@ func newMysqlReadTests() []mysqlReadTest {
 		},
 		{
 			"Parse query from COM_QUERY packet",
+			false,
 			[]byte{
 				0x14, 0x00, 0x00, 0x00, 0x03, 0x73, 0x65, 0x6c, 0x65, 0x63, 0x74, 0x20, 0x2a, 0x20, 0x66, 0x72,
 				0x6f, 0x6d, 0x20, 0x70, 0x6f, 0x73, 0x74, 0x73,
@@ -492,6 +519,7 @@ func newMysqlReadTests() []mysqlReadTest {
 		},
 		{
 			"When direction = dumper.RemoteToClient do not parse query",
+			false,
 			[]byte{
 				0x14, 0x00, 0x00, 0x00, 0x03, 0x73, 0x65, 0x6c, 0x65, 0x63, 0x74, 0x20, 0x2a, 0x20, 0x66, 0x72,
 				0x6f, 0x6d, 0x20, 0x70, 0x6f, 0x73, 0x74, 0x73,
@@ -511,6 +539,7 @@ func newMysqlReadTests() []mysqlReadTest {
 		},
 		{
 			"Parse values from COM_STMT_EXECUTE packet",
+			false,
 			[]byte{
 				0x25, 0x00, 0x00, 0x00, 0x17, 0x05, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x01,
 				0xfe, 0x00, 0xfe, 0x00, 0x06, 0x74, 0x65, 0x73, 0x74, 0x64, 0x62, 0x0d, 0x63, 0x6f, 0x6d, 0x6d,
@@ -548,6 +577,7 @@ func newMysqlReadTests() []mysqlReadTest {
 		},
 		{
 			"Parse values from COM_STMT_EXECUTE packet (0 values)",
+			false,
 			[]byte{
 				0x0b, 0x00, 0x00, 0x00, 0x17, 0x01, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
 			},
@@ -583,6 +613,7 @@ func newMysqlReadTests() []mysqlReadTest {
 		},
 		{
 			"Parse values from COM_STMT_PREPARE packet (0 values)",
+			false,
 			[]byte{
 				0x31, 0x00, 0x00, 0x00, 0x16, 0x53, 0x45, 0x4c, 0x45, 0x43, 0x54, 0x20, 0x2a, 0x20, 0x46,
 				0x52, 0x4f, 0x4d, 0x20, 0x69, 0x6e, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x69, 0x6f, 0x6e,
@@ -617,6 +648,7 @@ func newMysqlReadTests() []mysqlReadTest {
 		},
 		{
 			"Parse values from COM_STMT_EXECUTE packet (0 values)",
+			false,
 			[]byte{
 				0x0b, 0x00, 0x00, 0x00, 0x17, 0x01, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
 			},
@@ -653,6 +685,7 @@ func newMysqlReadTests() []mysqlReadTest {
 		{
 			// https://dev.mysql.com/doc/internals/en/example-one-mysql-packet.html
 			"Parse values from Compressed COM_QUERY (Client Compress ON)",
+			false,
 			[]byte{
 				0x22, 0x00, 0x00, 0x00, 0x32, 0x00, 0x00, 0x78, 0x9c, 0xd3, 0x63, 0x60, 0x60, 0x60, 0x2e, 0x4e,
 				0xcd, 0x49, 0x4d, 0x2e, 0x51, 0x50, 0x32, 0x30, 0x34, 0x32, 0x36, 0x31, 0x35, 0x33, 0xb7, 0xb0,
@@ -686,6 +719,7 @@ func newMysqlReadTests() []mysqlReadTest {
 		},
 		{
 			"Parse values from Uncompressed COM_QUERY (Client Compress ON)",
+			false,
 			[]byte{
 				0x2c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x28, 0x00, 0x00, 0x00, 0x03, 0x53, 0x45, 0x4c, 0x45,
 				0x43, 0x54, 0x20, 0x2a, 0x20, 0x46, 0x52, 0x4f, 0x4d, 0x20, 0x69, 0x6e, 0x66, 0x6f, 0x72, 0x6d,
@@ -720,6 +754,7 @@ func newMysqlReadTests() []mysqlReadTest {
 		},
 		{
 			"Parse values from Compressed COM_STMT_PREPARE (Client Compress ON)",
+			false,
 			[]byte{
 				0x60, 0x00, 0x00, 0x00, 0x10, 0x01, 0x00, 0x78, 0x9c, 0xe2, 0x61, 0x64, 0x60, 0x10, 0x0b, 0x76,
 				0xf5, 0x71, 0x75, 0x0e, 0x51, 0x70, 0xf6, 0xf7, 0x73, 0x76, 0x0c, 0xd1, 0xb0, 0xd7, 0x51, 0x80,
@@ -757,6 +792,7 @@ func newMysqlReadTests() []mysqlReadTest {
 		},
 		{
 			"Parse values from Compressed COM_STMT_EXECUTE (Client Compress ON)",
+			false,
 			[]byte{
 				0x40, 0x00, 0x00, 0x00, 0x1c, 0x01, 0x00, 0x78, 0x9c, 0x92, 0x60, 0x64, 0x60, 0x10, 0x67, 0x66,
 				0x60, 0x60, 0x60, 0x60, 0x04, 0x13, 0xff, 0x18, 0x40, 0x90, 0xb5, 0x24, 0xb9, 0x20, 0xa5, 0xe0,
@@ -796,6 +832,7 @@ func newMysqlReadTests() []mysqlReadTest {
 		},
 		{
 			"Parse values from Uncompressed COM_STMT_PREPARE (Client Compress ON)",
+			false,
 			[]byte{
 				0x15, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11, 0x00, 0x00, 0x00, 0x16, 0x53, 0x45, 0x4c, 0x45,
 				0x43, 0x54, 0x20, 0x3f, 0x20, 0x2b, 0x20, 0x3f, 0x20, 0x2b, 0x20, 0x3f,
@@ -828,6 +865,7 @@ func newMysqlReadTests() []mysqlReadTest {
 		},
 		{
 			"Parse values from Uncompressed COM_STMT_EXECUTE (Client Compress ON)",
+			false,
 			[]byte{
 				0x2e, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x2a, 0x00, 0x00, 0x00, 0x17, 0x02, 0x00, 0x00, 0x00,
 				0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x01, 0x08, 0x00, 0x05, 0x00, 0x08, 0x00, 0x01, 0x00, 0x00,
@@ -866,6 +904,7 @@ func newMysqlReadTests() []mysqlReadTest {
 		},
 		{
 			"tcpdp mysql dumper not support SSL connection (https://dev.mysql.com/doc/internals/en/ssl.html)",
+			true,
 			[]byte{
 				0x20, 0x00, 0x00, 0x01, 0x05, 0xae, 0x03, 0x00, 0x00, 0x00, 0x00, 0x01, 0x08, 0x00, 0x00, 0x00,
 				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
