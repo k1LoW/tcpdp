@@ -128,9 +128,6 @@ func TestMysqlDump(t *testing.T) {
 			additional := []dumper.DumpValue{}
 
 			err := d.Dump(in, direction, connMetadata, additional)
-			if err != nil && tt.wantErr {
-				return
-			}
 			if err != nil {
 				t.Errorf("%v", err)
 			}

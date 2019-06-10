@@ -53,10 +53,7 @@ func (p *Dumper) Name() string {
 
 // Dump query of PostgreSQL
 func (p *Dumper) Dump(in []byte, direction dumper.Direction, connMetadata *dumper.ConnMetadata, additional []dumper.DumpValue) error {
-	read, err := p.Read(in, direction, connMetadata)
-	if err != nil {
-		return err
-	}
+	read, _ := p.Read(in, direction, connMetadata)
 	if len(read) == 0 {
 		return nil
 	}
@@ -72,12 +69,12 @@ func (p *Dumper) Dump(in []byte, direction dumper.Direction, connMetadata *dumpe
 
 // Read return byte to analyzed string
 func (p *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumper.ConnMetadata) ([]dumper.DumpValue, error) {
-	values, err := p.readHandshake(in, direction, connMetadata)
-	if err != nil {
-		return values, err
-	}
-
+	values, handshakeErr := p.readHandshake(in, direction, connMetadata)
 	connMetadata.DumpValues = append(connMetadata.DumpValues, values...)
+
+	if handshakeErr != nil {
+		return values, handshakeErr
+	}
 
 	if direction == dumper.RemoteToClient || direction == dumper.DstToSrc || direction == dumper.Unknown {
 		return []dumper.DumpValue{}, nil

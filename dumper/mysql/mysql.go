@@ -50,10 +50,7 @@ func (m *Dumper) Name() string {
 
 // Dump query of MySQL
 func (m *Dumper) Dump(in []byte, direction dumper.Direction, connMetadata *dumper.ConnMetadata, additional []dumper.DumpValue) error {
-	read, err := m.Read(in, direction, connMetadata)
-	if err != nil {
-		return err
-	}
+	read, _ := m.Read(in, direction, connMetadata)
 	if len(read) == 0 {
 		return nil
 	}
@@ -69,10 +66,8 @@ func (m *Dumper) Dump(in []byte, direction dumper.Direction, connMetadata *dumpe
 
 // Read return byte to analyzed string
 func (m *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumper.ConnMetadata) ([]dumper.DumpValue, error) {
-	values, err := m.readHandshakeResponse(in, direction, connMetadata)
-	if err != nil {
-		return values, err
-	}
+	values, handshakeErr := m.readHandshakeResponse(in, direction, connMetadata)
+
 	connMetadata.DumpValues = append(connMetadata.DumpValues, values...)
 	cSet := connMetadata.Internal.(connMetadataInternal).charSet
 
@@ -81,6 +76,10 @@ func (m *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 		in = append(internal.longPacketCache, in...)
 		internal.longPacketCache = nil
 		connMetadata.Internal = internal
+	}
+
+	if handshakeErr != nil {
+		return values, handshakeErr
 	}
 
 	// Client Compress
