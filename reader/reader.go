@@ -401,7 +401,7 @@ func (r *PacketReader) handlePacket(target Target) error {
 			} else {
 				read, err = r.dumper.Read(in, direction, connMetadata)
 				if err != nil {
-					r.logger.WithOptions(zap.AddCaller()).Warn("-", zap.Error(err))
+					// clear
 					if _, ok := mMap[key]; ok {
 						delete(mMap, key)
 					}
@@ -411,6 +411,7 @@ func (r *PacketReader) handlePacket(target Target) error {
 					if _, ok := pMap[key]; ok {
 						delete(pMap, key)
 					}
+					// error but continue
 					continue
 				}
 			}
