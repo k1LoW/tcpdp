@@ -297,15 +297,31 @@ func (r *PacketReader) handlePacket(target Target) error {
 					Value: mss,
 				})
 			} else if tcp.FIN {
-				// TCP connection end
-				delete(mMap, key)
+				// TCP connection end (FIN=1)
 				delete(mssMap, key)
+				if _, ok := mMap[key]; ok {
+					mMap[key].Fin = true
+				}
 				pMap.deleteBuffer(key)
+			} else if _, ok := mMap[key]; ok && tcp.ACK && mMap[key].Fin {
+				// TCP connection end (ACK=1)
+				delete(mMap, key)
 				if direction == dumper.Unknown {
 					for _, key := range []string{srcToDstKey, dstToSrcKey} {
 						delete(mMap, key)
 					}
 				}
+				continue
+			} else if tcp.RST {
+				delete(mssMap, key)
+				delete(mMap, key)
+				if direction == dumper.Unknown {
+					for _, key := range []string{srcToDstKey, dstToSrcKey} {
+						delete(mMap, key)
+					}
+				}
+				pMap.deleteBuffer(key)
+				continue
 			}
 
 			in := tcpLayer.LayerPayload()
@@ -378,18 +394,13 @@ func (r *PacketReader) handlePacket(target Target) error {
 				connMetadata.DumpValues = append(connMetadata.DumpValues, ppValues...)
 				read, err = r.dumper.Read(in[seek:], direction, connMetadata)
 				if err != nil {
-					r.logger.WithOptions(zap.AddCaller()).Warn("-", zap.Error(err))
-					delete(mMap, key)
-					delete(mssMap, key)
 					pMap.deleteBuffer(key)
+					// error but continue
 					continue
 				}
 			} else {
 				read, err = r.dumper.Read(in, direction, connMetadata)
 				if err != nil {
-					// clear
-					delete(mMap, key)
-					delete(mssMap, key)
 					pMap.deleteBuffer(key)
 					// error but continue
 					continue
