@@ -170,7 +170,7 @@ func (r *PacketReader) handlePacket(target Target) error {
 	defer cancel()
 	mMap := map[string]*dumper.ConnMetadata{} // metadata map per connection
 	mssMap := map[string]int{}                // TCP MSS map per connection
-	pMap := payloadBufferManager{}            // long payload map per direction
+	pMap := newPayloadBufferManager()         // long payload map per direction
 	var mem runtime.MemStats
 
 	go pMap.startPurgeTicker(innerCtx, r.logger)
@@ -185,9 +185,11 @@ func (r *PacketReader) handlePacket(target Target) error {
 				case <-t.C:
 					runtime.ReadMemStats(&mem)
 					bSize := 0
-					for _, b := range pMap {
+					pMap.lock()
+					for _, b := range pMap.buffers {
 						bSize = bSize + b.Size()
 					}
+					pMap.unlock()
 
 					r.logger.Info("tcpdp internal stats",
 						zap.Uint64("tcpdp Alloc", mem.Alloc),
@@ -201,7 +203,7 @@ func (r *PacketReader) handlePacket(target Target) error {
 						zap.Uint64("tcpdp HeapInuse", mem.HeapInuse),
 						zap.Int("packet handler metadata cache (mMap) length", len(mMap)),
 						zap.Int("packet handler TCP MSS cache (mssMap) length", len(mssMap)),
-						zap.Int("packet handler payload buffer cache (pMap) length", len(pMap)),
+						zap.Int("packet handler payload buffer cache (pMap) length", len(pMap.buffers)),
 						zap.Int("packet handler payload buffer cache (pMap) size", bSize))
 				}
 			}
@@ -256,9 +258,7 @@ func (r *PacketReader) handlePacket(target Target) error {
 				if _, ok := mssMap[key]; ok {
 					delete(mssMap, key)
 				}
-				if _, ok := pMap[key]; ok {
-					delete(pMap, key)
-				}
+				pMap.deleteBuffer(key)
 
 				// TCP connection start ( hex, mysql, pg )
 				connID := xid.New().String()
@@ -272,7 +272,7 @@ func (r *PacketReader) handlePacket(target Target) error {
 				}
 				mMap[key] = connMetadata
 				mssMap[key] = mss
-				pMap[key] = newPayloadBuffer()
+				pMap.newBuffer(key)
 			} else if tcp.SYN && tcp.ACK {
 				if direction == dumper.Unknown {
 					key = dstToSrcKey
@@ -308,9 +308,7 @@ func (r *PacketReader) handlePacket(target Target) error {
 				if _, ok := mssMap[key]; ok {
 					delete(mssMap, key)
 				}
-				if _, ok := pMap[key]; ok {
-					delete(pMap, key)
-				}
+				pMap.deleteBuffer(key)
 				if direction == dumper.Unknown {
 					for _, key := range []string{srcToDstKey, dstToSrcKey} {
 						if _, ok := mMap[key]; ok {
@@ -325,8 +323,8 @@ func (r *PacketReader) handlePacket(target Target) error {
 				continue
 			}
 
-			if _, ok := pMap[key]; !ok {
-				pMap[key] = newPayloadBuffer()
+			if _, ok := pMap.buffers[key]; !ok {
+				pMap.newBuffer(key)
 			}
 
 			mss, ok := mssMap[key]
@@ -334,14 +332,18 @@ func (r *PacketReader) handlePacket(target Target) error {
 				maxPacketLen = mss - (len(tcp.LayerContents()) - 20)
 			}
 			if len(in) == maxPacketLen {
-				pMap[key].Append(direction, in)
+				pMap.lock()
+				pMap.buffers[key].Append(direction, in)
+				pMap.unlock()
 				continue
 			}
-			bb := pMap[key].Get(direction)
+			pMap.lock()
+			bb := pMap.buffers[key].Get(direction)
 			if len(bb) > 0 {
 				in = append(bb, in...)
 			}
-			pMap[key].Delete(direction)
+			pMap.buffers[key].Delete(direction)
+			pMap.unlock()
 
 			if direction == dumper.Unknown {
 				for _, k := range []string{srcToDstKey, dstToSrcKey} {
@@ -393,9 +395,7 @@ func (r *PacketReader) handlePacket(target Target) error {
 					if _, ok := mssMap[key]; ok {
 						delete(mssMap, key)
 					}
-					if _, ok := pMap[key]; ok {
-						delete(pMap, key)
-					}
+					pMap.deleteBuffer(key)
 					continue
 				}
 			} else {
@@ -408,9 +408,7 @@ func (r *PacketReader) handlePacket(target Target) error {
 					if _, ok := mssMap[key]; ok {
 						delete(mssMap, key)
 					}
-					if _, ok := pMap[key]; ok {
-						delete(pMap, key)
-					}
+					pMap.deleteBuffer(key)
 					// error but continue
 					continue
 				}

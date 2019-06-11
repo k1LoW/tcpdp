@@ -2,6 +2,7 @@ package reader
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/k1LoW/tcpdp/dumper"
@@ -83,9 +84,49 @@ func (p *payloadBuffer) Size() int {
 	return len(p.srcToDst) + len(p.dstToSrc) + len(p.unknown)
 }
 
-type payloadBufferManager map[string]*payloadBuffer
+type payloadBufferManager struct {
+	buffers map[string]*payloadBuffer
+	mutex   *sync.Mutex
+}
 
-func (m payloadBufferManager) startPurgeTicker(ctx context.Context, logger *zap.Logger) error {
+func newPayloadBufferManager() *payloadBufferManager {
+	return &payloadBufferManager{
+		mutex: new(sync.Mutex),
+	}
+}
+
+func (m *payloadBufferManager) lock() {
+	m.mutex.Lock()
+}
+
+func (m *payloadBufferManager) unlock() {
+	m.mutex.Unlock()
+}
+
+func (m *payloadBufferManager) newBuffer(key string) error {
+	m.lock()
+	m.buffers[key] = newPayloadBuffer()
+	m.unlock()
+	return nil
+}
+
+func (m *payloadBufferManager) Append(key string, direction dumper.Direction, in []byte) error {
+	m.lock()
+	m.buffers[key].Append(direction, in)
+	m.unlock()
+	return nil
+}
+
+func (m *payloadBufferManager) deleteBuffer(key string) error {
+	m.lock()
+	if _, ok := m.buffers[key]; ok {
+		delete(m.buffers, key)
+	}
+	m.unlock()
+	return nil
+}
+
+func (m *payloadBufferManager) startPurgeTicker(ctx context.Context, logger *zap.Logger) error {
 	t := time.NewTicker(time.Duration(packetTTL/10) * time.Second)
 	for {
 		select {
@@ -94,13 +135,13 @@ func (m payloadBufferManager) startPurgeTicker(ctx context.Context, logger *zap.
 		case <-t.C:
 			// purge expired packet buffer cache
 			purgedSize := 0
-			for key, b := range m {
+			for key, b := range m.buffers {
 				bSize := b.Size()
 				if b.Expired() || bSize == 0 {
 					if bSize > 0 {
 						purgedSize = purgedSize + bSize
 					}
-					delete(m, key)
+					m.deleteBuffer(key)
 				}
 			}
 			if purgedSize > 0 {
