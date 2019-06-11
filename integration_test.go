@@ -59,7 +59,7 @@ func TestProxy(t *testing.T) {
 			out, err := exec.CommandContext(ctx, "bash", "-c", tt.benchCmd).CombinedOutput()
 			if err != nil {
 				cancel()
-				t.Errorf("%v", err)
+				t.Errorf("%v:%s", err, out)
 			}
 			if !regexp.MustCompile(fmt.Sprintf("%s%s", `(?m)`, tt.benchMatchString)).Match(out) {
 				t.Errorf("%s", "bench command failed")
@@ -131,7 +131,7 @@ func TestProbe(t *testing.T) {
 			out, err := exec.CommandContext(ctx, "bash", "-c", tt.benchCmd).CombinedOutput()
 			if err != nil {
 				cancel()
-				t.Errorf("%v", err)
+				t.Errorf("%v:%s", err, out)
 			}
 			if !regexp.MustCompile(fmt.Sprintf("%s%s", `(?m)`, tt.benchMatchString)).Match(out) {
 				t.Errorf("%s", "bench command failed")
@@ -284,7 +284,7 @@ func TestProxyProtocol(t *testing.T) {
 			out, err := exec.CommandContext(ctx, "bash", "-c", tt.benchCmd).CombinedOutput()
 			if err != nil {
 				cancel()
-				t.Errorf("%v", err)
+				t.Errorf("%v:%s", err, out)
 			}
 			if !regexp.MustCompile(fmt.Sprintf("%s%s", `(?m)`, tt.benchMatchString)).Match(out) {
 				t.Errorf("%s", "bench command failed")
@@ -329,7 +329,7 @@ func TestConn(t *testing.T) {
 			out, err := exec.CommandContext(ctx, "bash", "-c", tt.benchCmd).CombinedOutput()
 			if err != nil {
 				cancel()
-				t.Errorf("%v", err)
+				t.Errorf("%v:%s", err, out)
 			}
 			if !regexp.MustCompile(fmt.Sprintf("%s%s", `(?m)`, tt.benchMatchString)).Match(out) {
 				t.Errorf("%s", "bench command failed")
