@@ -221,7 +221,6 @@ func (r *PacketReader) handlePacket(target Target) error {
 		case packet := <-r.packetBuffer:
 			if packet == nil {
 				r.cancel()
-				r.logger.WithOptions(zap.AddCaller()).Fatal("null packet")
 				return nil
 			}
 			ipLayer := packet.Layer(layers.LayerTypeIPv4)
@@ -465,7 +464,6 @@ func (r *PacketReader) handleConn(target Target) error {
 		case packet := <-r.packetBuffer:
 			if packet == nil {
 				r.cancel()
-				r.logger.WithOptions(zap.AddCaller()).Fatal("null packet")
 				return nil
 			}
 			ipLayer := packet.Layer(layers.LayerTypeIPv4)
