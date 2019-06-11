@@ -28,7 +28,7 @@ require (
 	github.com/xo/dburl v0.0.0-20190203050942-98997a05b24f
 	go.uber.org/zap v1.10.0
 	golang.org/x/net v0.0.0-20190607181551-461777fb6f67 // indirect
-	golang.org/x/sys v0.0.0-20190609082536-301114b31cce // indirect
+	golang.org/x/sys v0.0.0-20190610200419-93c9922d18ae // indirect
 	golang.org/x/text v0.3.2
 	google.golang.org/appengine v1.6.1 // indirect
 )
