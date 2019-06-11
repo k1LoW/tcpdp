@@ -34,7 +34,10 @@ func (h *Dumper) Name() string {
 // Dump TCP
 func (h *Dumper) Dump(in []byte, direction dumper.Direction, connMetadata *dumper.ConnMetadata, additional []dumper.DumpValue) error {
 	values := []dumper.DumpValue{}
-	read := h.Read(in, direction, connMetadata)
+	read, err := h.Read(in, direction, connMetadata)
+	if err != nil {
+		return err
+	}
 	values = append(values, read...)
 	values = append(values, connMetadata.DumpValues...)
 	values = append(values, additional...)
@@ -48,7 +51,7 @@ func (h *Dumper) Dump(in []byte, direction dumper.Direction, connMetadata *dumpe
 }
 
 // Read return byte to analyzed string
-func (h *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumper.ConnMetadata) []dumper.DumpValue {
+func (h *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumper.ConnMetadata) ([]dumper.DumpValue, error) {
 	hexdump := strings.Split(hex.Dump(in), "\n")
 	byteString := []string{}
 	ascii := []string{}
@@ -69,7 +72,7 @@ func (h *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 			Key:   "ascii",
 			Value: strings.Join(ascii, ""),
 		},
-	}
+	}, nil
 }
 
 // Log values

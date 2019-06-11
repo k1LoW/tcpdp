@@ -53,7 +53,7 @@ func (p *Dumper) Name() string {
 
 // Dump query of PostgreSQL
 func (p *Dumper) Dump(in []byte, direction dumper.Direction, connMetadata *dumper.ConnMetadata, additional []dumper.DumpValue) error {
-	read := p.Read(in, direction, connMetadata)
+	read, _ := p.Read(in, direction, connMetadata)
 	if len(read) == 0 {
 		return nil
 	}
@@ -68,12 +68,16 @@ func (p *Dumper) Dump(in []byte, direction dumper.Direction, connMetadata *dumpe
 }
 
 // Read return byte to analyzed string
-func (p *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumper.ConnMetadata) []dumper.DumpValue {
-	values := p.readHandshake(in, direction, connMetadata)
+func (p *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumper.ConnMetadata) ([]dumper.DumpValue, error) {
+	values, handshakeErr := p.readHandshake(in, direction, connMetadata)
 	connMetadata.DumpValues = append(connMetadata.DumpValues, values...)
 
+	if handshakeErr != nil {
+		return values, handshakeErr
+	}
+
 	if direction == dumper.RemoteToClient || direction == dumper.DstToSrc || direction == dumper.Unknown {
-		return []dumper.DumpValue{}
+		return []dumper.DumpValue{}, nil
 	}
 
 	if len(connMetadata.Internal.(connMetadataInternal).longPacketCache) > 0 {
@@ -84,7 +88,7 @@ func (p *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 	}
 
 	if len(in) == 0 {
-		return []dumper.DumpValue{}
+		return []dumper.DumpValue{}, nil
 	}
 
 	messageType := in[0]
@@ -104,7 +108,7 @@ func (p *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 			internal.messageLength = messageLength
 			internal.longPacketCache = append(internal.longPacketCache, in...)
 			connMetadata.Internal = internal
-			return []dumper.DumpValue{}
+			return []dumper.DumpValue{}, nil
 		}
 		internal.messageLength = uint32(0)
 		connMetadata.Internal = internal
@@ -206,12 +210,12 @@ func (p *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 			},
 		}
 	default:
-		return []dumper.DumpValue{}
+		return []dumper.DumpValue{}, nil
 	}
 	return append(dumps, dumper.DumpValue{
 		Key:   "message_type",
 		Value: string(messageType),
-	})
+	}), nil
 }
 
 // Log values
@@ -233,13 +237,13 @@ func (p *Dumper) NewConnMetadata() *dumper.ConnMetadata {
 	}
 }
 
-func (p *Dumper) readHandshake(in []byte, direction dumper.Direction, connMetadata *dumper.ConnMetadata) []dumper.DumpValue {
+func (p *Dumper) readHandshake(in []byte, direction dumper.Direction, connMetadata *dumper.ConnMetadata) ([]dumper.DumpValue, error) {
 	values := []dumper.DumpValue{}
 	if direction == dumper.RemoteToClient || direction == dumper.DstToSrc {
-		return values
+		return values, nil
 	}
 	if len(in) < 8 {
-		return values
+		return values, nil
 	}
 	b := make([]byte, 2)
 	copy(b, in[4:6])
@@ -251,8 +255,9 @@ func (p *Dumper) readHandshake(in []byte, direction dumper.Direction, connMetada
 		uNo := binary.BigEndian.Uint16(b)
 		if uNo == 5679 {
 			// tcpdp pg dumper not support SSL connection.
+			err := errors.New("client is trying to connect using SSL. tcpdp pg dumper not support SSL connection")
 			fields := []zapcore.Field{
-				zap.Error(errors.New("client is trying to connect using SSL. tcpdp pg dumper not support SSL connection")),
+				zap.Error(err),
 			}
 			for _, kv := range connMetadata.DumpValues {
 				fields = append(fields, zap.Any(kv.Key, kv.Value))
@@ -261,12 +266,12 @@ func (p *Dumper) readHandshake(in []byte, direction dumper.Direction, connMetada
 				fields = append(fields, zap.Any(kv.Key, kv.Value))
 			}
 			p.logger.Warn("-", fields...)
-			return values
+			return values, err
 		}
 	}
 	// parse StartupMessage to get username, database
 	if pNo != 3 {
-		return values
+		return values, nil
 	}
 	splited := bytes.Split(in[8:], []byte{0x00})
 	if len(splited) > 0 {
@@ -288,7 +293,7 @@ func (p *Dumper) readHandshake(in []byte, direction dumper.Direction, connMetada
 			}
 		}
 	}
-	return values
+	return values, nil
 }
 
 func readBytes(buff *bytes.Buffer, len int) []byte {

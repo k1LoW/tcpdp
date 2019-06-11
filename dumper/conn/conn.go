@@ -43,13 +43,13 @@ func (h *Dumper) Dump(in []byte, direction dumper.Direction, connMetadata *dumpe
 }
 
 // Read return byte to analyzed string
-func (h *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumper.ConnMetadata) []dumper.DumpValue {
+func (h *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumper.ConnMetadata) ([]dumper.DumpValue, error) {
 	return []dumper.DumpValue{
 		dumper.DumpValue{
 			Key:   "dummy",
 			Value: "dummy",
 		},
-	}
+	}, nil
 }
 
 // Log values
