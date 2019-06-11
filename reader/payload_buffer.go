@@ -91,7 +91,8 @@ type payloadBufferManager struct {
 
 func newPayloadBufferManager() *payloadBufferManager {
 	return &payloadBufferManager{
-		mutex: new(sync.Mutex),
+		buffers: map[string]*payloadBuffer{},
+		mutex:   new(sync.Mutex),
 	}
 }
 
