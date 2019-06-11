@@ -1,5 +1,12 @@
 # Changelog
 
+## [v0.20.3](https://github.com/k1LoW/tcpdp/compare/v0.20.2...v0.20.3) (2019-06-11)
+
+* Add more memStats metrics [#85](https://github.com/k1LoW/tcpdp/pull/85) ([k1LoW](https://github.com/k1LoW))
+* handle FIN / RST to delete unused buffer [#84](https://github.com/k1LoW/tcpdp/pull/84) ([k1LoW](https://github.com/k1LoW))
+* Add mutex to payloadBufferManager [#83](https://github.com/k1LoW/tcpdp/pull/83) ([k1LoW](https://github.com/k1LoW))
+* hundle dumper.Read error and delete unnecessary buffer [#82](https://github.com/k1LoW/tcpdp/pull/82) ([k1LoW](https://github.com/k1LoW))
+
 ## [v0.20.2](https://github.com/k1LoW/tcpdp/compare/v0.20.1...v0.20.2) (2019-06-09)
 
 * Fix payload buffer leak [#81](https://github.com/k1LoW/tcpdp/pull/81) ([k1LoW](https://github.com/k1LoW))
