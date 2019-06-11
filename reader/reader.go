@@ -201,6 +201,10 @@ func (r *PacketReader) handlePacket(target Target) error {
 						zap.Uint64("tcpdp HeapSys", mem.HeapSys),
 						zap.Uint64("tcpdp HeapIdle", mem.HeapIdle),
 						zap.Uint64("tcpdp HeapInuse", mem.HeapInuse),
+						zap.Uint64("tcpdp HeapReleased", mem.HeapReleased),
+						zap.Uint64("tcpdp HeapObjects", mem.HeapObjects),
+						zap.Uint64("tcpdp StackInuse", mem.StackInuse),
+						zap.Uint64("tcpdp StackSys", mem.StackSys),
 						zap.Int("packet handler metadata cache (mMap) length", len(mMap)),
 						zap.Int("packet handler TCP MSS cache (mssMap) length", len(mssMap)),
 						zap.Int("packet handler payload buffer cache (pMap) length", len(pMap.buffers)),
@@ -217,7 +221,6 @@ func (r *PacketReader) handlePacket(target Target) error {
 		case packet := <-r.packetBuffer:
 			if packet == nil {
 				r.cancel()
-				r.logger.WithOptions(zap.AddCaller()).Fatal("null packet")
 				return nil
 			}
 			ipLayer := packet.Layer(layers.LayerTypeIPv4)
@@ -444,6 +447,10 @@ func (r *PacketReader) handleConn(target Target) error {
 						zap.Uint64("tcpdp HeapSys", mem.HeapSys),
 						zap.Uint64("tcpdp HeapIdle", mem.HeapIdle),
 						zap.Uint64("tcpdp HeapInuse", mem.HeapInuse),
+						zap.Uint64("tcpdp HeapReleased", mem.HeapReleased),
+						zap.Uint64("tcpdp HeapObjects", mem.HeapObjects),
+						zap.Uint64("tcpdp StackInuse", mem.StackInuse),
+						zap.Uint64("tcpdp StackSys", mem.StackSys),
 					)
 				}
 			}
@@ -457,7 +464,6 @@ func (r *PacketReader) handleConn(target Target) error {
 		case packet := <-r.packetBuffer:
 			if packet == nil {
 				r.cancel()
-				r.logger.WithOptions(zap.AddCaller()).Fatal("null packet")
 				return nil
 			}
 			ipLayer := packet.Layer(layers.LayerTypeIPv4)

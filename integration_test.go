@@ -59,7 +59,7 @@ func TestProxy(t *testing.T) {
 			out, err := exec.CommandContext(ctx, "bash", "-c", tt.benchCmd).CombinedOutput()
 			if err != nil {
 				cancel()
-				t.Errorf("%v", err)
+				t.Errorf("%v:%s", err, out)
 			}
 			if !regexp.MustCompile(fmt.Sprintf("%s%s", `(?m)`, tt.benchMatchString)).Match(out) {
 				t.Errorf("%s", "bench command failed")
@@ -131,7 +131,7 @@ func TestProbe(t *testing.T) {
 			out, err := exec.CommandContext(ctx, "bash", "-c", tt.benchCmd).CombinedOutput()
 			if err != nil {
 				cancel()
-				t.Errorf("%v", err)
+				t.Errorf("%v:%s", err, out)
 			}
 			if !regexp.MustCompile(fmt.Sprintf("%s%s", `(?m)`, tt.benchMatchString)).Match(out) {
 				t.Errorf("%s", "bench command failed")
@@ -167,7 +167,7 @@ func TestRead(t *testing.T) {
 			cmd.Env = os.Environ()
 			out, err := cmd.CombinedOutput()
 			if err != nil {
-				t.Errorf("%v", err)
+				t.Errorf("%v:%s", err, out)
 			}
 			results := regexp.MustCompile(`(?m)query`).FindAllStringSubmatch(string(out), -1)
 			if len(results) < 10 {
@@ -284,7 +284,7 @@ func TestProxyProtocol(t *testing.T) {
 			out, err := exec.CommandContext(ctx, "bash", "-c", tt.benchCmd).CombinedOutput()
 			if err != nil {
 				cancel()
-				t.Errorf("%v", err)
+				t.Errorf("%v:%s", err, out)
 			}
 			if !regexp.MustCompile(fmt.Sprintf("%s%s", `(?m)`, tt.benchMatchString)).Match(out) {
 				t.Errorf("%s", "bench command failed")
@@ -329,7 +329,7 @@ func TestConn(t *testing.T) {
 			out, err := exec.CommandContext(ctx, "bash", "-c", tt.benchCmd).CombinedOutput()
 			if err != nil {
 				cancel()
-				t.Errorf("%v", err)
+				t.Errorf("%v:%s", err, out)
 			}
 			if !regexp.MustCompile(fmt.Sprintf("%s%s", `(?m)`, tt.benchMatchString)).Match(out) {
 				t.Errorf("%s", "bench command failed")
