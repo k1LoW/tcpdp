@@ -37,6 +37,7 @@ type DumpValue struct {
 type ConnMetadata struct {
 	DumpValues []DumpValue
 	Internal   interface{} // internal metadata for dumper
+	Fin        bool
 }
 
 // Dumper interface
