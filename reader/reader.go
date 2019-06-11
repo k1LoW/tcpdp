@@ -252,12 +252,8 @@ func (r *PacketReader) handlePacket(target Target) error {
 				}
 
 				// TCP connection start
-				if _, ok := mMap[key]; ok {
-					delete(mMap, key)
-				}
-				if _, ok := mssMap[key]; ok {
-					delete(mssMap, key)
-				}
+				delete(mMap, key)
+				delete(mssMap, key)
 				pMap.deleteBuffer(key)
 
 				// TCP connection start ( hex, mysql, pg )
@@ -302,18 +298,12 @@ func (r *PacketReader) handlePacket(target Target) error {
 				})
 			} else if tcp.FIN {
 				// TCP connection end
-				if _, ok := mMap[key]; ok {
-					delete(mMap, key)
-				}
-				if _, ok := mssMap[key]; ok {
-					delete(mssMap, key)
-				}
+				delete(mMap, key)
+				delete(mssMap, key)
 				pMap.deleteBuffer(key)
 				if direction == dumper.Unknown {
 					for _, key := range []string{srcToDstKey, dstToSrcKey} {
-						if _, ok := mMap[key]; ok {
-							delete(mMap, key)
-						}
+						delete(mMap, key)
 					}
 				}
 			}
@@ -389,12 +379,8 @@ func (r *PacketReader) handlePacket(target Target) error {
 				read, err = r.dumper.Read(in[seek:], direction, connMetadata)
 				if err != nil {
 					r.logger.WithOptions(zap.AddCaller()).Warn("-", zap.Error(err))
-					if _, ok := mMap[key]; ok {
-						delete(mMap, key)
-					}
-					if _, ok := mssMap[key]; ok {
-						delete(mssMap, key)
-					}
+					delete(mMap, key)
+					delete(mssMap, key)
 					pMap.deleteBuffer(key)
 					continue
 				}
@@ -402,12 +388,8 @@ func (r *PacketReader) handlePacket(target Target) error {
 				read, err = r.dumper.Read(in, direction, connMetadata)
 				if err != nil {
 					// clear
-					if _, ok := mMap[key]; ok {
-						delete(mMap, key)
-					}
-					if _, ok := mssMap[key]; ok {
-						delete(mssMap, key)
-					}
+					delete(mMap, key)
+					delete(mssMap, key)
 					pMap.deleteBuffer(key)
 					// error but continue
 					continue

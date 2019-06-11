@@ -119,9 +119,7 @@ func (m *payloadBufferManager) Append(key string, direction dumper.Direction, in
 
 func (m *payloadBufferManager) deleteBuffer(key string) error {
 	m.lock()
-	if _, ok := m.buffers[key]; ok {
-		delete(m.buffers, key)
-	}
+	delete(m.buffers, key)
 	m.unlock()
 	return nil
 }
