@@ -167,7 +167,7 @@ func TestRead(t *testing.T) {
 			cmd.Env = os.Environ()
 			out, err := cmd.CombinedOutput()
 			if err != nil {
-				t.Errorf("%v", err)
+				t.Errorf("%v:%s", err, out)
 			}
 			results := regexp.MustCompile(`(?m)query`).FindAllStringSubmatch(string(out), -1)
 			if len(results) < 10 {
