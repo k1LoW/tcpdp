@@ -256,16 +256,6 @@ func (p *Dumper) readHandshake(in []byte, direction dumper.Direction, connMetada
 		if uNo == 5679 {
 			// tcpdp pg dumper not support SSL connection.
 			err := errors.New("client is trying to connect using SSL. tcpdp pg dumper not support SSL connection")
-			fields := []zapcore.Field{
-				zap.Error(err),
-			}
-			for _, kv := range connMetadata.DumpValues {
-				fields = append(fields, zap.Any(kv.Key, kv.Value))
-			}
-			for _, kv := range values {
-				fields = append(fields, zap.Any(kv.Key, kv.Value))
-			}
-			p.logger.Warn("-", fields...)
 			return values, err
 		}
 	}
