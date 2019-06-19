@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.21.0](https://github.com/k1LoW/tcpdp/compare/v0.20.3...v0.21.0) (2019-06-19)
+
+* Log *addr when dumper.Read error ( ex. SSL connection ) [#86](https://github.com/k1LoW/tcpdp/pull/86) ([k1LoW](https://github.com/k1LoW))
+
 ## [v0.20.3](https://github.com/k1LoW/tcpdp/compare/v0.20.2...v0.20.3) (2019-06-11)
 
 * Add more memStats metrics [#85](https://github.com/k1LoW/tcpdp/pull/85) ([k1LoW](https://github.com/k1LoW))
