@@ -27,8 +27,8 @@ require (
 	github.com/tebeka/strftime v0.0.0-20140926081919-3f9c7761e312 // indirect
 	github.com/xo/dburl v0.0.0-20190203050942-98997a05b24f
 	go.uber.org/zap v1.10.0
-	golang.org/x/net v0.0.0-20190607181551-461777fb6f67 // indirect
-	golang.org/x/sys v0.0.0-20190610200419-93c9922d18ae // indirect
+	golang.org/x/net v0.0.0-20190613194153-d28f0bde5980 // indirect
+	golang.org/x/sys v0.0.0-20190618155005-516e3c20635f // indirect
 	golang.org/x/text v0.3.2
 	google.golang.org/appengine v1.6.1 // indirect
 )
