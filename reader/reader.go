@@ -397,6 +397,16 @@ func (r *PacketReader) handlePacket(target Target) error {
 				connMetadata.DumpValues = append(connMetadata.DumpValues, ppValues...)
 				read, err = r.dumper.Read(in[seek:], direction, connMetadata)
 				if err != nil {
+
+					values = append(values, dumper.DumpValue{
+						Key:   "error",
+						Value: err,
+					})
+					values = append(values, read...)
+					values = append(values, r.pValues...)
+					values = append(values, connMetadata.DumpValues...)
+					r.dumper.Log(values)
+
 					pMap.deleteBuffer(key)
 					// error but continue
 					continue
@@ -404,6 +414,16 @@ func (r *PacketReader) handlePacket(target Target) error {
 			} else {
 				read, err = r.dumper.Read(in, direction, connMetadata)
 				if err != nil {
+
+					values = append(values, dumper.DumpValue{
+						Key:   "error",
+						Value: err,
+					})
+					values = append(values, read...)
+					values = append(values, r.pValues...)
+					values = append(values, connMetadata.DumpValues...)
+					r.dumper.Log(values)
+
 					pMap.deleteBuffer(key)
 					// error but continue
 					continue
