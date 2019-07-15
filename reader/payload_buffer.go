@@ -134,6 +134,7 @@ func (m *payloadBufferManager) startPurgeTicker(ctx context.Context, logger *zap
 		case <-t.C:
 			// purge expired packet buffer cache
 			purgedSize := 0
+			m.lock()
 			for key, b := range m.buffers {
 				bSize := b.Size()
 				if b.Expired() || bSize == 0 {
@@ -143,6 +144,7 @@ func (m *payloadBufferManager) startPurgeTicker(ctx context.Context, logger *zap
 					m.deleteBuffer(key)
 				}
 			}
+			m.unlock()
 			if purgedSize > 0 {
 				logger.Info("purge expired packet buffer cache", zap.Int("purged_size", purgedSize))
 			}

@@ -332,9 +332,11 @@ func (r *PacketReader) handlePacket(target Target) error {
 				continue
 			}
 
+			pMap.lock()
 			if _, ok := pMap.buffers[key]; !ok {
 				pMap.newBuffer(key)
 			}
+			pMap.unlock()
 
 			mss, ok := mssMap[key]
 			if ok {
