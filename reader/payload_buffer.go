@@ -104,9 +104,11 @@ func (m *payloadBufferManager) unlock() {
 	m.mutex.Unlock()
 }
 
-func (m *payloadBufferManager) newBuffer(key string) error {
+func (m *payloadBufferManager) newBuffer(key string, force bool) error {
 	m.lock()
-	m.buffers[key] = newPayloadBuffer()
+	if _, ok := m.buffers[key]; !ok || force {
+		m.buffers[key] = newPayloadBuffer()
+	}
 	m.unlock()
 	return nil
 }

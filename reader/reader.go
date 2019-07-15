@@ -271,7 +271,7 @@ func (r *PacketReader) handlePacket(target Target) error {
 				}
 				mMap[key] = connMetadata
 				mssMap[key] = mss
-				pMap.newBuffer(key)
+				pMap.newBuffer(key, true)
 			} else if tcp.SYN && tcp.ACK {
 				if direction == dumper.Unknown {
 					key = dstToSrcKey
@@ -332,11 +332,7 @@ func (r *PacketReader) handlePacket(target Target) error {
 				continue
 			}
 
-			pMap.lock()
-			if _, ok := pMap.buffers[key]; !ok {
-				pMap.buffers[key] = newPayloadBuffer()
-			}
-			pMap.unlock()
+			pMap.newBuffer(key, false)
 
 			mss, ok := mssMap[key]
 			if ok {
