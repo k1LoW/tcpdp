@@ -104,9 +104,11 @@ func (m *payloadBufferManager) unlock() {
 	m.mutex.Unlock()
 }
 
-func (m *payloadBufferManager) newBuffer(key string) error {
+func (m *payloadBufferManager) newBuffer(key string, force bool) error {
 	m.lock()
-	m.buffers[key] = newPayloadBuffer()
+	if _, ok := m.buffers[key]; !ok || force {
+		m.buffers[key] = newPayloadBuffer()
+	}
 	m.unlock()
 	return nil
 }
@@ -134,15 +136,17 @@ func (m *payloadBufferManager) startPurgeTicker(ctx context.Context, logger *zap
 		case <-t.C:
 			// purge expired packet buffer cache
 			purgedSize := 0
+			m.lock()
 			for key, b := range m.buffers {
 				bSize := b.Size()
 				if b.Expired() || bSize == 0 {
 					if bSize > 0 {
 						purgedSize = purgedSize + bSize
 					}
-					m.deleteBuffer(key)
+					delete(m.buffers, key)
 				}
 			}
+			m.unlock()
 			if purgedSize > 0 {
 				logger.Info("purge expired packet buffer cache", zap.Int("purged_size", purgedSize))
 			}

@@ -31,7 +31,7 @@ var proxyTests = []struct {
 	{
 		"tcpdp proxy -> postgresql",
 		"./tcpdp proxy -l localhost:54321 -r localhost:$POSTGRES_PORT -d pg --stdout",
-		"PGPASSWORD=$POSTGRES_PASSWORD pgbench -h 127.0.0.1 -p 54321 -U$POSTGRES_USER -i $POSTGRES_DB && PGPASSWORD=$POSTGRES_PASSWORD pgbench -h 127.0.0.1 -p 54321 -U$POSTGRES_USER -c 100 -t 10 $POSTGRES_DB",
+		"PGPASSWORD=$POSTGRES_PASSWORD pgbench -i postgresql://$POSTGRES_USER@127.0.0.1:54321/$POSTGRES_DB?sslmode=disable && PGPASSWORD=$POSTGRES_PASSWORD pgbench -c 100 -t 10 postgresql://$POSTGRES_USER@127.0.0.1:54321/$POSTGRES_DB?sslmode=disable",
 		"number of transactions actually processed: 1000/1000",
 	},
 	{
@@ -83,7 +83,7 @@ var probeTests = []struct {
 	{
 		"tcpdp probe - lo -> postgresql",
 		"sudo ./tcpdp probe -i $LO -t $POSTGRES_PORT -d pg -B 64MB --stdout",
-		"PGPASSWORD=$POSTGRES_PASSWORD pgbench -h 127.0.0.1 -p $POSTGRES_PORT -U$POSTGRES_USER -i $POSTGRES_DB && PGPASSWORD=$POSTGRES_PASSWORD pgbench -h 127.0.0.1 -p $POSTGRES_PORT -U$POSTGRES_USER -c 100 -t 10 $POSTGRES_DB",
+		"PGPASSWORD=$POSTGRES_PASSWORD pgbench -i postgresql://$POSTGRES_USER@127.0.0.1:$POSTGRES_PORT/$POSTGRES_DB?sslmode=disable && PGPASSWORD=$POSTGRES_PASSWORD pgbench -c 100 -t 10 postgresql://$POSTGRES_USER@127.0.0.1:$POSTGRES_PORT/$POSTGRES_DB?sslmode=disable",
 		"number of transactions actually processed: 1000/1000",
 		false,
 	},
@@ -97,7 +97,7 @@ var probeTests = []struct {
 	{
 		"tcpdp probe - any -> postgresql",
 		"sudo ./tcpdp probe -i any -t $POSTGRES_PORT -d pg -B 64MB --stdout",
-		"PGPASSWORD=$POSTGRES_PASSWORD pgbench -h 127.0.0.1 -p $POSTGRES_PORT -U$POSTGRES_USER -i $POSTGRES_DB && PGPASSWORD=$POSTGRES_PASSWORD pgbench -h 127.0.0.1 -p $POSTGRES_PORT -U$POSTGRES_USER -c 100 -t 10 $POSTGRES_DB",
+		"PGPASSWORD=$POSTGRES_PASSWORD pgbench -i postgresql://$POSTGRES_USER@127.0.0.1:$POSTGRES_PORT/$POSTGRES_DB?sslmode=disable && PGPASSWORD=$POSTGRES_PASSWORD pgbench -c 100 -t 10 postgresql://$POSTGRES_USER@127.0.0.1:$POSTGRES_PORT/$POSTGRES_DB?sslmode=disable",
 		"number of transactions actually processed: 1000/1000",
 		true,
 	},
@@ -195,12 +195,12 @@ var longQueryTests = []struct {
 	{
 		"tcpdp proxy postgresql long query",
 		"./tcpdp proxy -l localhost:54321 -r localhost:$POSTGRES_PORT -d pg --stdout",
-		"PGPASSWORD=$POSTGRES_PASSWORD psql -h 127.0.0.1 -p 54321 -U$POSTGRES_USER $POSTGRES_DB < ./testdata/query/long.sql 2>&1 > /dev/null",
+		"PGPASSWORD=$POSTGRES_PASSWORD psql postgresql://$POSTGRES_USER@127.0.0.1:54321/$POSTGRES_DB?sslmode=disable < ./testdata/query/long.sql 2>&1 > /dev/null",
 	},
 	{
 		"tcpdp probe postgresql long query",
 		"sudo ./tcpdp probe -i $LO -t $POSTGRES_PORT -d pg -B 64MB --stdout",
-		"PGPASSWORD=$POSTGRES_PASSWORD psql -h 127.0.0.1 -p $POSTGRES_PORT -U$POSTGRES_USER $POSTGRES_DB < ./testdata/query/long.sql 2>&1 > /dev/null",
+		"PGPASSWORD=$POSTGRES_PASSWORD psql postgresql://$POSTGRES_USER@127.0.0.1:$POSTGRES_PORT/$POSTGRES_DB?sslmode=disable < ./testdata/query/long.sql 2>&1 > /dev/null",
 	},
 }
 
@@ -307,7 +307,7 @@ var connTests = []struct {
 	{
 		"tcpdp probe - lo -> postgresql",
 		"sudo ./tcpdp probe -i $LO -t $POSTGRES_PORT -d conn -B 64MB --stdout",
-		"PGPASSWORD=$POSTGRES_PASSWORD pgbench -h 127.0.0.1 -p $POSTGRES_PORT -U$POSTGRES_USER -i $POSTGRES_DB && PGPASSWORD=$POSTGRES_PASSWORD pgbench -h 127.0.0.1 -p $POSTGRES_PORT -U$POSTGRES_USER -c 100 -t 10 $POSTGRES_DB",
+		"PGPASSWORD=$POSTGRES_PASSWORD pgbench -i postgresql://$POSTGRES_USER@127.0.0.1:$POSTGRES_PORT/$POSTGRES_DB?sslmode=disable && PGPASSWORD=$POSTGRES_PASSWORD pgbench -c 100 -t 10 postgresql://$POSTGRES_USER@127.0.0.1:$POSTGRES_PORT/$POSTGRES_DB?sslmode=disable",
 		"number of transactions actually processed: 1000/1000",
 	},
 }
