@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.21.1](https://github.com/k1LoW/tcpdp/compare/v0.21.0...v0.21.1) (2019-07-15)
+
+* Add lock/unlock to the place to operate pMap.buffers [#88](https://github.com/k1LoW/tcpdp/pull/88) ([k1LoW](https://github.com/k1LoW))
+
 ## [v0.21.0](https://github.com/k1LoW/tcpdp/compare/v0.20.3...v0.21.0) (2019-06-19)
 
 * Log *addr when dumper.Read error ( ex. SSL connection ) [#86](https://github.com/k1LoW/tcpdp/pull/86) ([k1LoW](https://github.com/k1LoW))
