@@ -1,10 +1,11 @@
 module github.com/k1LoW/tcpdp
 
 require (
-	code.cloudfoundry.org/bytefmt v0.0.0-20180906201452-2aa6f33b730c
+	code.cloudfoundry.org/bytefmt v0.0.0-20190710193110-1eb035ffe2b6
 	github.com/bLamarche413/mysql v1.0.3
 	github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 // indirect
 	github.com/go-sql-driver/mysql v1.4.1
+	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/google/gopacket v1.1.17
 	github.com/hnakamur/zap-ltsv v0.0.0-20170731143423-10a3dd1d839c
 	github.com/jehiah/go-strftime v0.0.0-20171201141054-1d33003b3869 // indirect
@@ -27,8 +28,8 @@ require (
 	github.com/tebeka/strftime v0.0.0-20140926081919-3f9c7761e312 // indirect
 	github.com/xo/dburl v0.0.0-20190203050942-98997a05b24f
 	go.uber.org/zap v1.10.0
-	golang.org/x/net v0.0.0-20190613194153-d28f0bde5980 // indirect
-	golang.org/x/sys v0.0.0-20190618155005-516e3c20635f // indirect
+	golang.org/x/net v0.0.0-20190628185345-da137c7871d7 // indirect
+	golang.org/x/sys v0.0.0-20190712062909-fae7ac547cb7 // indirect
 	golang.org/x/text v0.3.2
 	google.golang.org/appengine v1.6.1 // indirect
 )
