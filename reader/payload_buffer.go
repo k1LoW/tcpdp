@@ -141,7 +141,7 @@ func (m *payloadBufferManager) startPurgeTicker(ctx context.Context, logger *zap
 					if bSize > 0 {
 						purgedSize = purgedSize + bSize
 					}
-					m.deleteBuffer(key)
+					delete(m.buffers, key)
 				}
 			}
 			m.unlock()

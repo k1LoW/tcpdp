@@ -334,7 +334,7 @@ func (r *PacketReader) handlePacket(target Target) error {
 
 			pMap.lock()
 			if _, ok := pMap.buffers[key]; !ok {
-				pMap.newBuffer(key)
+				pMap.buffers[key] = newPayloadBuffer()
 			}
 			pMap.unlock()
 
