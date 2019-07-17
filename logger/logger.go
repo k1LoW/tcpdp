@@ -228,6 +228,7 @@ type RotateHandler struct {
 func (r *RotateHandler) Handle(e rotatelogs.Event) {
 	if e.Type() == rotatelogs.FileRotatedEventType {
 		fre := e.(*rotatelogs.FileRotatedEvent)
+		// #nosec
 		out, err := exec.Command(r.command, fre.PreviousFile(), fre.CurrentFile()).CombinedOutput()
 		if err != nil {
 			log.Printf("Log lotate event error %v\n", err)
