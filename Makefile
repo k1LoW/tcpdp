@@ -31,7 +31,7 @@ export MYSQL_ROOT_PASSWORD=mypass
 DISTS=centos7 centos6 ubuntu16
 
 default: build
-ci: depsdev test_race test_with_integration
+ci: depsdev test_race test_with_integration sec
 
 test:
 	go test -v $(shell go list ./... | grep -v misc) -coverprofile=coverage.txt -covermode=count
