@@ -54,7 +54,7 @@ func (p *payloadBuffer) Get(direction dumper.Direction) []byte {
 	return nil
 }
 
-func (p *payloadBuffer) Delete(direction dumper.Direction) error {
+func (p *payloadBuffer) Delete(direction dumper.Direction) {
 	p.updateExpires()
 	switch direction {
 	case dumper.SrcToDst:
@@ -64,10 +64,9 @@ func (p *payloadBuffer) Delete(direction dumper.Direction) error {
 	case dumper.Unknown:
 		p.unknown = nil
 	}
-	return nil
 }
 
-func (p *payloadBuffer) Append(direction dumper.Direction, in []byte) error {
+func (p *payloadBuffer) Append(direction dumper.Direction, in []byte) {
 	p.updateExpires()
 	switch direction {
 	case dumper.SrcToDst:
@@ -77,7 +76,6 @@ func (p *payloadBuffer) Append(direction dumper.Direction, in []byte) error {
 	case dumper.Unknown:
 		p.unknown = append(p.unknown, in...)
 	}
-	return nil
 }
 
 func (p *payloadBuffer) Size() int {
@@ -104,35 +102,32 @@ func (m *payloadBufferManager) unlock() {
 	m.mutex.Unlock()
 }
 
-func (m *payloadBufferManager) newBuffer(key string, force bool) error {
+func (m *payloadBufferManager) newBuffer(key string, force bool) {
 	m.lock()
 	if _, ok := m.buffers[key]; !ok || force {
 		m.buffers[key] = newPayloadBuffer()
 	}
 	m.unlock()
-	return nil
 }
 
-func (m *payloadBufferManager) Append(key string, direction dumper.Direction, in []byte) error {
+func (m *payloadBufferManager) Append(key string, direction dumper.Direction, in []byte) {
 	m.lock()
 	m.buffers[key].Append(direction, in)
 	m.unlock()
-	return nil
 }
 
-func (m *payloadBufferManager) deleteBuffer(key string) error {
+func (m *payloadBufferManager) deleteBuffer(key string) {
 	m.lock()
 	delete(m.buffers, key)
 	m.unlock()
-	return nil
 }
 
-func (m *payloadBufferManager) startPurgeTicker(ctx context.Context, logger *zap.Logger) error {
+func (m *payloadBufferManager) startPurgeTicker(ctx context.Context, logger *zap.Logger) {
 	t := time.NewTicker(time.Duration(packetTTL/10) * time.Second)
 	for {
 		select {
 		case <-ctx.Done():
-			return nil
+			return
 		case <-t.C:
 			// purge expired packet buffer cache
 			purgedSize := 0

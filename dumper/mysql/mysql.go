@@ -95,10 +95,13 @@ func (m *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 				// https://dev.mysql.com/doc/internals/en/compressed-payload.html
 				r, err := zlib.NewReader(buff)
 				if err != nil {
-					panic(err)
+					return values, err
 				}
 				newBuff := new(bytes.Buffer)
-				io.Copy(newBuff, r)
+				_, err = io.Copy(newBuff, r)
+				if err != nil {
+					return values, err
+				}
 				in = newBuff.Bytes()
 			} else {
 				// https://dev.mysql.com/doc/internals/en/uncompressed-payload.html

@@ -21,7 +21,10 @@ func main() {
 		}
 		for tableRows.Next() {
 		}
-		tableRows.Close()
+		err = tableRows.Close()
+		if err != nil {
+			panic(err)
+		}
 
 		tableRows, err = db.Query(`SELECT ? + ? + ?`, 1, 23.4, 0)
 		if err != nil {
@@ -29,7 +32,10 @@ func main() {
 		}
 		for tableRows.Next() {
 		}
-		tableRows.Close()
+		err = tableRows.Close()
+		if err != nil {
+			panic(err)
+		}
 
 		tableRows, err = db.Query(`SELECT CONCAT(?, ?, ?, " tcpdp is TCP dump tool with custom dumper written in Go.", " tcpdp is TCP dump tool with custom dumper written in Go.", " tcpdp is TCP dump tool with custom dumper written in Go.", " tcpdp is TCP dump tool with custom dumper written in Go.");`,
 			"tcpdp", "ティーシーピーディーピーティーシーピーディーピーティーシーピーディーピーティーシーピーディーピーティーシーピーディーピーティーシーピーディーピーティーシーピーディーピー", "")
@@ -38,8 +44,14 @@ func main() {
 		}
 		for tableRows.Next() {
 		}
-		tableRows.Close()
+		err = tableRows.Close()
+		if err != nil {
+			panic(err)
+		}
 
-		db.Close()
+		err = db.Close()
+		if err != nil {
+			panic(err)
+		}
 	}
 }

@@ -31,15 +31,13 @@ export MYSQL_ROOT_PASSWORD=mypass
 DISTS=centos7 centos6 ubuntu16
 
 default: build
-ci: depsdev test_race test_with_integration
-
-lint:
-	golint $(shell go list ./... | grep -v misc)
-	go vet $(shell go list ./... | grep -v misc)
-	go fmt $(shell go list ./... | grep -v misc)
+ci: depsdev test_race test_with_integration sec
 
 test:
 	go test -v $(shell go list ./... | grep -v misc) -coverprofile=coverage.txt -covermode=count
+
+sec:
+	gosec ./...
 
 test_race:
 	go test $(shell go list ./... | grep -v misc) -race
@@ -125,6 +123,7 @@ depsdev:
 	curl -o $(GOPATH)/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.4.1/gomplate_$(GOMPLATE_OS)-amd64
 	chmod 755 $(GOPATH)/bin/gomplate
 	go get github.com/Songmu/ghch
+	go get github.com/securego/gosec/cmd/gosec
 
 crossbuild: build_darwin
 	@for d in $(DISTS); do\

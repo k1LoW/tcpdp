@@ -30,7 +30,10 @@ func main() {
 			}
 			fmt.Printf("%s\n", res)
 		}
-		tableRows.Close()
+		err = tableRows.Close()
+		if err != nil {
+			panic(err)
+		}
 
 		tableRows, err = db.Query(`SELECT $1::int + $2::float + $3::int`, 1, 23.4, 0)
 		if err != nil {
@@ -38,8 +41,14 @@ func main() {
 		}
 		for tableRows.Next() {
 		}
-		tableRows.Close()
+		err = tableRows.Close()
+		if err != nil {
+			panic(err)
+		}
 
-		db.Close()
+		err = db.Close()
+		if err != nil {
+			panic(err)
+		}
 	}
 }

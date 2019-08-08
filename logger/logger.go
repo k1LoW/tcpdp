@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/hnakamur/zap-ltsv"
+	ltsv "github.com/hnakamur/zap-ltsv"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -160,7 +160,7 @@ func newLogWriter(logType string) io.Writer {
 	rotationHook := viper.GetString(fmt.Sprintf("%s.rotationHook", logType))
 	fileName := viper.GetString(fmt.Sprintf("%s.fileName", logType))
 
-	path, err := filepath.Abs(fmt.Sprintf("%s/%s", dir, fileName))
+	path, err := filepath.Abs(filepath.Join(dir, fileName))
 	if err != nil {
 		log.Fatalf("Log setting error %v", err)
 	}
@@ -203,6 +203,7 @@ func newLogWriter(logType string) io.Writer {
 			log.Fatalf("Log setting error %v", err)
 		}
 	} else {
+		// #nosec
 		w, err = os.Open(path)
 		if err != nil {
 			log.Fatalf("Log setting error %v", err)
@@ -228,6 +229,7 @@ type RotateHandler struct {
 func (r *RotateHandler) Handle(e rotatelogs.Event) {
 	if e.Type() == rotatelogs.FileRotatedEventType {
 		fre := e.(*rotatelogs.FileRotatedEvent)
+		// #nosec
 		out, err := exec.Command(r.command, fre.PreviousFile(), fre.CurrentFile()).CombinedOutput()
 		if err != nil {
 			log.Printf("Log lotate event error %v\n", err)
