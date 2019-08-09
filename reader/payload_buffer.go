@@ -34,6 +34,9 @@ func (p *payloadBuffer) Expired() bool {
 }
 
 func (p *payloadBuffer) Get(direction dumper.Direction) []byte {
+	if p == nil {
+		return nil
+	}
 	switch direction {
 	case dumper.SrcToDst:
 		if len(p.srcToDst) > 0 {
