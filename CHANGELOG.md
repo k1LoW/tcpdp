@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.21.2](https://github.com/k1LoW/tcpdp/compare/v0.21.1...v0.21.2) (2019-08-09)
+
+* Fix payloadBuffer.Get ( when buffer deleted, return nil ) [#91](https://github.com/k1LoW/tcpdp/pull/91) ([k1LoW](https://github.com/k1LoW))
+* Add make sec [#89](https://github.com/k1LoW/tcpdp/pull/89) ([k1LoW](https://github.com/k1LoW))
+
 ## [v0.21.0](https://github.com/k1LoW/tcpdp/compare/v0.20.3...v0.21.0) (2019-06-19)
 
 * Add lock/unlock to the place to operate pMap.buffers [#88](https://github.com/k1LoW/tcpdp/pull/88) ([k1LoW](https://github.com/k1LoW))
