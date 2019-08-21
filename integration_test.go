@@ -275,6 +275,9 @@ func TestProxyProtocol(t *testing.T) {
 			cmd := exec.CommandContext(ctx, "bash", "-c", tt.tcpdpCmd)
 			stdout := new(bytes.Buffer)
 			cmd.Stdout = stdout
+			if stdout.String() != "" {
+				t.Fatalf("%s:%s", "stdout not empty", stdout.String())
+			}
 			err := cmd.Start()
 			if err != nil {
 				cancel()
