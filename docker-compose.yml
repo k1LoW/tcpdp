@@ -77,6 +77,18 @@ services:
     environment:
       DIST: el6
     command: make depsdev build_in_docker build_static_in_docker build_rpm
+  centos5:
+    build:
+      context: .
+      dockerfile: dockerfiles/Dockerfile.centos5
+      args:
+        GO_VERSION: 1.9
+        LIBPCAP_VERSION: 1.9.0
+    volumes:
+      - .:/go/src/github.com/k1LoW/tcpdp
+    environment:
+      DIST: el5
+    command: make depsdev build_static_in_docker build_rpm
   ubuntu16:
     build:
       context: .
