@@ -1,0 +1,51 @@
+name: build
+
+on: push
+
+jobs:
+  job-test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go_version: [1.15]
+    steps:
+      - name: Set up Go ${{ matrix.go_version }}
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go_version }}
+
+      - name: Install codecov
+        run: sudo pip install codecov
+
+      - name: Check out source code
+        uses: actions/checkout@v2
+
+      - name: Setup packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpcap-dev netcat
+
+      - name: Run Docker containers
+        run: |
+          docker --version
+          docker-compose --version
+          docker-compose up -d postgres mysql57 proxy-protocol-proxy-linux proxy-protocol-mariadb
+          while ! nc -w 1 127.0.0.1 33066 > /dev/null 2>&1; do sleep 1; echo 'sleeping'; done;
+          while ! nc -w 1 127.0.0.1 54322 > /dev/null 2>&1; do sleep 1; echo 'sleeping'; done;
+          while ! nc -w 1 127.0.0.1 33081 > /dev/null 2>&1; do sleep 1; echo 'sleeping'; done;
+          while ! nc -w 1 127.0.0.1 33068 > /dev/null 2>&1; do sleep 1; echo 'sleeping'; done;
+          while ! nc -w 1 127.0.0.1 33069 > /dev/null 2>&1; do sleep 1; echo 'sleeping'; done;
+          while ! nc -w 1 127.0.0.1 33070 > /dev/null 2>&1; do sleep 1; echo 'sleeping'; done;
+          while ! nc -w 1 127.0.0.1 33071 > /dev/null 2>&1; do sleep 1; echo 'sleeping'; done;
+
+      - name: Test
+        run: |
+          export GOPATH=$HOME/go
+          export PATH=$PATH:$GOPATH/bin
+          make ci
+
+      - name: Run codecov
+        run: codecov
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
