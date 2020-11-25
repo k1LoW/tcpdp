@@ -276,7 +276,7 @@ func (s *ProbeServer) writePID() error {
 			}
 		}
 	}
-	return ioutil.WriteFile(s.pidfile, []byte(fmt.Sprintf("%d\n", os.Getpid())), 0664)
+	return ioutil.WriteFile(s.pidfile, []byte(fmt.Sprintf("%d\n", os.Getpid())), 0664) // #nosec
 }
 
 func (s *ProbeServer) deletePID() {

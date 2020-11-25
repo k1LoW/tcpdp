@@ -1,7 +1,7 @@
 language: go
 sudo: required
 go:
-  - 1.12
+  - 1.15
   - master
 matrix:
   allow_failures:

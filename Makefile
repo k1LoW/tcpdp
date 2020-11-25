@@ -118,7 +118,7 @@ build_deb:
 depsdev:
 	go get golang.org/x/tools/cmd/cover
 	go get golang.org/x/lint/golint
-	go get github.com/motemen/gobump/cmd/gobump
+	go get github.com/x-motemen/gobump/cmd/gobump
 	go get github.com/tcnksm/ghr
 	curl -o $(GOPATH)/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.4.1/gomplate_$(GOMPLATE_OS)-amd64
 	chmod 755 $(GOPATH)/bin/gomplate
