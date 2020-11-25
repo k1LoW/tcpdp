@@ -26,10 +26,16 @@ func newPayloadBuffer() *payloadBuffer {
 }
 
 func (p *payloadBuffer) updateExpires() {
+	if p == nil {
+		return
+	}
 	p.expires = time.Now().Add(time.Duration(packetTTL) * time.Second)
 }
 
 func (p *payloadBuffer) Expired() bool {
+	if p == nil {
+		return true
+	}
 	return p.expires.Before(time.Now())
 }
 
