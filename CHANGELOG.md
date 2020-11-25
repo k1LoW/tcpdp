@@ -1,5 +1,14 @@
 # Changelog
 
+## [v0.22.0](https://github.com/k1LoW/tcpdp/compare/v0.21.1...v0.22.0) (2020-11-25)
+
+* Fix payloadBuffer invalid nil pointer dereference [#95](https://github.com/k1LoW/tcpdp/pull/95) ([k1LoW](https://github.com/k1LoW))
+* Use GitHub Actions [#94](https://github.com/k1LoW/tcpdp/pull/94) ([k1LoW](https://github.com/k1LoW))
+* Bump up go version [#93](https://github.com/k1LoW/tcpdp/pull/93) ([k1LoW](https://github.com/k1LoW))
+* fix a typo in doc string [#92](https://github.com/k1LoW/tcpdp/pull/92) ([kentaro](https://github.com/kentaro))
+* Fix payloadBuffer.Get ( when buffer deleted, return nil ) [#91](https://github.com/k1LoW/tcpdp/pull/91) ([k1LoW](https://github.com/k1LoW))
+* Add make sec [#89](https://github.com/k1LoW/tcpdp/pull/89) ([k1LoW](https://github.com/k1LoW))
+
 ## [v0.21.2](https://github.com/k1LoW/tcpdp/compare/v0.21.1...v0.21.2) (2019-08-09)
 
 * Fix payloadBuffer.Get ( when buffer deleted, return nil ) [#91](https://github.com/k1LoW/tcpdp/pull/91) ([k1LoW](https://github.com/k1LoW))

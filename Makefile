@@ -123,7 +123,7 @@ depsdev:
 	curl -o $(GOPATH)/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.4.1/gomplate_$(GOMPLATE_OS)-amd64
 	chmod 755 $(GOPATH)/bin/gomplate
 	go get github.com/Songmu/ghch
-	go get github.com/securego/gosec/cmd/gosec
+	go get github.com/securego/gosec/v2/cmd/gosec
 
 crossbuild: build_darwin
 	@for d in $(DISTS); do\
