@@ -98,7 +98,7 @@ func (m *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 					return values, err
 				}
 				newBuff := new(bytes.Buffer)
-				_, err = io.Copy(newBuff, r)
+				_, err = io.Copy(newBuff, r) // #nosec
 				if err != nil {
 					return values, err
 				}
