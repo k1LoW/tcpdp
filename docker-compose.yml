@@ -58,8 +58,8 @@ services:
       context: .
       dockerfile: dockerfiles/Dockerfile.centos7
       args:
-        GO_VERSION: 1.12
-        LIBPCAP_VERSION: 1.9.0
+        GO_VERSION: 1.15
+        LIBPCAP_VERSION: 1.9.1
     volumes:
       - .:/go/src/github.com/k1LoW/tcpdp
     environment:
@@ -70,8 +70,8 @@ services:
       context: .
       dockerfile: dockerfiles/Dockerfile.centos6
       args:
-        GO_VERSION: 1.12
-        LIBPCAP_VERSION: 1.9.0
+        GO_VERSION: 1.15
+        LIBPCAP_VERSION: 1.9.1
     volumes:
       - .:/go/src/github.com/k1LoW/tcpdp
     environment:
@@ -82,8 +82,8 @@ services:
       context: .
       dockerfile: dockerfiles/Dockerfile.ubuntu16
       args:
-        GO_VERSION: 1.12
-        LIBPCAP_VERSION: 1.9.0
+        GO_VERSION: 1.15
+        LIBPCAP_VERSION: 1.9.1
     volumes:
       - .:/go/src/github.com/k1LoW/tcpdp
     environment:
