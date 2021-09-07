@@ -120,8 +120,7 @@ depsdev:
 	go get golang.org/x/lint/golint
 	go get github.com/x-motemen/gobump/cmd/gobump
 	go get github.com/tcnksm/ghr
-	curl -o $(GOPATH)/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.4.1/gomplate_$(GOMPLATE_OS)-amd64
-	chmod 755 $(GOPATH)/bin/gomplate
+	go get github.com/hairyhenderson/gomplate/v3/cmd/gomplate
 	go get github.com/Songmu/ghch
 	go get github.com/securego/gosec/v2/cmd/gosec
 
