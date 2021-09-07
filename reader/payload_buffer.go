@@ -64,6 +64,9 @@ func (p *payloadBuffer) Get(direction dumper.Direction) []byte {
 }
 
 func (p *payloadBuffer) Delete(direction dumper.Direction) {
+	if p == nil {
+		return
+	}
 	p.updateExpires()
 	switch direction {
 	case dumper.SrcToDst:
@@ -76,6 +79,9 @@ func (p *payloadBuffer) Delete(direction dumper.Direction) {
 }
 
 func (p *payloadBuffer) Append(direction dumper.Direction, in []byte) {
+	if p == nil {
+		return
+	}
 	p.updateExpires()
 	switch direction {
 	case dumper.SrcToDst:

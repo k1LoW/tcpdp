@@ -7,7 +7,7 @@ ifeq ($(OSNAME),Darwin)
   export GOMPLATE_OS=darwin
 else
 	export LO = lo
-	export MYSQL_DISABLE_SSL = --skip-ssl
+	export MYSQL_DISABLE_SSL = --ssl-mode=DISABLED
 	export GOMPLATE_OS=linux
 endif
 
