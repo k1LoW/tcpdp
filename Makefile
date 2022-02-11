@@ -34,7 +34,7 @@ default: build
 ci: depsdev test_race test_with_integration sec
 
 test:
-	go test -v $(shell go list ./... | grep -v misc) -coverprofile=coverage.txt -covermode=count
+	go test -v $(shell go list ./... | grep -v misc) -coverprofile=coverage.out -covermode=count
 
 sec:
 	gosec ./...
@@ -43,7 +43,7 @@ test_race:
 	go test $(shell go list ./... | grep -v misc) -race
 
 test_with_integration: build
-	go test -v $(shell go list ./... | grep -v misc) -tags integration -coverprofile=coverage.txt -covermode=count
+	go test -v $(shell go list ./... | grep -v misc) -tags integration -coverprofile=coverage-integration.out -covermode=count
 
 build:
 	go build -ldflags="$(BUILD_LDFLAGS)"

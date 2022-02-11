@@ -2,3 +2,4 @@ dist/
 .terraform
 *.tfstate
 *.tfstate.backup
+coverage*out
