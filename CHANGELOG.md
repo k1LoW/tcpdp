@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.22.1](https://github.com/k1LoW/tcpdp/compare/v0.22.0...v0.22.1) (2021-09-07)
+
+* Fix null pointer dereference [#96](https://github.com/k1LoW/tcpdp/pull/96) ([k1LoW](https://github.com/k1LoW))
+
 ## [v0.22.0](https://github.com/k1LoW/tcpdp/compare/v0.21.1...v0.22.0) (2020-11-25)
 
 * Fix payloadBuffer invalid nil pointer dereference [#95](https://github.com/k1LoW/tcpdp/pull/95) ([k1LoW](https://github.com/k1LoW))
