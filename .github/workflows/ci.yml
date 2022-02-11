@@ -1,6 +1,10 @@
 name: build
 
-on: push
+on:
+  push:
+    branches:
+      - master
+  pull_request:
 
 jobs:
   job-test:
@@ -14,9 +18,6 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: ${{ matrix.go_version }}
-
-      - name: Install codecov
-        run: sudo pip install codecov
 
       - name: Check out source code
         uses: actions/checkout@v2
@@ -45,7 +46,5 @@ jobs:
           export PATH=$PATH:$GOPATH/bin
           make ci
 
-      - name: Run codecov
-        run: codecov
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      - name: Run octocov
+        uses: k1LoW/octocov-action@v0

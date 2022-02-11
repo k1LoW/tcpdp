@@ -34,7 +34,7 @@ default: build
 ci: depsdev test_race test_with_integration sec
 
 test:
-	go test -v $(shell go list ./... | grep -v misc) -coverprofile=coverage.txt -covermode=count
+	go test -v $(shell go list ./... | grep -v misc) -coverprofile=coverage.out -covermode=count
 
 sec:
 	gosec ./...
@@ -43,7 +43,7 @@ test_race:
 	go test $(shell go list ./... | grep -v misc) -race
 
 test_with_integration: build
-	go test -v $(shell go list ./... | grep -v misc) -tags integration -coverprofile=coverage.txt -covermode=count
+	go test -v $(shell go list ./... | grep -v misc) -tags integration -coverprofile=coverage-integration.out -covermode=count
 
 build:
 	go build -ldflags="$(BUILD_LDFLAGS)"
@@ -116,13 +116,11 @@ build_deb:
 	rm -rf $(workdir)
 
 depsdev:
-	go get golang.org/x/tools/cmd/cover
-	go get golang.org/x/lint/golint
-	go get github.com/x-motemen/gobump/cmd/gobump
-	go get github.com/tcnksm/ghr
-	go get github.com/hairyhenderson/gomplate/v3/cmd/gomplate
-	go get github.com/Songmu/ghch
-	go get github.com/securego/gosec/v2/cmd/gosec
+	go get github.com/Songmu/ghch/cmd/ghch@v0.10.2
+	go get github.com/Songmu/gocredits/cmd/gocredits@v0.2.0
+	go get github.com/securego/gosec/v2/cmd/gosec@v2.8.1
+	go get github.com/tcnksm/ghr@v0.14.0
+	go get github.com/hairyhenderson/gomplate/v3/cmd/gomplate@v3.9.0
 
 crossbuild: build_darwin
 	@for d in $(DISTS); do\
