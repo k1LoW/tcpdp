@@ -1,4 +1,4 @@
-# tcpdp [![build](https://github.com/k1LoW/tcpdp/workflows/build/badge.svg)](https://github.com/k1LoW/tcpdp/actions) [![GitHub release](https://img.shields.io/github/release/k1LoW/tcpdp.svg)](https://github.com/k1LoW/tcpdp/releases) [![codecov](https://codecov.io/gh/k1LoW/tcpdp/branch/master/graph/badge.svg)](https://codecov.io/gh/k1LoW/tcpdp)
+# tcpdp [![build](https://github.com/k1LoW/tcpdp/workflows/build/badge.svg)](https://github.com/k1LoW/tcpdp/actions) [![GitHub release](https://img.shields.io/github/release/k1LoW/tcpdp.svg)](https://github.com/k1LoW/tcpdp/releases)
 
 tcpdp is TCP dump tool with custom dumper and structured logger written in Go.
 
