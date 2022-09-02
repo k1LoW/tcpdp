@@ -116,11 +116,11 @@ build_deb:
 	rm -rf $(workdir)
 
 depsdev:
-	go get github.com/Songmu/ghch/cmd/ghch@v0.10.2
-	go get github.com/Songmu/gocredits/cmd/gocredits@v0.2.0
-	go get github.com/securego/gosec/v2/cmd/gosec@v2.8.1
-	go get github.com/tcnksm/ghr@v0.14.0
-	go get github.com/hairyhenderson/gomplate/v3/cmd/gomplate@v3.9.0
+	go install github.com/Songmu/ghch/cmd/ghch@latest
+	go install github.com/Songmu/gocredits/cmd/gocredits@latest
+	go install github.com/securego/gosec/v2/cmd/gosec@latest
+	go install github.com/tcnksm/ghr@latest
+	go install github.com/hairyhenderson/gomplate/v3/cmd/gomplate@v3.9.0
 
 crossbuild: build_darwin
 	@for d in $(DISTS); do\
