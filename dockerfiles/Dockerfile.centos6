@@ -15,11 +15,8 @@ RUN cd /usr/local/src/ &&\
 RUN pwd && ls -la /usr/local/src/
 RUN pwd && ls -la 
 RUN cd /usr/local/src/git-2.33.0 && make prefix=/usr/local all && make prefix=/usr/local install
-# RUN wget -O /etc/yum.repos.d/devtools-2.repo http://people.centos.org/tru/devtools-2/devtools-2.repo --no-check-certificate
-# RUN yum install devtoolset-2-gcc -y && yum install devtoolset-2-binutils -y && yum install devtoolset-2-gcc-c++ -y
-RUN yum install -y centos-release-scl
-RUN yum install -y scl-utils
-RUN yum install -y devtoolset-4-gcc devtoolset-4-gcc-c++ devtoolset-4-binutils
+RUN wget -O /etc/yum.repos.d/devtools-2.repo http://people.centos.org/tru/devtools-2/devtools-2.repo --no-check-certificate
+RUN yum install devtoolset-2-gcc -y && yum install devtoolset-2-binutils -y && yum install devtoolset-2-gcc-c++ -y
 
 ENV FILE go$GO_VERSION.linux-amd64.tar.gz
 ENV URL https://storage.googleapis.com/golang/$FILE
