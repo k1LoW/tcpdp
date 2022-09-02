@@ -4,7 +4,7 @@ LABEL maintainer="k1LoW <k1lowxb@gmail.com>"
 ARG GO_VERSION
 ARG LIBPCAP_VERSION
 
-RUN sed -i -e "s/^mirrorlist=http:\/\/mirrorlist.centos.org/#mirrorlist=http:\/\/mirrorlist.centos.org/g" /etc/yum.repos.d/CentOS-Base.repo &&\
+RUN sed -i -e "s/^mirrorlist=http:\/\/mirrorlist.centos.org/#mirrorlist=http:\/\/mirrorlist.centos.org/g" /etc/yum.repos.d/CentOS-Base.repo
 RUN sed -i -e "s/^#baseurl=http:\/\/mirror.centos.org/baseurl=http:\/\/vault.centos.org/g" /etc/yum.repos.d/CentOS-Base.repo
 RUN yum install -y epel-release
 RUN yum install -y rpmdevtools yum-utils make glibc glibc-static gcc byacc flex bison libpcap-devel \
