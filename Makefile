@@ -122,7 +122,9 @@ depsdev:
 	go install github.com/tcnksm/ghr@latest
 	go install github.com/hairyhenderson/gomplate/v3/cmd/gomplate@v3.9.0
 
-crossbuild: build_darwin
+build_all: build_darwin build_linux
+
+build_linux:
 	@for d in $(DISTS); do\
 		docker-compose up $$d;\
 	done

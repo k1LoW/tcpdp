@@ -1,0 +1,23 @@
+name: build
+
+on:
+  push:
+
+jobs:
+  build-linux:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version-file: go.mod
+
+      - name: Build for linux
+        run: |
+          make build_linux
+          ls -la dist/
+
