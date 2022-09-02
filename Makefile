@@ -121,6 +121,7 @@ depsdev:
 	go install github.com/securego/gosec/v2/cmd/gosec@latest
 	go install github.com/tcnksm/ghr@latest
 	go install github.com/hairyhenderson/gomplate/v3/cmd/gomplate@v3.9.0
+	go install github.com/x-motemen/gobump/cmd/gobump@latest
 
 build_all: build_darwin build_linux
 
