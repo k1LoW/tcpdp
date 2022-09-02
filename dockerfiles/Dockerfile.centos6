@@ -7,7 +7,7 @@ ARG LIBPCAP_VERSION
 RUN sed -i -e "s/^mirrorlist=http:\/\/mirrorlist.centos.org/#mirrorlist=http:\/\/mirrorlist.centos.org/g" /etc/yum.repos.d/CentOS-Base.repo
 RUN sed -i -e "s/^#baseurl=http:\/\/mirror.centos.org/baseurl=http:\/\/vault.centos.org/g" /etc/yum.repos.d/CentOS-Base.repo
 RUN yum install -y epel-release
-RUN yum install -y rpmdevtools yum-utils make glibc glibc-static gcc byacc flex bison libpcap-devel \
+RUN yum install -y rpmdevtools yum-utils make glibc glibc-static gcc byacc flex bison libpcap-devel binutils \
     curl-devel expat-devel gettext-devel openssl-devel perl-devel zlib-devel perl-ExtUtils-MakeMaker
 RUN cd /usr/local/src/ &&\
        curl -LkvOf https://mirrors.edge.kernel.org/pub/software/scm/git/git-2.33.0.tar.gz &&\
@@ -15,6 +15,11 @@ RUN cd /usr/local/src/ &&\
 RUN pwd && ls -la /usr/local/src/
 RUN pwd && ls -la 
 RUN cd /usr/local/src/git-2.33.0 && make prefix=/usr/local all && make prefix=/usr/local install
+# RUN wget -O /etc/yum.repos.d/devtools-2.repo http://people.centos.org/tru/devtools-2/devtools-2.repo --no-check-certificate
+# RUN yum install devtoolset-2-gcc -y && yum install devtoolset-2-binutils -y && yum install devtoolset-2-gcc-c++ -y
+RUN yum install -y centos-release-scl
+RUN yum install -y scl-utils
+RUN yum install -y devtoolset-4-gcc devtoolset-4-gcc-c++ devtoolset-4-binutils
 
 ENV FILE go$GO_VERSION.linux-amd64.tar.gz
 ENV URL https://storage.googleapis.com/golang/$FILE

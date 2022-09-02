@@ -28,7 +28,7 @@ export MYSQL_PORT=33066
 export MYSQL_DATABASE=testdb
 export MYSQL_ROOT_PASSWORD=mypass
 
-DISTS=centos7 centos6 ubuntu16
+DISTS=centos6 centos7 ubuntu16
 
 default: build
 ci: depsdev test_race test_with_integration sec

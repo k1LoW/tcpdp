@@ -76,7 +76,7 @@ services:
       - .:/go/src/github.com/k1LoW/tcpdp
     environment:
       DIST: el6
-    command: make depsdev build_in_docker build_static_in_docker build_rpm
+    command: scl enable devtoolset-4 'make depsdev build_in_docker build_static_in_docker build_rpm'
   ubuntu16:
     build:
       context: .
