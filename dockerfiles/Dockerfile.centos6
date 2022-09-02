@@ -12,7 +12,9 @@ RUN yum install -y rpmdevtools yum-utils make glibc glibc-static gcc byacc flex 
 RUN cd /usr/local/src/ &&\
        curl -LkvOf https://mirrors.edge.kernel.org/pub/software/scm/git/git-2.33.0.tar.gz &&\
        tar zvfx git-2.33.0.tar.gz
-RUN cd git-2.33.0 && make prefix=/usr/local all && make prefix=/usr/local install
+RUN pwd && ls -la /usr/local/src/
+RUN pwd && ls -la 
+RUN cd /usr/local/src/git-2.33.0 && make prefix=/usr/local all && make prefix=/usr/local install
 
 ENV FILE go$GO_VERSION.linux-amd64.tar.gz
 ENV URL https://storage.googleapis.com/golang/$FILE
