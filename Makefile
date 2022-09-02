@@ -124,7 +124,7 @@ depsdev:
 
 build_all: build_darwin build_linux
 
-build_linux:
+build_linux: depsdev
 	@for d in $(DISTS); do\
 		docker-compose up $$d;\
 	done
