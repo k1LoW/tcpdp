@@ -28,11 +28,11 @@ export MYSQL_PORT=33066
 export MYSQL_DATABASE=testdb
 export MYSQL_ROOT_PASSWORD=mypass
 
-# DISTS=centos6 centos7 ubuntu16
-DISTS=centos6
+DISTS=centos6 centos7 ubuntu16
 
 default: build
 ci: depsdev test_race test_with_integration sec
+ci_go1.15: depsdev_1.15 test_race test_with_integration sec
 
 test:
 	go test -v $(shell go list ./... | grep -v misc) -coverprofile=coverage.out -covermode=count
@@ -116,10 +116,6 @@ build_deb:
 	fakeroot dpkg-deb --build $(workdir) /go/src/github.com/k1LoW/tcpdp/dist/$(ver)
 	rm -rf $(workdir)
 
-rm_cache:
-	go version
-	go env
-
 depsdev:
 	go install github.com/Songmu/ghch/cmd/ghch@latest
 	go install github.com/Songmu/gocredits/cmd/gocredits@latest
@@ -128,7 +124,7 @@ depsdev:
 	go install github.com/hairyhenderson/gomplate/v3/cmd/gomplate@v3.9.0
 	go install github.com/x-motemen/gobump/cmd/gobump@latest
 
-depsdev_centos6:
+depsdev_go1.15:
 	go get github.com/hairyhenderson/gomplate/v3/cmd/gomplate@v3.9.0
 	go get github.com/x-motemen/gobump/cmd/gobump@latest
 
