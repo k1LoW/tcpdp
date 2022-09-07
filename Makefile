@@ -32,7 +32,7 @@ DISTS=centos6 centos7 ubuntu16
 
 default: build
 ci: depsdev test_race test_with_integration sec
-ci_go1.15: depsdev_1.15 test_race test_with_integration sec
+ci_go1.15: depsdev_go1.15 test_race test_with_integration sec
 
 test:
 	go test -v $(shell go list ./... | grep -v misc) -coverprofile=coverage.out -covermode=count
@@ -122,9 +122,10 @@ depsdev:
 	go install github.com/securego/gosec/v2/cmd/gosec@latest
 	go install github.com/tcnksm/ghr@latest
 	go install github.com/hairyhenderson/gomplate/v3/cmd/gomplate@v3.9.0
-	go install github.com/x-motemen/gobump/cmd/gobump@latest
+	go install github.com/x-motemen/gobump/cmd/gobump@master
 
 depsdev_go1.15:
+	go get github.com/securego/gosec/v2/cmd/gosec@v2.8.1
 	go get github.com/hairyhenderson/gomplate/v3/cmd/gomplate@v3.9.0
 	go get github.com/x-motemen/gobump/cmd/gobump@latest
 

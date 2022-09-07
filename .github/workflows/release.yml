@@ -1,0 +1,49 @@
+name: release
+
+on:
+  push:
+    tags:
+      - v*.*.*
+
+jobs:
+  release-linux:
+    name: Release for Linux
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.18
+
+      - name: Build
+        run: |
+          make build_linux
+          tree dist/
+
+      - name: Upload assets
+        run: |
+          make release
+
+  release-darwin:
+    name: Release for macOS
+    runs-on: macos-latest
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.18
+
+      - name: Build
+        run: |
+          make build_darwin
+
+      - name: Upload assets
+        run: |
+          make release
+
