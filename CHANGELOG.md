@@ -1,5 +1,13 @@
 # Changelog
 
+## [v0.22.2](https://github.com/k1LoW/tcpdp/compare/v0.22.1...v0.22.2) (2022-09-08)
+
+* Fix build and release pipeline [#100](https://github.com/k1LoW/tcpdp/pull/100) ([k1LoW](https://github.com/k1LoW))
+* Revert "Update go and pkgs" [#101](https://github.com/k1LoW/tcpdp/pull/101) ([k1LoW](https://github.com/k1LoW))
+* Update go and pkgs [#99](https://github.com/k1LoW/tcpdp/pull/99) ([k1LoW](https://github.com/k1LoW))
+* Update the GoText package [#98](https://github.com/k1LoW/tcpdp/pull/98) ([rnakamine](https://github.com/rnakamine))
+* Use octocov [#97](https://github.com/k1LoW/tcpdp/pull/97) ([k1LoW](https://github.com/k1LoW))
+
 ## [v0.22.1](https://github.com/k1LoW/tcpdp/compare/v0.22.0...v0.22.1) (2021-09-07)
 
 * Fix null pointer dereference [#96](https://github.com/k1LoW/tcpdp/pull/96) ([k1LoW](https://github.com/k1LoW))
