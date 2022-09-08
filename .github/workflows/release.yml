@@ -26,6 +26,8 @@ jobs:
       - name: Upload assets
         run: |
           make release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   release-darwin:
     name: Release for macOS
@@ -46,4 +48,6 @@ jobs:
       - name: Upload assets
         run: |
           make release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
