@@ -28,10 +28,11 @@ export MYSQL_PORT=33066
 export MYSQL_DATABASE=testdb
 export MYSQL_ROOT_PASSWORD=mypass
 
-DISTS=centos7 centos6 ubuntu16
+DISTS=centos6 centos7 ubuntu16
 
 default: build
 ci: depsdev test_race test_with_integration sec
+ci_go1.15: depsdev_go1.15 test_race test_with_integration sec
 
 test:
 	go test -v $(shell go list ./... | grep -v misc) -coverprofile=coverage.out -covermode=count
@@ -116,13 +117,21 @@ build_deb:
 	rm -rf $(workdir)
 
 depsdev:
-	go get github.com/Songmu/ghch/cmd/ghch@v0.10.2
-	go get github.com/Songmu/gocredits/cmd/gocredits@v0.2.0
-	go get github.com/securego/gosec/v2/cmd/gosec@v2.8.1
-	go get github.com/tcnksm/ghr@v0.14.0
-	go get github.com/hairyhenderson/gomplate/v3/cmd/gomplate@v3.9.0
+	go install github.com/Songmu/ghch/cmd/ghch@latest
+	go install github.com/Songmu/gocredits/cmd/gocredits@latest
+	go install github.com/securego/gosec/v2/cmd/gosec@latest
+	go install github.com/tcnksm/ghr@latest
+	go install github.com/hairyhenderson/gomplate/v3/cmd/gomplate@v3.9.0
+	go install github.com/x-motemen/gobump/cmd/gobump@master
 
-crossbuild: build_darwin
+depsdev_go1.15:
+	go get github.com/securego/gosec/v2/cmd/gosec@v2.8.1
+	go get github.com/hairyhenderson/gomplate/v3/cmd/gomplate@v3.9.0
+	go get github.com/x-motemen/gobump/cmd/gobump@latest
+
+build_all: build_darwin build_linux
+
+build_linux: depsdev
 	@for d in $(DISTS); do\
 		docker-compose up $$d;\
 	done
