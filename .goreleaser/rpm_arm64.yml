@@ -1,0 +1,58 @@
+before:
+  hooks:
+    - go mod download
+    - go mod tidy
+builds:
+-
+  id: tcpdp-linux
+  flags:
+    - -buildvcs=false
+  ldflags:
+    - -s -w -X github.com/k1LoW/tcpdp.version={{.Version}} -X github.com/k1LoW/tcpdp.commit={{.FullCommit}} -X github.com/k1LoW/tcpdp.date={{.Date}} -X github.com/k1LoW/tcpdp/version.Version={{.Version}}
+  env:
+    - CGO_ENABLED=1
+  goos:
+    - linux
+  goarch:
+    - arm64
+archives:
+-
+  id: tcpdp-archive
+  name_template: '{{ .ProjectName }}_v{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}.el7'
+  builds:
+    - tcpdp-linux
+  files:
+    - LICENSE
+    - CREDITS
+    - README.md
+    - CHANGELOG.md
+checksum:
+  name_template: 'checksums-rpm_arm64.txt'
+snapshot:
+  name_template: "{{ .Version }}-next"
+changelog:
+  skip: true
+  sort: asc
+  filters:
+    exclude:
+    - '^docs:'
+    - '^test:'
+nfpms:
+  -
+    id: tcpdp-nfpms
+    file_name_template: "{{ .ProjectName }}_{{ .Version }}-1_{{ .Arch }}"
+    builds:
+    - tcpdp-linux
+    homepage: https://github.com/k1LoW/tcpdp
+    maintainer: Ken'ichiro Oyama <k1lowxb@gmail.com>
+    description: tcpdp is TCP dump tool with custom dumper and structured logger written in Go.
+    license: MIT
+    formats:
+      - rpm
+    bindir: /usr/bin
+    dependencies:
+      - libpcap-devel
+    epoch: 1
+release:
+  draft: true
+  skip_upload: true

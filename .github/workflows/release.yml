@@ -1,53 +1,294 @@
 name: release
 
 on:
-  push:
-    tags:
-      - v*.*.*
+  pull_request:
 
 jobs:
-  release-linux:
-    name: Release for Linux
+  ubuntu-amd64:
+    name: Build packages on Ubuntu amd64
     runs-on: ubuntu-latest
     steps:
       - name: Check out source code
-        uses: actions/checkout@v3
-
-      - name: Set up Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.18
+        uses: actions/checkout@v4
 
       - name: Build
-        run: |
-          make build_linux
-          tree dist/
+        uses: k1LoW/run-on-container@main
+        with:
+          run: |
+            uname -a
 
-      - name: Upload assets
-        run: |
-          make release
+            apt-get -qq update
+            apt-get install -qq gcc g++ make debhelper dh-make clang git curl devscripts fakeroot byacc bison flex libpcap-dev
+            export LIBPCAP_FILE=libpcap-$LIBPCAP_VERSION.tar.gz
+            export LIBPCAP_URL=https://www.tcpdump.org/release/$LIBPCAP_FILE
+            export GO_FILE=go$GO_VERSION.linux-amd64.tar.gz
+            export GO_URL=https://storage.googleapis.com/golang/$GO_FILE
+            export GOPATH=/go
+            export PATH=$GOPATH/bin:/usr/local/go/bin:$PATH
+            curl -OL $GO_URL
+            tar -C /usr/local -xzf $GO_FILE
+            rm $GO_FILE
+            curl -OL $LIBPCAP_URL
+            tar -C /usr/local/src -xzf $LIBPCAP_FILE
+            rm $LIBPCAP_FILE
+
+            mkdir -p $GOPATH/src $GOPATH/bin
+            chmod -R 777 $GOPATH
+            go version
+
+            echo 'deb [trusted=yes] https://repo.goreleaser.com/apt/ /' | tee /etc/apt/sources.list.d/goreleaser.list
+            apt-get -qq update
+            apt-get install -qq goreleaser
+            goreleaser -v
+            goreleaser release --config .goreleaser/deb_amd64.yml --clean --snapshot --skip=publish
+          image: ubuntu:latest
+          platform: linux/amd64
+          args: '--env LIBPCAP_VERSION --env GO_VERSION'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GO_VERSION: 1.22.1
+          LIBPCAP_VERSION: 1.10.4
 
-  release-darwin:
-    name: Release for macOS
-    runs-on: macos-latest
+      - name: Check dist/
+        run: ls dist/
+
+      - name: Install test
+        uses: k1LoW/run-on-container@main
+        with:
+          run: |
+            apt-get -qq update
+            apt-get install -qq libpcap0.8
+            dpkg -i dist/tcpdp*.deb
+            tcpdp version
+          image: ubuntu:latest
+          platform: linux/amd64
+
+      - name: Upload dist/
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-deb-amd64
+          path: |
+            dist/*.deb
+            dist/*.tar.gz
+            dist/checksums*
+
+  ubuntu-arm64:
+    name: Build packages on Ubuntu arm64
+    runs-on: ubuntu-latest
     steps:
       - name: Check out source code
-        uses: actions/checkout@v3
-
-      - name: Set up Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.18
+        uses: actions/checkout@v4
 
       - name: Build
-        run: |
-          make build_darwin
+        uses: k1LoW/run-on-container@main
+        with:
+          run: |
+            uname -a
 
-      - name: Upload assets
-        run: |
-          make release
+            apt-get -qq update
+            apt-get install -qq gcc g++ make debhelper dh-make clang git curl devscripts fakeroot byacc bison flex libpcap-dev
+            export LIBPCAP_FILE=libpcap-$LIBPCAP_VERSION.tar.gz
+            export LIBPCAP_URL=https://www.tcpdump.org/release/$LIBPCAP_FILE
+            export GO_FILE=go$GO_VERSION.linux-amd64.tar.gz
+            export GO_URL=https://storage.googleapis.com/golang/$GO_FILE
+            export GOPATH=/go
+            export PATH=$GOPATH/bin:/usr/local/go/bin:$PATH
+            curl -OL $GO_URL
+            tar -C /usr/local -xzf $GO_FILE
+            rm $GO_FILE
+            curl -OL $LIBPCAP_URL
+            tar -C /usr/local/src -xzf $LIBPCAP_FILE
+            rm $LIBPCAP_FILE
+
+            mkdir -p $GOPATH/src $GOPATH/bin
+            chmod -R 777 $GOPATH
+            go version
+
+            echo 'deb [trusted=yes] https://repo.goreleaser.com/apt/ /' | tee /etc/apt/sources.list.d/goreleaser.list
+            apt-get -qq update
+            apt-get install -qq goreleaser
+            goreleaser -v
+            goreleaser release --config .goreleaser/deb_arm64.yml --clean --snapshot --skip=publish
+          image: ubuntu:latest
+          platform: linux/arm64
+          args: '--env LIBPCAP_VERSION --env GO_VERSION'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GO_VERSION: 1.22.1
+          LIBPCAP_VERSION: 1.10.4
 
+      - name: Check dist/
+        run: ls dist/
+
+      - name: Install test
+        uses: k1LoW/run-on-container@main
+        with:
+          run: |
+            apt-get -qq update
+            apt-get install -qq libpcap0.8
+            dpkg -i dist/tcpdp*.deb
+            tcpdp version
+          image: ubuntu:latest
+          platform: linux/arm64
+
+      - name: Upload dist/
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-deb-arm64
+          path: |
+            dist/*.deb
+            dist/*.tar.gz
+            dist/checksums*
+          
+  centos-amd64:
+    name: Build packages on CentOS amd64
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v4
+
+      - name: Build
+        uses: k1LoW/run-on-container@main
+        with:
+          run: |
+            uname -a
+
+            yum install -y epel-release make clang glibc glibc-static gcc byacc flex git libpcap-devel
+            export LIBPCAP_FILE=libpcap-$LIBPCAP_VERSION.tar.gz
+            export LIBPCAP_URL=https://www.tcpdump.org/release/$LIBPCAP_FILE
+            export GO_FILE=go$GO_VERSION.linux-amd64.tar.gz
+            export GO_URL=https://storage.googleapis.com/golang/$GO_FILE
+            export GOPATH=/go
+            export PATH=$GOPATH/bin:/usr/local/go/bin:$PATH
+            curl -OL $GO_URL
+            tar -C /usr/local -xzf $GO_FILE
+            rm $GO_FILE
+            curl -OL $LIBPCAP_URL
+            tar -C /usr/local/src -xzf $LIBPCAP_FILE
+            rm $LIBPCAP_FILE
+
+            mkdir -p $GOPATH/src $GOPATH/bin
+            chmod -R 777 $GOPATH
+            go version
+
+            echo '[goreleaser]
+            name=GoReleaser
+            baseurl=https://repo.goreleaser.com/yum/
+            enabled=1
+            gpgcheck=0' | tee /etc/yum.repos.d/goreleaser.repo
+            yum install -y goreleaser
+            goreleaser -v
+            goreleaser release --config .goreleaser/rpm_amd64.yml --clean --snapshot --skip=publish
+          image: centos:7
+          platform: linux/amd64
+          args: '--env LIBPCAP_VERSION --env GO_VERSION'
+        env:
+          GO_VERSION: 1.22.1
+          LIBPCAP_VERSION: 1.10.4
+
+      - name: Check dist/
+        run: ls dist/
+
+      - name: Install test
+        uses: k1LoW/run-on-container@main
+        with:
+          run: |
+            yum install -y dist/tcpdp*.rpm
+            tcpdp version
+          image: centos:7
+          platform: linux/amd64
+
+      - name: Upload dist/
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-rpm-amd64
+          path: |
+            dist/*.rpm
+            dist/*.tar.gz
+            dist/checksums*
+          
+  centos-arm64:
+    name: Build packages on CentOS arm64
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v4
+
+      - name: Build
+        uses: k1LoW/run-on-container@main
+        with:
+          run: |
+            uname -a
+
+            yum install -y epel-release make clang glibc glibc-static gcc byacc flex git libpcap-devel
+            export LIBPCAP_FILE=libpcap-$LIBPCAP_VERSION.tar.gz
+            export LIBPCAP_URL=https://www.tcpdump.org/release/$LIBPCAP_FILE
+            export GO_FILE=go$GO_VERSION.linux-arm64.tar.gz
+            export GO_URL=https://storage.googleapis.com/golang/$GO_FILE
+            export GOPATH=/go
+            export PATH=$GOPATH/bin:/usr/local/go/bin:$PATH
+            curl -OL $GO_URL
+            tar -C /usr/local -xzf $GO_FILE
+            rm $GO_FILE
+            curl -OL $LIBPCAP_URL
+            tar -C /usr/local/src -xzf $LIBPCAP_FILE
+            rm $LIBPCAP_FILE
+
+            mkdir -p $GOPATH/src $GOPATH/bin
+            chmod -R 777 $GOPATH
+            go version
+
+            echo '[goreleaser]
+            name=GoReleaser
+            baseurl=https://repo.goreleaser.com/yum/
+            enabled=1
+            gpgcheck=0' | tee /etc/yum.repos.d/goreleaser.repo
+            yum install -y goreleaser
+            goreleaser -v
+            goreleaser release --config .goreleaser/rpm_arm64.yml --clean --snapshot --skip=publish
+          image: centos:7
+          platform: linux/arm64
+          args: '--env LIBPCAP_VERSION --env GO_VERSION'
+        env:
+          GO_VERSION: 1.22.1
+          LIBPCAP_VERSION: 1.10.4
+
+      - name: Check dist/
+        run: ls dist/
+
+      - name: Install test
+        uses: k1LoW/run-on-container@main
+        with:
+          run: |
+            yum install -y dist/tcpdp*.rpm
+            tcpdp version
+          image: centos:7
+          platform: linux/arm64
+          
+      - name: Upload dist/
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-rpm-rpm64
+          path: |
+            dist/*.rpm
+            dist/*.tar.gz
+            dist/checksums*
+  merge:
+    runs-on: ubuntu-latest
+    needs:
+      - ubuntu-amd64
+      - ubuntu-arm64
+      - centos-amd64
+      - centos-arm64
+    steps:
+      - name: Merge Artifacts
+        uses: actions/upload-artifact/merge@v4
+        with:
+          name: merged-artifacts
+          pattern: dist-*
+          delete-merged: true          
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: merged-artifacts
+          path: dist/
+      - name: Check dist/
+        run: ls dist/
