@@ -279,9 +279,9 @@ jobs:
             rm -f ${GIT_VER}.tar.gz
             cd git-*
             scl enable devtoolset-10 'make configure && ./configure --prefix=/usr && make && make install'
-            git config --global --add safe.directory $WORKSPACE
-
             cd $WORKSPACE
+            rm -rf git-*
+            git config --global --add safe.directory $WORKSPACE
 
             export LIBPCAP_FILE=libpcap-$LIBPCAP_VERSION.tar.gz
             export LIBPCAP_URL=https://www.tcpdump.org/release/$LIBPCAP_FILE
