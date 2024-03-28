@@ -16,7 +16,6 @@ export GO111MODULE=on
 BUILD_LDFLAGS = -X $(PKG).commit=$(COMMIT)
 RELEASE_BUILD_LDFLAGS = -s -w $(BUILD_LDFLAGS)
 
-BINDIR=/usr/local/bin
 SOURCES=Makefile CHANGELOG.md README.md LICENSE go.mod go.sum dumper logger reader server cmd version main.go
 
 export POSTGRES_PORT=54322
@@ -48,9 +47,6 @@ test_with_integration: build
 
 build:
 	go build -ldflags="$(BUILD_LDFLAGS)"
-
-install:
-	cp tcpdp $(BINDIR)/tcpdp
 
 build_darwin: depsdev
 	$(eval ver = v$(shell gobump show -r version/))
