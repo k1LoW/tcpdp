@@ -192,8 +192,8 @@ jobs:
 
             yum install -y epel-release make clang glibc glibc-static gcc byacc flex libpcap-devel
             yum remove git*
-            yum -y install https://packages.endpointdev.com/rhel/7/os/x86_64/endpoint-repo.x86_64.rpm
-            yum install git
+            yum install -y https://packages.endpointdev.com/rhel/7/os/x86_64/endpoint-repo.x86_64.rpm
+            yum install -y git
 
             git config --global --add safe.directory $WORKSPACE
 
@@ -269,8 +269,8 @@ jobs:
 
             yum install -y epel-release make clang glibc glibc-static gcc byacc flex libpcap-devel
             yum remove git*
-            yum -y install https://packages.endpointdev.com/rhel/7/os/x86_64/endpoint-repo.x86_64.rpm
-            yum install git
+            yum install -y https://packages.endpointdev.com/rhel/7/os/x86_64/endpoint-repo.x86_64.rpm
+            yum install -y git
             git config --global --add safe.directory $WORKSPACE
 
             export LIBPCAP_FILE=libpcap-$LIBPCAP_VERSION.tar.gz
