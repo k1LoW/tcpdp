@@ -27,11 +27,8 @@ export MYSQL_PORT=33066
 export MYSQL_DATABASE=testdb
 export MYSQL_ROOT_PASSWORD=mypass
 
-DISTS=centos6 centos7 ubuntu16
-
 default: build
 ci: depsdev test_race test_with_integration sec
-ci_go1.15: depsdev_go1.15 test_race test_with_integration sec
 
 test:
 	go test -v $(shell go list ./... | grep -v misc) -coverprofile=coverage.out -covermode=count
@@ -48,70 +45,6 @@ test_with_integration: build
 build:
 	go build -ldflags="$(BUILD_LDFLAGS)"
 
-build_darwin: depsdev
-	$(eval ver = v$(shell gobump show -r version/))
-	$(eval pkg = tcpdp_v$(shell gobump show -r version/)_darwin_amd64)
-	go build -ldflags="$(RELEASE_BUILD_LDFLAGS) -X $(PKG).version=$(ver)"
-	[ -d ./dist/$(ver) ] || mkdir -p ./dist/$(ver)
-	mkdir $(pkg)
-	mv tcpdp ./$(pkg)/tcpdp
-	cp CHANGELOG.md README.md LICENSE ./$(pkg)
-	tar -zcvf ./dist/$(ver)/$(pkg).tar.gz --exclude='*/.*' ./$(pkg)
-	rm -rf ./$(pkg)
-
-build_in_docker:
-	$(eval ver = v$(shell gobump show -r version/))
-	$(eval pkg = tcpdp_v$(shell gobump show -r version/)_linux_amd64.$(DIST))
-	go build -ldflags="$(RELEASE_BUILD_LDFLAGS) -X $(PKG).version=$(ver)"
-	[ -d ./dist/$(ver) ] || mkdir -p ./dist/$(ver)
-	mkdir $(pkg)
-	mv tcpdp ./$(pkg)/tcpdp
-	cp CHANGELOG.md README.md LICENSE ./$(pkg)
-	tar -zcvf ./dist/$(ver)/$(pkg).tar.gz ./$(pkg)
-	rm -rf ./$(pkg)
-
-build_static_in_docker:
-	$(eval ver = v$(shell gobump show -r version/))
-	$(eval pkg = tcpdp_v$(shell gobump show -r version/)_linux_amd64_static.$(DIST))
-	cd /usr/local/src/libpcap-$(LIBPCAP_VERSION) && ./configure && make && make install
-	go build -a -tags netgo -installsuffix netgo -ldflags="$(RELEASE_BUILD_LDFLAGS) -X $(PKG).version=$(ver) -X $(PKG).libpcap=$(LIBPCAP_VERSION) -linkmode external -extldflags -static"
-	[ -d ./dist/$(ver) ] || mkdir -p ./dist/$(ver)
-	mkdir $(pkg)
-	mv tcpdp ./$(pkg)/tcpdp
-	cp CHANGELOG.md README.md LICENSE ./$(pkg)
-	tar -zcvf ./dist/$(ver)/$(pkg).tar.gz ./$(pkg)
-	rm -rf ./$(pkg)
-
-build_rpm:
-	$(eval ver = v$(shell gobump show -r version/))
-	$(eval no_v_ver = $(shell gobump show -r version/))
-	$(eval pkg = tcpdp-$(shell gobump show -r version/))
-	go build -ldflags="$(RELEASE_BUILD_LDFLAGS) -X $(PKG).version=$(ver)"
-	cat ./template/tcpdp.spec.template | VERSION=$(no_v_ver) gomplate > tcpdp.spec
-	rm -rf /root/rpmbuild/
-	rpmdev-setuptree
-	yum-builddep tcpdp.spec
-	mkdir $(pkg)
-	cp -r $(SOURCES) $(pkg)
-	tar -zcvf $(pkg).tar.gz ./$(pkg)
-	rm -rf $(pkg)
-	mv $(pkg).tar.gz /root/rpmbuild/SOURCES
-	spectool -g -R tcpdp.spec
-	rpmbuild -ba tcpdp.spec
-	mv /root/rpmbuild/RPMS/*/*.rpm /go/src/github.com/k1LoW/tcpdp/dist/$(ver)
-	rm tcpdp tcpdp.spec
-
-build_deb:
-	$(eval ver = v$(shell gobump show -r version/))
-	$(eval no_v_ver = $(shell gobump show -r version/))
-	$(eval workdir = deb)
-	go build -ldflags="$(RELEASE_BUILD_LDFLAGS) -X $(PKG).version=$(ver)"
-	mkdir -p $(workdir)/DEBIAN $(workdir)/usr/bin
-	cat ./template/control.template | VERSION=$(no_v_ver) gomplate > $(workdir)/DEBIAN/control
-	mv tcpdp $(workdir)/usr/bin
-	fakeroot dpkg-deb --build $(workdir) /go/src/github.com/k1LoW/tcpdp/dist/$(ver)
-	rm -rf $(workdir)
-
 depsdev:
 	go install github.com/Songmu/ghch/cmd/ghch@latest
 	go install github.com/Songmu/gocredits/cmd/gocredits@latest
@@ -120,25 +53,9 @@ depsdev:
 	go install github.com/hairyhenderson/gomplate/v3/cmd/gomplate@v3.9.0
 	go install github.com/x-motemen/gobump/cmd/gobump@master
 
-depsdev_go1.15:
-	go get github.com/securego/gosec/v2/cmd/gosec@v2.8.1
-	go get github.com/hairyhenderson/gomplate/v3/cmd/gomplate@v3.9.0
-	go get github.com/x-motemen/gobump/cmd/gobump@latest
-
-build_all: build_darwin build_linux
-
-build_linux: depsdev
-	@for d in $(DISTS); do\
-		docker-compose up $$d;\
-	done
-
 prerelease_for_tagpr:
 	gocredits -w .
 	git add CHANGELOG.md CREDITS go.mod go.sum
-
-docker:
-	docker build -t tcpdp_develop -f dockerfiles/Dockerfile.golang .
-	docker run --cap-add=SYS_PTRACE --security-opt="seccomp=unconfined" -v $(GOPATH):/go/ -v $(GOPATH)/pkg/mod/cache:/go/pkg/mod/cache -w /go/src/github.com/k1LoW/tcpdp -it tcpdp_develop /bin/bash
 
 release:
 	ghr -username k1LoW -replace ${ver} dist/
