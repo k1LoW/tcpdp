@@ -269,9 +269,19 @@ jobs:
 
             yum install -y epel-release make clang glibc glibc-static gcc byacc flex libpcap-devel
             yum remove git*
-            yum install -y https://packages.endpointdev.com/rhel/7/os/x86_64/endpoint-repo.x86_64.rpm
-            yum install -y git
+            yum -y install epel-release centos-release-scl
+            yum -y groupinstall "Development Tools"
+            yum -y install wget perl-CPAN gettext-devel perl-devel openssl-devel zlib-devel curl curl-devel expat-devel getopt asciidoc xmlto docbook2X devtoolset-10
+            ln -s /usr/bin/db2x_docbook2texi /usr/bin/docbook2x-texi
+            export GIT_VER="v2.44.0"
+            wget https://github.com/git/git/archive/${GIT_VER}.tar.gz
+            tar -xvf ${GIT_VER}.tar.gz
+            rm -f ${GIT_VER}.tar.gz
+            cd git-*
+            scl enable devtoolset-10 'make configure && ./configure --prefix=/usr && make && make install'
             git config --global --add safe.directory $WORKSPACE
+
+            cd $WORKSPACE
 
             export LIBPCAP_FILE=libpcap-$LIBPCAP_VERSION.tar.gz
             export LIBPCAP_URL=https://www.tcpdump.org/release/$LIBPCAP_FILE
