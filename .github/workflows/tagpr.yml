@@ -1,10 +1,33 @@
 name: release
-
 on:
-  pull_request:
+  push:
+    branches:
+      - main
 
 jobs:
+  tagpr:
+    runs-on: ubuntu-latest
+    outputs:
+      tagpr-tag: ${{ steps.run-tagpr.outputs.tag }}
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - id: run-tagpr
+        name: Run tagpr
+        uses: Songmu/tagpr@v1
+  
   ubuntu-amd64:
+    needs: tagpr
+    if: needs.tagpr.outputs.tagpr-tag != ''
     name: Build packages on Ubuntu amd64
     runs-on: ubuntu-latest
     steps:
@@ -72,6 +95,8 @@ jobs:
             dist/checksums*
 
   ubuntu-arm64:
+    needs: tagpr
+    if: needs.tagpr.outputs.tagpr-tag != ''
     name: Build packages on Ubuntu arm64
     runs-on: ubuntu-latest
     steps:
@@ -139,6 +164,8 @@ jobs:
             dist/checksums*
           
   centos-amd64:
+    needs: tagpr
+    if: needs.tagpr.outputs.tagpr-tag != ''
     name: Build packages on CentOS amd64
     runs-on: ubuntu-latest
     steps:
@@ -206,6 +233,8 @@ jobs:
             dist/checksums*
           
   centos-arm64:
+    needs: tagpr
+    if: needs.tagpr.outputs.tagpr-tag != ''
     name: Build packages on CentOS arm64
     runs-on: ubuntu-latest
     steps:
@@ -271,9 +300,10 @@ jobs:
             dist/*.rpm
             dist/*.tar.gz
             dist/checksums*
-  merge:
+  release:
     runs-on: ubuntu-latest
     needs:
+      - tagpr
       - ubuntu-amd64
       - ubuntu-arm64
       - centos-amd64
@@ -292,3 +322,14 @@ jobs:
           path: dist/
       - name: Check dist/
         run: ls dist/
+      - name: Setup ghr
+        uses: k1LoW/gh-setup@v1
+        with:
+          repo: tcnksm/ghr
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          bin-match: ghr
+          force: true        
+      - name: Release
+        run: |
+          ghr -t ${{ secrets.GITHUB_TOKEN }} -replace ${{ needs.tagpr.outputs.tagpr-tag }} dist/
+        
