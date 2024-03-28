@@ -26,7 +26,7 @@ jobs:
       - name: Run tagpr
         id: run-tagpr
         uses: Songmu/tagpr@v1
-  
+
   ubuntu-amd64:
     needs: tagpr
     if: needs.tagpr.outputs.tagpr-tag != ''
@@ -35,6 +35,8 @@ jobs:
     steps:
       - name: Check out source code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Build
         uses: k1LoW/run-on-container@main
@@ -104,6 +106,8 @@ jobs:
     steps:
       - name: Check out source code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Build
         uses: k1LoW/run-on-container@main
@@ -164,7 +168,7 @@ jobs:
             dist/*.deb
             dist/*.tar.gz
             dist/checksums*
-          
+
   centos-amd64:
     needs: tagpr
     if: needs.tagpr.outputs.tagpr-tag != ''
@@ -173,6 +177,8 @@ jobs:
     steps:
       - name: Check out source code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Build
         uses: k1LoW/run-on-container@main
@@ -233,7 +239,7 @@ jobs:
             dist/*.rpm
             dist/*.tar.gz
             dist/checksums*
-          
+
   centos-arm64:
     needs: tagpr
     if: needs.tagpr.outputs.tagpr-tag != ''
@@ -242,6 +248,8 @@ jobs:
     steps:
       - name: Check out source code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Build
         uses: k1LoW/run-on-container@main
@@ -293,7 +301,7 @@ jobs:
             tcpdp version
           image: centos:7
           platform: linux/arm64
-          
+
       - name: Upload dist/
         uses: actions/upload-artifact@v4
         with:
@@ -316,7 +324,7 @@ jobs:
         with:
           name: merged-artifacts
           pattern: dist-*
-          delete-merged: true          
+          delete-merged: true
       - name: Download Artifacts
         uses: actions/download-artifact@v4
         with:
@@ -330,8 +338,7 @@ jobs:
           repo: tcnksm/ghr
           github-token: ${{ secrets.GITHUB_TOKEN }}
           bin-match: ghr
-          force: true        
+          force: true
       - name: Release
         run: |
           ghr -u k1LoW -r tcpdp -t ${{ secrets.GITHUB_TOKEN }} -replace ${{ needs.tagpr.outputs.tagpr-tag }} dist/
-        
