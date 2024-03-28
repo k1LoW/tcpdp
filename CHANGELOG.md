@@ -1,5 +1,7 @@
 # Changelog
 
+## [v0.23.7](https://github.com/k1LoW/tcpdp/compare/v0.23.6...v0.23.7) - 2024-03-28
+
 ## [v0.23.6](https://github.com/k1LoW/tcpdp/compare/v0.23.5...v0.23.6) - 2024-03-28
 
 ## [v0.23.5](https://github.com/k1LoW/tcpdp/compare/v0.23.4...v0.23.5) - 2024-03-28
