@@ -39,7 +39,7 @@ jobs:
           fetch-depth: 0
 
       - name: Build
-        uses: k1LoW/run-on-container@main
+        uses: k1LoW/run-on-container@v1
         with:
           run: |
             uname -a
@@ -81,7 +81,7 @@ jobs:
         run: ls dist/
 
       - name: Install test
-        uses: k1LoW/run-on-container@main
+        uses: k1LoW/run-on-container@v1
         with:
           run: |
             apt-get -qq update
@@ -112,7 +112,7 @@ jobs:
           fetch-depth: 0
 
       - name: Build
-        uses: k1LoW/run-on-container@main
+        uses: k1LoW/run-on-container@v1
         with:
           run: |
             uname -a
@@ -154,7 +154,7 @@ jobs:
         run: ls dist/
 
       - name: Install test
-        uses: k1LoW/run-on-container@main
+        uses: k1LoW/run-on-container@v1
         with:
           run: |
             apt-get -qq update
@@ -185,7 +185,7 @@ jobs:
           fetch-depth: 0
 
       - name: Build
-        uses: k1LoW/run-on-container@main
+        uses: k1LoW/run-on-container@v1
         with:
           run: |
             uname -a
@@ -233,7 +233,7 @@ jobs:
         run: ls dist/
 
       - name: Install test
-        uses: k1LoW/run-on-container@main
+        uses: k1LoW/run-on-container@v1
         with:
           run: |
             yum install -y dist/tcpdp*.rpm
@@ -262,7 +262,7 @@ jobs:
           fetch-depth: 0
 
       - name: Build
-        uses: k1LoW/run-on-container@main
+        uses: k1LoW/run-on-container@v1
         with:
           run: |
             uname -a
@@ -319,7 +319,7 @@ jobs:
         run: ls dist/
 
       - name: Install test
-        uses: k1LoW/run-on-container@main
+        uses: k1LoW/run-on-container@v1
         with:
           run: |
             yum install -y dist/tcpdp*.rpm
