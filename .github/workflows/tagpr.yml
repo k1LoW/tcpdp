@@ -333,5 +333,5 @@ jobs:
           force: true        
       - name: Release
         run: |
-          ghr -t ${{ secrets.GITHUB_TOKEN }} -replace ${{ needs.tagpr.outputs.tagpr-tag }} dist/
+          ghr -u k1LoW -t ${{ secrets.GITHUB_TOKEN }} -replace ${{ needs.tagpr.outputs.tagpr-tag }} dist/
         
