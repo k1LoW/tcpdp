@@ -10,17 +10,14 @@ jobs:
   job-test:
     name: Test
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        go_version: [1.15, 1.22]
     steps:
       - name: Check out source code
         uses: actions/checkout@v4
 
-      - name: Set up Go ${{ matrix.go_version }}
+      - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: ${{ matrix.go_version }}
+          go-version-file: go.mod
 
       - name: Setup packages
         run: |
@@ -41,12 +38,7 @@ jobs:
           while ! nc -w 1 127.0.0.1 33071 > /dev/null 2>&1; do sleep 1; echo 'sleeping'; done;
 
       - name: Test
-        if: ${{ matrix.go_version != '1.15' }}
         run: make ci
-
-      - name: Test
-        if: ${{ matrix.go_version == '1.15' }}
-        run: make ci_go1.15
 
       - name: Run octocov
         uses: k1LoW/octocov-action@v0
