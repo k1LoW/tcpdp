@@ -65,7 +65,7 @@ jobs:
             apt-get -qq update
             apt-get install -qq goreleaser
             goreleaser -v
-            goreleaser release --config .goreleaser/deb_amd64.yml --clean --snapshot --skip=publish
+            goreleaser release --config .goreleaser/deb_amd64.yml --clean --skip=publish
           image: ubuntu:latest
           platform: linux/amd64
           args: '--env LIBPCAP_VERSION --env GO_VERSION'
@@ -134,7 +134,7 @@ jobs:
             apt-get -qq update
             apt-get install -qq goreleaser
             goreleaser -v
-            goreleaser release --config .goreleaser/deb_arm64.yml --clean --snapshot --skip=publish
+            goreleaser release --config .goreleaser/deb_arm64.yml --clean --skip=publish
           image: ubuntu:latest
           platform: linux/arm64
           args: '--env LIBPCAP_VERSION --env GO_VERSION'
@@ -205,7 +205,7 @@ jobs:
             gpgcheck=0' | tee /etc/yum.repos.d/goreleaser.repo
             yum install -y goreleaser
             goreleaser -v
-            goreleaser release --config .goreleaser/rpm_amd64.yml --clean --snapshot --skip=publish
+            goreleaser release --config .goreleaser/rpm_amd64.yml --clean --skip=publish
           image: centos:7
           platform: linux/amd64
           args: '--env LIBPCAP_VERSION --env GO_VERSION'
@@ -274,7 +274,7 @@ jobs:
             gpgcheck=0' | tee /etc/yum.repos.d/goreleaser.repo
             yum install -y goreleaser
             goreleaser -v
-            goreleaser release --config .goreleaser/rpm_arm64.yml --clean --snapshot --skip=publish
+            goreleaser release --config .goreleaser/rpm_arm64.yml --clean --skip=publish
           image: centos:7
           platform: linux/arm64
           args: '--env LIBPCAP_VERSION --env GO_VERSION'
