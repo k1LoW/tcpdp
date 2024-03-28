@@ -46,6 +46,8 @@ jobs:
 
             apt-get -qq update
             apt-get install -qq gcc g++ make debhelper dh-make clang git curl devscripts fakeroot byacc bison flex libpcap-dev
+            git config --global --add safe.directory $WORKSPACE
+
             export LIBPCAP_FILE=libpcap-$LIBPCAP_VERSION.tar.gz
             export LIBPCAP_URL=https://www.tcpdump.org/release/$LIBPCAP_FILE
             export GO_FILE=go$GO_VERSION.linux-amd64.tar.gz
@@ -117,6 +119,8 @@ jobs:
 
             apt-get -qq update
             apt-get install -qq gcc g++ make debhelper dh-make clang git curl devscripts fakeroot byacc bison flex libpcap-dev
+            git config --global --add safe.directory $WORKSPACE
+
             export LIBPCAP_FILE=libpcap-$LIBPCAP_VERSION.tar.gz
             export LIBPCAP_URL=https://www.tcpdump.org/release/$LIBPCAP_FILE
             export GO_FILE=go$GO_VERSION.linux-amd64.tar.gz
@@ -187,6 +191,8 @@ jobs:
             uname -a
 
             yum install -y epel-release make clang glibc glibc-static gcc byacc flex git libpcap-devel
+            git config --global --add safe.directory $WORKSPACE
+
             export LIBPCAP_FILE=libpcap-$LIBPCAP_VERSION.tar.gz
             export LIBPCAP_URL=https://www.tcpdump.org/release/$LIBPCAP_FILE
             export GO_FILE=go$GO_VERSION.linux-amd64.tar.gz
@@ -258,6 +264,8 @@ jobs:
             uname -a
 
             yum install -y epel-release make clang glibc glibc-static gcc byacc flex git libpcap-devel
+            git config --global --add safe.directory $WORKSPACE
+
             export LIBPCAP_FILE=libpcap-$LIBPCAP_VERSION.tar.gz
             export LIBPCAP_URL=https://www.tcpdump.org/release/$LIBPCAP_FILE
             export GO_FILE=go$GO_VERSION.linux-arm64.tar.gz
