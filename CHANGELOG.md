@@ -1,5 +1,16 @@
 # Changelog
 
+## [v0.23.0](https://github.com/k1LoW/tcpdp/compare/v0.22.2...v0.23.0) - 2024-03-28
+### Breaking Changes 🛠
+- Update go version by @k1LoW in https://github.com/k1LoW/tcpdp/pull/106
+### Other Changes
+- Bump golang.org/x/text from 0.3.7 to 0.3.8 by @dependabot in https://github.com/k1LoW/tcpdp/pull/102
+- Bump gopkg.in/yaml.v3 from 3.0.0-20210107192922-496545a6307b to 3.0.0 by @dependabot in https://github.com/k1LoW/tcpdp/pull/103
+- Add Go 1.22 by @k1LoW in https://github.com/k1LoW/tcpdp/pull/104
+- Fix build pipeline by @k1LoW in https://github.com/k1LoW/tcpdp/pull/105
+- Setup tagpr by @k1LoW in https://github.com/k1LoW/tcpdp/pull/107
+- Cleanup unnecessary code/files by @k1LoW in https://github.com/k1LoW/tcpdp/pull/109
+
 ## [v0.22.2](https://github.com/k1LoW/tcpdp/compare/v0.22.1...v0.22.2) (2022-09-08)
 
 * Fix build and release pipeline [#100](https://github.com/k1LoW/tcpdp/pull/100) ([k1LoW](https://github.com/k1LoW))
