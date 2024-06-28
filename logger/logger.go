@@ -232,9 +232,9 @@ func (r *RotateHandler) Handle(e rotatelogs.Event) {
 		// #nosec
 		out, err := exec.Command(r.command, fre.PreviousFile(), fre.CurrentFile()).CombinedOutput()
 		if err != nil {
-			log.Printf("Log lotate event error %v\n", err)
+			log.Printf("Log rotate event error %v\n", err)
 		} else {
-			log.Printf("Log lotate event success %v\n", out)
+			log.Printf("Log rotate event success %v\n", out)
 		}
 	}
 }
