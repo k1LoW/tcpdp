@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.23.10](https://github.com/k1LoW/tcpdp/compare/v0.23.9...v0.23.10) - 2024-06-28
+### Other Changes
+- fix typo in logger/logger.go by @Drumato in https://github.com/k1LoW/tcpdp/pull/119
+
 ## [v0.23.9](https://github.com/k1LoW/tcpdp/compare/v0.23.8...v0.23.9) - 2024-03-28
 
 ## [v0.23.8](https://github.com/k1LoW/tcpdp/compare/v0.23.7...v0.23.8) - 2024-03-28
