@@ -1,5 +1,13 @@
 # Changelog
 
+## [v0.23.10](https://github.com/k1LoW/tcpdp/compare/v0.23.9...v0.23.10) - 2026-11-18
+
+### Other Changes
+- fix typo in logger/logger.go by @Drumato in https://github.com/k1LoW/tcpdp/pull/119
+- Bump gopkg.in/yaml.v3 from 3.0.0 to 3.0.1 by @dependabot[bot] in https://github.com/k1LoW/tcpdp/pull/121
+- fix: resolve integer overflow conversions reported by gosec G115 by @k1LoW in https://github.com/k1LoW/tcpdp/pull/124
+- ci: fix build and tagpr workflows on the current runner image by @k1LoW in https://github.com/k1LoW/tcpdp/pull/123
+
 ## [v0.23.9](https://github.com/k1LoW/tcpdp/compare/v0.23.8...v0.23.9) - 2024-03-28
 
 ## [v0.23.8](https://github.com/k1LoW/tcpdp/compare/v0.23.7...v0.23.8) - 2024-03-28
