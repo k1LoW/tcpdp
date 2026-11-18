@@ -1,3 +1,4 @@
+version: 2
 before:
   hooks:
     - go mod download
@@ -26,7 +27,7 @@ archives:
 -
   id: tcpdp-archive-static
   name_template: '{{ .ProjectName }}_v{{ .Version }}_{{ .Os }}_static_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
-  builds:
+  ids:
     - tcpdp-linux-static
   files:
     - LICENSE
@@ -36,9 +37,9 @@ archives:
 checksum:
   name_template: 'checksums-deb_arm64_static.txt'
 snapshot:
-  name_template: "{{ .Version }}-next"
+  version_template: "{{ .Version }}-next"
 changelog:
-  skip: true
+  disable: true
   sort: asc
   filters:
     exclude:
@@ -48,7 +49,7 @@ nfpms:
   -
     id: tcpdp-nfpms-static
     file_name_template: "{{ .ProjectName }}_{{ .Version }}-1_{{ .Arch }}_static"
-    builds:
+    ids:
     - tcpdp-linux-static
     homepage: https://github.com/k1LoW/tcpdp
     maintainer: Ken'ichiro Oyama <k1lowxb@gmail.com>
