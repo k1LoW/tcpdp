@@ -929,3 +929,31 @@ func newMysqlReadTests() []mysqlReadTest {
 
 	return mysqlReadTests
 }
+
+func TestBytesToInt(t *testing.T) {
+	tests := [][]byte{
+		{},
+		{0x00},
+		{0xff},
+		{0x34, 0x12},
+		{0xff, 0xff, 0xff},
+		{0x78, 0x56, 0x34, 0x12},
+		{0xff, 0xff, 0xff, 0x7f},
+	}
+	for _, in := range tests {
+		got := bytesToInt(in)
+		want := int(bytesToUint64(in))
+		if got != want {
+			t.Errorf("bytesToInt(%v) got %d want %d", in, got, want)
+		}
+	}
+}
+
+func TestReadBinaryProtocolValueWithOversizedLength(t *testing.T) {
+	// 0xfe announces an 8 byte length, here 2^64-1, followed by only 3 bytes of data.
+	in := []byte{0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 'a', 'b', 'c'}
+	got := readBinaryProtocolValue(bytes.NewBuffer(in), typeVarString, charSetUtf8)
+	if want := "abc"; got != want {
+		t.Errorf("got %v want %v", got, want)
+	}
+}
