@@ -51,7 +51,7 @@ jobs:
             export LIBPCAP_FILE=libpcap-$LIBPCAP_VERSION.tar.gz
             export LIBPCAP_URL=https://www.tcpdump.org/release/$LIBPCAP_FILE
             export GO_FILE=go$GO_VERSION.linux-amd64.tar.gz
-            export GO_URL=https://storage.googleapis.com/golang/$GO_FILE
+            export GO_URL=https://go.dev/dl/$GO_FILE
             export GOPATH=/go
             export PATH=$GOPATH/bin:/usr/local/go/bin:$PATH
             curl -OL $GO_URL
@@ -67,7 +67,9 @@ jobs:
 
             echo 'deb [trusted=yes] https://repo.goreleaser.com/apt/ /' | tee /etc/apt/sources.list.d/goreleaser.list
             apt-get -qq update
-            apt-get install -qq goreleaser
+            # Pin to the last v1 release because v2 rejects the v1 style configs in .goreleaser/,
+            # and rebuilding an already tagged version always reads the configs of that tag.
+            apt-get install -qq goreleaser=1.26.2
             goreleaser -v
             goreleaser release --config .goreleaser/deb_amd64.yml --clean --skip=publish
           image: ubuntu:latest
@@ -124,7 +126,7 @@ jobs:
             export LIBPCAP_FILE=libpcap-$LIBPCAP_VERSION.tar.gz
             export LIBPCAP_URL=https://www.tcpdump.org/release/$LIBPCAP_FILE
             export GO_FILE=go$GO_VERSION.linux-amd64.tar.gz
-            export GO_URL=https://storage.googleapis.com/golang/$GO_FILE
+            export GO_URL=https://go.dev/dl/$GO_FILE
             export GOPATH=/go
             export PATH=$GOPATH/bin:/usr/local/go/bin:$PATH
             curl -OL $GO_URL
@@ -140,7 +142,9 @@ jobs:
 
             echo 'deb [trusted=yes] https://repo.goreleaser.com/apt/ /' | tee /etc/apt/sources.list.d/goreleaser.list
             apt-get -qq update
-            apt-get install -qq goreleaser
+            # Pin to the last v1 release because v2 rejects the v1 style configs in .goreleaser/,
+            # and rebuilding an already tagged version always reads the configs of that tag.
+            apt-get install -qq goreleaser=1.26.2
             goreleaser -v
             goreleaser release --config .goreleaser/deb_arm64.yml --clean --skip=publish
           image: ubuntu:latest
@@ -190,6 +194,8 @@ jobs:
           run: |
             uname -a
 
+            # CentOS 7 is EOL and mirrorlist.centos.org is gone, so use the frozen vault.centos.org instead.
+            sed -i -e 's/^mirrorlist=/#mirrorlist=/' -e 's/^#[[:space:]]*baseurl=/baseurl=/' -e 's#http://mirror.centos.org/centos/\(\$releasever\|7\)/#https://vault.centos.org/centos/7.9.2009/#' /etc/yum.repos.d/CentOS-*.repo
             yum install -y epel-release make clang glibc glibc-static gcc byacc flex libpcap-devel
             yum remove git*
             yum install -y https://packages.endpointdev.com/rhel/7/os/x86_64/endpoint-repo.x86_64.rpm
@@ -200,7 +206,7 @@ jobs:
             export LIBPCAP_FILE=libpcap-$LIBPCAP_VERSION.tar.gz
             export LIBPCAP_URL=https://www.tcpdump.org/release/$LIBPCAP_FILE
             export GO_FILE=go$GO_VERSION.linux-amd64.tar.gz
-            export GO_URL=https://storage.googleapis.com/golang/$GO_FILE
+            export GO_URL=https://go.dev/dl/$GO_FILE
             export GOPATH=/go
             export PATH=$GOPATH/bin:/usr/local/go/bin:$PATH
             curl -OL $GO_URL
@@ -219,7 +225,9 @@ jobs:
             baseurl=https://repo.goreleaser.com/yum/
             enabled=1
             gpgcheck=0' | tee /etc/yum.repos.d/goreleaser.repo
-            yum install -y goreleaser
+            # Pin to the last v1 release because v2 rejects the v1 style configs in .goreleaser/,
+            # and rebuilding an already tagged version always reads the configs of that tag.
+            yum install -y goreleaser-1.26.2
             goreleaser -v
             goreleaser release --config .goreleaser/rpm_amd64.yml --clean --skip=publish
           image: centos:7
@@ -236,6 +244,8 @@ jobs:
         uses: k1LoW/run-on-container@v1
         with:
           run: |
+            # CentOS 7 is EOL and mirrorlist.centos.org is gone, so use the frozen vault.centos.org instead.
+            sed -i -e 's/^mirrorlist=/#mirrorlist=/' -e 's/^#[[:space:]]*baseurl=/baseurl=/' -e 's#http://mirror.centos.org/centos/\(\$releasever\|7\)/#https://vault.centos.org/centos/7.9.2009/#' /etc/yum.repos.d/CentOS-*.repo
             yum install -y dist/tcpdp*.rpm
             tcpdp version
           image: centos:7
@@ -267,9 +277,13 @@ jobs:
           run: |
             uname -a
 
+            # CentOS 7 is EOL and mirrorlist.centos.org is gone, so use the frozen vault.centos.org instead.
+            sed -i -e 's/^mirrorlist=/#mirrorlist=/' -e 's/^#[[:space:]]*baseurl=/baseurl=/' -e 's#http://mirror.centos.org/\(centos\|altarch\)/\(\$releasever\|7\)/#https://vault.centos.org/altarch/7.9.2009/#' /etc/yum.repos.d/CentOS-*.repo
             yum install -y epel-release make clang glibc glibc-static gcc byacc flex libpcap-devel
             yum remove git*
             yum -y install epel-release centos-release-scl
+            # centos-release-scl adds repo files that still point to the mirrorlist.
+            sed -i -e 's/^mirrorlist=/#mirrorlist=/' -e 's/^#[[:space:]]*baseurl=/baseurl=/' -e 's#http://mirror.centos.org/\(centos\|altarch\)/\(\$releasever\|7\)/#https://vault.centos.org/altarch/7.9.2009/#' /etc/yum.repos.d/CentOS-*.repo
             yum -y groupinstall "Development Tools"
             yum -y install wget perl-CPAN gettext-devel perl-devel openssl-devel zlib-devel curl curl-devel expat-devel getopt asciidoc xmlto docbook2X devtoolset-10
             ln -s /usr/bin/db2x_docbook2texi /usr/bin/docbook2x-texi
@@ -286,7 +300,7 @@ jobs:
             export LIBPCAP_FILE=libpcap-$LIBPCAP_VERSION.tar.gz
             export LIBPCAP_URL=https://www.tcpdump.org/release/$LIBPCAP_FILE
             export GO_FILE=go$GO_VERSION.linux-arm64.tar.gz
-            export GO_URL=https://storage.googleapis.com/golang/$GO_FILE
+            export GO_URL=https://go.dev/dl/$GO_FILE
             export GOPATH=/go
             export PATH=$GOPATH/bin:/usr/local/go/bin:$PATH
             curl -OL $GO_URL
@@ -305,7 +319,9 @@ jobs:
             baseurl=https://repo.goreleaser.com/yum/
             enabled=1
             gpgcheck=0' | tee /etc/yum.repos.d/goreleaser.repo
-            yum install -y goreleaser
+            # Pin to the last v1 release because v2 rejects the v1 style configs in .goreleaser/,
+            # and rebuilding an already tagged version always reads the configs of that tag.
+            yum install -y goreleaser-1.26.2
             goreleaser -v
             goreleaser release --config .goreleaser/rpm_arm64.yml --clean --skip=publish
           image: centos:7
@@ -322,6 +338,8 @@ jobs:
         uses: k1LoW/run-on-container@v1
         with:
           run: |
+            # CentOS 7 is EOL and mirrorlist.centos.org is gone, so use the frozen vault.centos.org instead.
+            sed -i -e 's/^mirrorlist=/#mirrorlist=/' -e 's/^#[[:space:]]*baseurl=/baseurl=/' -e 's#http://mirror.centos.org/\(centos\|altarch\)/\(\$releasever\|7\)/#https://vault.centos.org/altarch/7.9.2009/#' /etc/yum.repos.d/CentOS-*.repo
             yum install -y dist/tcpdp*.rpm
             tcpdp version
           image: centos:7
