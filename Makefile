@@ -27,6 +27,11 @@ export MYSQL_PORT=33066
 export MYSQL_DATABASE=testdb
 export MYSQL_ROOT_PASSWORD=mypass
 
+# actions/setup-go exports GOTOOLCHAIN=local, which makes installing dev tools that
+# require a newer Go than the go directive in go.mod fail. Bumping the go directive
+# just for tools would also change the Go version used to build release binaries.
+GO_INSTALL_TOOL = GOTOOLCHAIN=auto go install
+
 default: build
 ci: depsdev test_race test_with_integration sec
 
@@ -46,18 +51,22 @@ build:
 	go build -ldflags="$(BUILD_LDFLAGS)"
 
 depsdev:
-	go install github.com/Songmu/ghch/cmd/ghch@latest
-	go install github.com/Songmu/gocredits/cmd/gocredits@latest
-	go install github.com/securego/gosec/v2/cmd/gosec@latest
-	go install github.com/tcnksm/ghr@latest
-	go install github.com/hairyhenderson/gomplate/v3/cmd/gomplate@v3.9.0
-	go install github.com/x-motemen/gobump/cmd/gobump@master
+	$(GO_INSTALL_TOOL) github.com/Songmu/ghch/cmd/ghch@latest
+	$(GO_INSTALL_TOOL) github.com/Songmu/gocredits/cmd/gocredits@latest
+	$(GO_INSTALL_TOOL) github.com/securego/gosec/v2/cmd/gosec@latest
+	$(GO_INSTALL_TOOL) github.com/tcnksm/ghr@latest
+	$(GO_INSTALL_TOOL) github.com/hairyhenderson/gomplate/v3/cmd/gomplate@v3.9.0
+	$(GO_INSTALL_TOOL) github.com/x-motemen/gobump/cmd/gobump@master
+
+credits:
+	$(GO_INSTALL_TOOL) github.com/Songmu/gocredits/cmd/gocredits@v1.0.0
+	gocredits . > CREDITS
 
 prerelease_for_tagpr:
-	gocredits -w .
+	$(MAKE) credits
 	git add CHANGELOG.md CREDITS go.mod go.sum
 
 release:
 	ghr -username k1LoW -replace ${ver} dist/
 
-.PHONY: default test
+.PHONY: default test credits
