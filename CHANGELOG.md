@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.23.12](https://github.com/k1LoW/tcpdp/compare/v0.23.11...v0.23.12) - 2026-11-18
+
+### Other Changes
+- chore(ci): migrate goreleaser configs to v2 by @k1LoW in https://github.com/k1LoW/tcpdp/pull/127
+
 ## [v0.23.11](https://github.com/k1LoW/tcpdp/compare/v0.23.10...v0.23.11) - 2026-11-18
 
 ### Other Changes
