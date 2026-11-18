@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.23.11](https://github.com/k1LoW/tcpdp/compare/v0.23.10...v0.23.11) - 2026-11-18
+
+### Other Changes
+- fix(ci): repair package build jobs in the release pipeline by @k1LoW in https://github.com/k1LoW/tcpdp/pull/125
+
 ## [v0.23.10](https://github.com/k1LoW/tcpdp/compare/v0.23.9...v0.23.10) - 2026-11-18
 
 ### Other Changes
