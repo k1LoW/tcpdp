@@ -67,9 +67,9 @@ jobs:
 
             echo 'deb [trusted=yes] https://repo.goreleaser.com/apt/ /' | tee /etc/apt/sources.list.d/goreleaser.list
             apt-get -qq update
-            # Pin to the last v1 release because v2 rejects the v1 style configs in .goreleaser/,
-            # and rebuilding an already tagged version always reads the configs of that tag.
-            apt-get install -qq goreleaser=1.26.2
+            # Pin an exact version instead of floating, because a new major already broke this job once
+            # and the configs in .goreleaser/ need v2.8 or later (ids).
+            apt-get install -qq goreleaser=2.20.2
             goreleaser -v
             goreleaser release --config .goreleaser/deb_amd64.yml --clean --skip=publish
           image: ubuntu:latest
@@ -142,9 +142,9 @@ jobs:
 
             echo 'deb [trusted=yes] https://repo.goreleaser.com/apt/ /' | tee /etc/apt/sources.list.d/goreleaser.list
             apt-get -qq update
-            # Pin to the last v1 release because v2 rejects the v1 style configs in .goreleaser/,
-            # and rebuilding an already tagged version always reads the configs of that tag.
-            apt-get install -qq goreleaser=1.26.2
+            # Pin an exact version instead of floating, because a new major already broke this job once
+            # and the configs in .goreleaser/ need v2.8 or later (ids).
+            apt-get install -qq goreleaser=2.20.2
             goreleaser -v
             goreleaser release --config .goreleaser/deb_arm64.yml --clean --skip=publish
           image: ubuntu:latest
@@ -225,9 +225,9 @@ jobs:
             baseurl=https://repo.goreleaser.com/yum/
             enabled=1
             gpgcheck=0' | tee /etc/yum.repos.d/goreleaser.repo
-            # Pin to the last v1 release because v2 rejects the v1 style configs in .goreleaser/,
-            # and rebuilding an already tagged version always reads the configs of that tag.
-            yum install -y goreleaser-1.26.2
+            # Pin an exact version instead of floating, because a new major already broke this job once
+            # and the configs in .goreleaser/ need v2.8 or later (ids).
+            yum install -y goreleaser-2.20.2
             goreleaser -v
             goreleaser release --config .goreleaser/rpm_amd64.yml --clean --skip=publish
           image: centos:7
@@ -319,9 +319,9 @@ jobs:
             baseurl=https://repo.goreleaser.com/yum/
             enabled=1
             gpgcheck=0' | tee /etc/yum.repos.d/goreleaser.repo
-            # Pin to the last v1 release because v2 rejects the v1 style configs in .goreleaser/,
-            # and rebuilding an already tagged version always reads the configs of that tag.
-            yum install -y goreleaser-1.26.2
+            # Pin an exact version instead of floating, because a new major already broke this job once
+            # and the configs in .goreleaser/ need v2.8 or later (ids).
+            yum install -y goreleaser-2.20.2
             goreleaser -v
             goreleaser release --config .goreleaser/rpm_arm64.yml --clean --skip=publish
           image: centos:7
