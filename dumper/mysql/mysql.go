@@ -87,9 +87,9 @@ func (m *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 	if ok && compressed {
 		// https://dev.mysql.com/doc/internals/en/compressed-packet-header.html
 		buff := bytes.NewBuffer(in)
-		lenCompressed := int(bytesToUint64(readBytes(buff, 3))) // 3:length of compressed payload
-		_ = readBytes(buff, 1)                                  // 1:compressed sequence id
-		lenUncompressed := bytesToUint64(readBytes(buff, 3))    // 3:length of payload before compression
+		lenCompressed := bytesToInt(readBytes(buff, 3))      // 3:length of compressed payload
+		_ = readBytes(buff, 1)                               // 1:compressed sequence id
+		lenUncompressed := bytesToUint64(readBytes(buff, 3)) // 3:length of payload before compression
 		if buff.Len() == lenCompressed {
 			if lenUncompressed > 0 {
 				// https://dev.mysql.com/doc/internals/en/compressed-payload.html
@@ -115,10 +115,10 @@ func (m *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 		if len(in) >= 16 && in[4] == comStmtPrepareOK && in[13] == 0x00 {
 			buff := bytes.NewBuffer(in[5:])
 			stmtID := readBytes(buff, 4)
-			stmtIDNum := int(bytesToUint64(stmtID))
+			stmtIDNum := bytesToInt(stmtID)
 			_ = readBytes(buff, 2)
 			numParams := readBytes(buff, 2)
-			numParamsNum := int(bytesToUint64(numParams))
+			numParamsNum := bytesToInt(numParams)
 			connMetadata.Internal.(connMetadataInternal).stmtNumParams[stmtIDNum] = numParamsNum
 		}
 		return []dumper.DumpValue{}, nil
@@ -137,7 +137,7 @@ func (m *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 		copy(pl, in[0:3])
 		payloadLength = bytesToUint32(pl) // 3:payload_length
 	}
-	if uint32(len(in[4:])) < payloadLength {
+	if int64(len(in[4:])) < int64(payloadLength) {
 		internal.payloadLength = payloadLength
 		internal.longPacketCache = append(internal.longPacketCache, in...)
 		connMetadata.Internal = internal
@@ -171,7 +171,7 @@ func (m *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 		// https://dev.mysql.com/doc/internals/en/com-stmt-execute.html
 		buff := bytes.NewBuffer(in[5:])
 		stmtID := readBytes(buff, 4) // 4:stmt-id
-		stmtIDNum := int(bytesToUint64(stmtID))
+		stmtIDNum := bytesToInt(stmtID)
 		numParamsNum, ok := connMetadata.Internal.(connMetadataInternal).stmtNumParams[stmtIDNum]
 		if ok && numParamsNum > 0 {
 			_ = readBytes(buff, 5)                  // 1:flags 4:iteration-count
@@ -417,23 +417,23 @@ func readBinaryProtocolValue(buff *bytes.Buffer, dataType dataType, cSet charSet
 	switch dataType {
 	case typeLonglong:
 		v := readBytes(buff, 8)
-		return int64(binary.LittleEndian.Uint64(v))
+		return int64(binary.LittleEndian.Uint64(v)) // #nosec G115 -- reinterprets the wire bytes as a signed value
 	case typeLong, typeInt24:
 		v := readBytes(buff, 4)
-		return int32(binary.LittleEndian.Uint32(v))
+		return int32(binary.LittleEndian.Uint32(v)) // #nosec G115 -- reinterprets the wire bytes as a signed value
 	case typeShort, typeYear:
 		v := readBytes(buff, 2)
-		return int16(binary.LittleEndian.Uint16(v))
+		return int16(binary.LittleEndian.Uint16(v)) // #nosec G115 -- reinterprets the wire bytes as a signed value
 	case typeTiny:
 		v := readBytes(buff, 1)
-		return int8(v[0])
+		return int8(v[0]) // #nosec G115 -- reinterprets the wire bytes as a signed value
 	case typeDouble:
 		bits := bytesToUint64(readBytes(buff, 8))
 		float := math.Float64frombits(bits)
 		return float
 	case typeFloat:
-		bits := bytesToUint64(readBytes(buff, 4))
-		float := math.Float32frombits(uint32(bits))
+		bits := binary.LittleEndian.Uint32(readBytes(buff, 4))
+		float := math.Float32frombits(bits)
 		return float
 	case typeDate, typeDatetime, typeTimestamp:
 		return readDatetime(buff, dataType)
@@ -442,8 +442,17 @@ func readBinaryProtocolValue(buff *bytes.Buffer, dataType dataType, cSet charSet
 	case typeNull:
 		return nil
 	default:
+		// A length-encoded integer can declare up to 2^64-1 bytes, which would overflow int
+		// or allocate far more than the packet actually carries.
 		l := readLengthEncodedInteger(buff)
-		v := readBytes(buff, int(l))
+		if l > math.MaxInt32 {
+			l = math.MaxInt32
+		}
+		n := int(l)
+		if n > buff.Len() {
+			n = buff.Len()
+		}
+		v := readBytes(buff, n)
 		return readString(v, cSet)
 	}
 }
@@ -462,24 +471,24 @@ func readDatetime(buff *bytes.Buffer, dataType dataType) string {
 	switch l {
 	case 0:
 	case 4:
-		year = int(bytesToUint64(readBytes(buff, 2)))
-		month = time.Month(int(bytesToUint64(readBytes(buff, 1))))
-		day = int(bytesToUint64(readBytes(buff, 1)))
+		year = bytesToInt(readBytes(buff, 2))
+		month = time.Month(bytesToInt(readBytes(buff, 1)))
+		day = bytesToInt(readBytes(buff, 1))
 	case 7:
-		year = int(bytesToUint64(readBytes(buff, 2)))
-		month = time.Month(int(bytesToUint64(readBytes(buff, 1))))
-		day = int(bytesToUint64(readBytes(buff, 1)))
-		hour = int(bytesToUint64(readBytes(buff, 1)))
-		min = int(bytesToUint64(readBytes(buff, 1)))
-		sec = int(bytesToUint64(readBytes(buff, 1)))
+		year = bytesToInt(readBytes(buff, 2))
+		month = time.Month(bytesToInt(readBytes(buff, 1)))
+		day = bytesToInt(readBytes(buff, 1))
+		hour = bytesToInt(readBytes(buff, 1))
+		min = bytesToInt(readBytes(buff, 1))
+		sec = bytesToInt(readBytes(buff, 1))
 	case 11:
-		year = int(bytesToUint64(readBytes(buff, 2)))
-		month = time.Month(int(bytesToUint64(readBytes(buff, 1))))
-		day = int(bytesToUint64(readBytes(buff, 1)))
-		hour = int(bytesToUint64(readBytes(buff, 1)))
-		min = int(bytesToUint64(readBytes(buff, 1)))
-		sec = int(bytesToUint64(readBytes(buff, 1)))
-		microSecond = int(bytesToUint64(readBytes(buff, 4)))
+		year = bytesToInt(readBytes(buff, 2))
+		month = time.Month(bytesToInt(readBytes(buff, 1)))
+		day = bytesToInt(readBytes(buff, 1))
+		hour = bytesToInt(readBytes(buff, 1))
+		min = bytesToInt(readBytes(buff, 1))
+		sec = bytesToInt(readBytes(buff, 1))
+		microSecond = bytesToInt(readBytes(buff, 4))
 	}
 	t := time.Date(year, month, day, hour, min, sec, microSecond*1000, time.UTC)
 
@@ -503,18 +512,18 @@ func readTime(buff *bytes.Buffer) string {
 	switch l {
 	case 0:
 	case 8:
-		negative = int(bytesToUint64(readBytes(buff, 1)))
-		days = int(bytesToUint64(readBytes(buff, 4)))
-		hour = int(bytesToUint64(readBytes(buff, 1)))
-		min = int(bytesToUint64(readBytes(buff, 1)))
-		sec = int(bytesToUint64(readBytes(buff, 1)))
+		negative = bytesToInt(readBytes(buff, 1))
+		days = bytesToInt(readBytes(buff, 4))
+		hour = bytesToInt(readBytes(buff, 1))
+		min = bytesToInt(readBytes(buff, 1))
+		sec = bytesToInt(readBytes(buff, 1))
 	case 12:
-		negative = int(bytesToUint64(readBytes(buff, 1)))
-		days = int(bytesToUint64(readBytes(buff, 4)))
-		hour = int(bytesToUint64(readBytes(buff, 1)))
-		min = int(bytesToUint64(readBytes(buff, 1)))
-		sec = int(bytesToUint64(readBytes(buff, 1)))
-		microSecond = int(bytesToUint64(readBytes(buff, 4)))
+		negative = bytesToInt(readBytes(buff, 1))
+		days = bytesToInt(readBytes(buff, 4))
+		hour = bytesToInt(readBytes(buff, 1))
+		min = bytesToInt(readBytes(buff, 1))
+		sec = bytesToInt(readBytes(buff, 1))
+		microSecond = bytesToInt(readBytes(buff, 4))
 	}
 	op := ""
 	if negative == 1 {
@@ -538,6 +547,15 @@ func bytesToUint32(b []byte) uint32 {
 	copy(c, b)
 	padding := make([]byte, 4-len(c))
 	return binary.LittleEndian.Uint32(append(c, padding...))
+}
+
+// bytesToInt converts a little-endian unsigned integer of up to 4 bytes to int.
+func bytesToInt(b []byte) int {
+	n := 0
+	for i, v := range b {
+		n |= int(v) << (8 * i)
+	}
+	return n
 }
 
 func bytesToUint64(b []byte) uint64 {

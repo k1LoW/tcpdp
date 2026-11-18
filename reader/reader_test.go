@@ -224,3 +224,11 @@ func TestNewBPFFilterString(t *testing.T) {
 		}
 	}
 }
+
+func TestParseTargetOutOfRangePort(t *testing.T) {
+	for _, target := range []string{"65536", "localhost:65536"} {
+		if _, err := ParseTarget(target); err == nil {
+			t.Errorf("ParseTarget(%q) should return an error", target)
+		}
+	}
+}

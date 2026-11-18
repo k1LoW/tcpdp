@@ -104,7 +104,7 @@ func (p *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 			copy(ml, in[1:5])
 			messageLength = binary.BigEndian.Uint32(ml)
 		}
-		if uint32(len(in[1:])) < messageLength {
+		if int64(len(in[1:])) < int64(messageLength) {
 			internal.messageLength = messageLength
 			internal.longPacketCache = append(internal.longPacketCache, in...)
 			connMetadata.Internal = internal
@@ -157,7 +157,7 @@ func (p *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 		c := int(binary.BigEndian.Uint16(readBytes(buff, 2)))
 		dataTypes := []dataType{}
 		for i := 0; i < c; i++ {
-			t := dataType(binary.BigEndian.Uint16(readBytes(buff, 2)))
+			t := dataType(binary.BigEndian.Uint16(readBytes(buff, 2))) // #nosec G115 -- reinterprets the wire bytes as a signed value
 			dataTypes = append(dataTypes, t)
 		}
 		numParams := int(binary.BigEndian.Uint16(readBytes(buff, 2)))
@@ -168,7 +168,7 @@ func (p *Dumper) Read(in []byte, direction dumper.Direction, connMetadata *dumpe
 		}
 		values := []interface{}{}
 		for i := 0; i < numParams; i++ {
-			n := int32(binary.BigEndian.Uint32(readBytes(buff, 4)))
+			n := int32(binary.BigEndian.Uint32(readBytes(buff, 4))) // #nosec G115 -- reinterprets the wire bytes as a signed value
 			if n == -1 {
 				continue
 			}

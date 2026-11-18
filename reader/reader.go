@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"math"
 	"net"
 	"runtime"
 	"strconv"
@@ -58,6 +59,9 @@ func ParseTarget(t string) (Target, error) {
 			if err != nil {
 				return Target{}, err
 			}
+			if tAddr.Port < 0 || tAddr.Port > math.MaxUint16 {
+				return Target{}, fmt.Errorf("invalid port: %d", tAddr.Port)
+			}
 			host = tAddr.IP.String()
 			port = uint16(tAddr.Port)
 		} else if strings.Contains(t, ".") {
@@ -65,7 +69,7 @@ func ParseTarget(t string) (Target, error) {
 			port = uint16(0)
 		} else {
 			host = ""
-			port64, err := strconv.ParseUint(t, 10, 64)
+			port64, err := strconv.ParseUint(t, 10, 16)
 			if err != nil {
 				return Target{}, err
 			}

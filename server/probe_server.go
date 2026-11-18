@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -309,6 +310,9 @@ func byteFormat(s string) (int, error) {
 	i, err := bytefmt.ToBytes(s)
 	if err != nil {
 		return -1, err
+	}
+	if i > math.MaxInt {
+		return -1, fmt.Errorf("byte size out of range: %s", s)
 	}
 	return int(i), nil
 }
